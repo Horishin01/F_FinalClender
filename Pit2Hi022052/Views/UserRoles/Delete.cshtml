@@ -1,0 +1,23 @@
+﻿@model IdentityUserRole<string>
+
+@{
+    if (!(Model is not null)) { throw new NullReferenceException(); }
+    ViewData["Title"] = "Delete";
+}
+
+<h1>Delete</h1>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>UserRole</h4>
+    <hr />
+
+    <partial name="_DetailsPartial.cshtml" />
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="UserId" />
+        <input type="hidden" asp-for="RoleId" />
+        <input type="submit" value="Delete" class="btn btn-danger" /> |
+        <a asp-action="Index">Back to List</a>
+    </form>
+</div>

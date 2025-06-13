@@ -1,0 +1,21 @@
+﻿@model TextbookAuthor
+
+@{
+    if (!(Model is not null)) { throw new NullReferenceException(); }
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>Textbook</h4>
+    <hr />
+
+    <partial name="_DetailsPartial.cshtml" />
+
+
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.TextbookId" asp-route-id2="@Model.AuthorId">Edit</a> |
+    <a asp-action="Index">Back to List</a>
+</div>

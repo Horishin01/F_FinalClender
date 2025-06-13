@@ -1,0 +1,39 @@
+﻿@model Textbook
+
+@{
+	if (!(Model is not null)) { throw new NullReferenceException(); }	// Ad-hoc
+}
+
+<dl class="row">
+	<dt class="col-sm-2">@Html.DisplayNameFor(model => model.Id)</dt>
+	<dd class="col-sm-10">@Html.DisplayFor(model => model.Id)</dd>
+	<dt class="col-sm-2">@Html.DisplayNameFor(model => model.Name)</dt>
+	<dd class="col-sm-10">@Html.DisplayFor(model => model.Name)</dd>
+	<dt class="col-sm-2">@Html.DisplayNameFor(model => model.Price)</dt>
+	<dd class="col-sm-10">@Html.DisplayFor(model => model.Price)</dd>
+	@if (Model.Publisher is not null)
+	{
+		<dt class="col-sm-2">
+			@Html.DisplayNameFor(model => Model.Publisher.Name)
+		</dt>
+		<dd class="col-sm-10">
+			@Html.DisplayFor(model => Model.Publisher.Name)
+		</dd>
+	}
+	@if (Model.TextbookAuthors is not null)
+	{
+		<dt class="col-sm-2">
+			@Html.DisplayNameFor(model => Model.TextbookAuthors)
+		</dt>
+		<dd class="col-sm-10">
+			@foreach (var textbookAuthor in Model.TextbookAuthors)
+			{
+				if (!(textbookAuthor is not null)) { continue; }
+				if (!(textbookAuthor.Author is not null)) { continue; }
+				@Html.DisplayFor(model => textbookAuthor.Author.Name)
+				<span>, </span>
+			}
+		</dd>
+	}
+</dl>
+

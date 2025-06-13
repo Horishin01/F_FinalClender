@@ -1,0 +1,23 @@
+﻿@model Pit2Hi022052.Models.ICCard
+@{
+    ViewData["Title"] = "ICカード";
+}
+
+<h2>ICカード情報</h2>
+
+@if (Model != null)
+{
+    <div>
+        <p><strong>UID:</strong> @Model.Uid</p>
+        <form method="post" asp-action="Delete" asp-route-id="@Model.Id">
+            <button type="submit" class="btn btn-danger">削除</button>
+        </form>
+    </div>
+}
+else
+{
+    <p>ICカードは登録されていません。</p>
+    <form method="post" asp-action="Register">
+        <button type="submit" class="btn btn-success">ICカード登録</button>
+    </form>
+}

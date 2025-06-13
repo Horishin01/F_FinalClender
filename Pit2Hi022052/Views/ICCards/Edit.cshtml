@@ -1,0 +1,16 @@
+﻿@model Pit2Hi022052.Models.ICCard
+@{
+    ViewData["Title"] = "ICカード編集";
+}
+
+<h2>ICカード情報の編集</h2>
+
+<form method="post" asp-action="Edit">
+    <div class="form-group">
+        <label for="Uid">UID</label>
+        <input type="text" class="form-control" id="Uid" name="Uid" value="@Model.Uid" required />
+    </div>
+    <button type="submit" class="btn btn-primary">保存</button>
+</form>
+<br />
+<a href="@Url.Action("Index")" class="btn btn-secondary">戻る</a>

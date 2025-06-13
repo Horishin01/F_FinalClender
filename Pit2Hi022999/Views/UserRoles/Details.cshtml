@@ -1,0 +1,20 @@
+﻿@model IdentityUserRole<string>
+
+@{
+    if (!(Model is not null)) { throw new NullReferenceException(); }
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>UserRole</h4>
+    <hr />
+
+    <partial name="_DetailsPartial.cshtml" />
+
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.UserId" asp-route-id2="@Model.RoleId">Edit</a> |
+    <a asp-action="Index">Back to List</a>
+</div>

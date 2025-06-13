@@ -1,0 +1,59 @@
+﻿@model Publisher
+
+@{
+	if (!(Model is not null)) { throw new NullReferenceException(); }
+}
+
+<dl class="row">
+	<dt class="col-sm-2">
+		@Html.DisplayNameFor(model => model.Id)
+	</dt>
+	<dd class="col-sm-10">
+		@Html.DisplayFor(model => model.Id)
+	</dd>
+	<dt class="col-sm-2">
+		@Html.DisplayNameFor(model => model.Name)
+	</dt>
+	<dd class="col-sm-10">
+		@Html.DisplayFor(model => model.Name)
+	</dd>
+	<dt class="col-sm-2">
+		@Html.DisplayNameFor(model => model.Address)
+	</dt>
+	<dd class="col-sm-10">
+		@Html.DisplayFor(model => model.Address)
+	</dd>
+</dl>
+
+@if (Model.Textbooks is not null && Model.Textbooks.Count > 0)
+{
+	<hr />
+	<h2>発行書籍一覧</h2>
+	<table class="table">
+		<thead>
+			<tr>
+				<th>
+					@Html.DisplayNameFor(model => Model.Textbooks[0].Id)
+				</th>
+				<th>
+					@Html.DisplayNameFor(model => Model.Textbooks[0].Name)
+				</th>
+				<th>
+					@Html.DisplayNameFor(model => Model.Textbooks[0].Price)
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var item in Model.Textbooks)
+			{
+				if (!(item is not null)) { continue; }
+				<tr>
+					<td>@Html.DisplayFor(modelItem => item.Id)</td>
+					<td>@Html.DisplayFor(modelItem => item.Name)</td>
+					<td>@Html.DisplayFor(modelItem => item.Price)</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+

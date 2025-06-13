@@ -1,0 +1,43 @@
+﻿@model IEnumerable<Event>
+
+@{
+    ViewData["Title"] = "Calendars";
+}
+
+<div id="calendar"></div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.js"></script> <!-- FullCalendarのスクリプト -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek', // 週表示
+                events: '/Events/GetEvents', // イベントデータ取得用のAPIエンドポイント
+                headerToolbar: {
+                    start: 'today prev,next', // 左側に「今日」「前」「次」
+                    center: 'title',         // 中央にカレンダーのタイトル
+                    end: 'dayGridMonth,timeGridWeek,timeGridDay' // 右側にビュー切り替えボタン
+                },
+                selectable: true, // 日付範囲の選択を有効化
+                select: function (info) {
+                    // ダブルクリックで入力画面にリダイレクト
+                    var startDate = info.startStr; // 選択された開始日時（ISOフォーマット）
+                    var endDate = info.endStr;     // 選択された終了日時（ISOフォーマット）
+                    window.location.href = '/Events/Create?startDate=' + startDate + '&endDate=' + endDate;
+                },
+
+                eventClick: function (info) {
+                    // イベントがクリックされたときの処理
+                    var eventId = info.event.id; // イベントのIDを取得
+                    if (eventId) {
+                        // 詳細ページにリダイレクト
+                        window.location.href = '/Events/Details?id=' + eventId;
+                    }
+                }
+            });
+            calendar.render();
+        });
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css" rel="stylesheet" /> <!-- FullCalendarのスタイル -->
+}

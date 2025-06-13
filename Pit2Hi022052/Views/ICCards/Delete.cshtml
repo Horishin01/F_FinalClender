@@ -1,0 +1,16 @@
+﻿@model Pit2Hi022052.Models.ICCard
+@{
+    ViewData["Title"] = "ICカード削除";
+}
+
+<h2>ICカード削除</h2>
+
+<div>
+    <p>本当にICカードを削除しますか？</p>
+    <p><strong>UID:</strong> @Model.Uid</p>
+    <form method="post" asp-action="Delete" asp-route-id="@Model.Id">
+        <button type="submit" class="btn btn-danger">削除</button>
+    </form>
+    <br />
+    <a href="@Url.Action("Index")" class="btn btn-secondary">キャンセル</a>
+</div>

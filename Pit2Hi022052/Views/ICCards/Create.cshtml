@@ -1,0 +1,16 @@
+﻿@model Pit2Hi022052.Models.ICCard
+@{
+    ViewData["Title"] = "ICカード登録";
+}
+
+<h2>ICカード登録</h2>
+
+<form method="post" asp-action="Register">
+    <div class="form-group">
+        <label for="Uid">UID</label>
+        <input type="text" class="form-control" id="Uid" name="Uid" required />
+    </div>
+    <button type="submit" class="btn btn-success">登録</button>
+</form>
+<br />
+<a href="@Url.Action("Index")" class="btn btn-secondary">戻る</a>

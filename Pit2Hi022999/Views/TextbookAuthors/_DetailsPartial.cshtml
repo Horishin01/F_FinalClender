@@ -1,0 +1,43 @@
+﻿@model TextbookAuthor
+
+@{
+    if (!(Model is not null)) { throw new NullReferenceException(); }
+}
+
+   <dl class="row">
+        <dt class = "col-sm-2">
+        @Html.DisplayNameFor(model => model.TextbookId)
+        </dt>
+        <dd class = "col-sm-10">
+        @Html.DisplayFor(model => model.TextbookId)
+        </dd>
+    
+        @if(Model.Textbook is not null)
+        {
+        <dt class = "col-sm-2">
+        @Html.DisplayNameFor(model => Model.Textbook.Name)
+        </dt>
+        <dd class = "col-sm-10">
+        @Html.DisplayFor(model => Model.Textbook.Name)
+        </dd> 
+        }
+        <dt class = "col-sm-2">
+        @Html.DisplayNameFor(model => model.AuthorId)
+        </dt>
+        <dd class = "col-sm-10">
+        @Html.DisplayFor(model => model.AuthorId)
+        </dd>
+
+        @if (Model.Author is not null)
+        {
+            <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => Model.Author.Name)
+            </dt>
+            <dd class = "col-sm-10">
+            @Html.DisplayFor(model => Model.Author.Name)
+            </dd> 
+        }
+
+
+
+    </dl>

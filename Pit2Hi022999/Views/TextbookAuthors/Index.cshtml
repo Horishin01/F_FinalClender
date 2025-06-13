@@ -1,0 +1,46 @@
+﻿@model IEnumerable<TextbookAuthor>
+
+@{
+    if (!(Model is not null)) { throw new NullReferenceException(); }
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.TextbookId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.AuthorId)
+            </th>
+
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.TextbookId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.AuthorId)
+                </td>
+
+
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.TextbookId" asp-route-id2="@item.AuthorId">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.TextbookId" asp-route-id2="@item.AuthorId">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.TextbookId" asp-route-id2="@item.AuthorId">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
