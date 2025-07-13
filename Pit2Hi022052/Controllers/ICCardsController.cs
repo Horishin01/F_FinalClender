@@ -23,7 +23,7 @@ namespace Pit2Hi022052.Controllers
         }
 
         // ICカード一覧表示
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,user")]
         [HttpGet]
         public async Task<IActionResult> Index()
         {

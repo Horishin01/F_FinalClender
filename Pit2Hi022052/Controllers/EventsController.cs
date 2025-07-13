@@ -21,7 +21,7 @@ namespace Pit2Hi022052.Controllers
         }
 
         // カレンダーの表示用アクション
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,user")]
         public IActionResult Index()
         {
             return View();
@@ -47,7 +47,7 @@ namespace Pit2Hi022052.Controllers
         }
 
         // イベント作成ページ (GET)
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,user")]
         [HttpGet]
         public async Task<IActionResult> Create(string startDate = null, string endDate = null)
         {
@@ -89,7 +89,7 @@ namespace Pit2Hi022052.Controllers
 
         // イベント編集処理
         // GET: Event/Edit/5
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,user")]
 
         public async Task<IActionResult> Edit(string id)
         {
@@ -143,7 +143,7 @@ namespace Pit2Hi022052.Controllers
         }
 
         // イベント詳細ページ
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,user")]
         public IActionResult Details(string id)
         {
             // IDがnullまたは空の場合、404エラーを返す
@@ -178,7 +178,7 @@ namespace Pit2Hi022052.Controllers
         }
 
         // イベント削除処理
-        [Authorize(Roles = "admin,user")]
+        [Authorize(Roles = "Admin,user")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Delete(string id, bool confirm)

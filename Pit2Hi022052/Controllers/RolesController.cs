@@ -21,7 +21,7 @@ namespace Pit2Hi022052.Controllers
             RoleManager = roleManager;
         }
 
-        [Authorize(Roles = "admin")]
+            [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
             var modelsList = await RoleManager.Roles.ToListAsync();
