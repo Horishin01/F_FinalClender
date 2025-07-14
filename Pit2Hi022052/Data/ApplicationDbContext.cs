@@ -25,6 +25,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public virtual DbSet<Event>? Events { get; set; }
     public virtual DbSet<ICCard>? ICCards { get; set; }
 
+    //--------
+    // icouldプロパティ
+    public DbSet<ICloudSetting> ICloudSettings { get; set; }
+
 
     //--------
     // END

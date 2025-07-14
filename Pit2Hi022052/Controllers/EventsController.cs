@@ -5,8 +5,10 @@ using Pit2Hi022052.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Query.ExpressionTranslators.Internal;
+using System.Globalization;
 
+// 追加
+using System.Threading.Tasks;
 
 namespace Pit2Hi022052.Controllers
 {
@@ -14,40 +16,90 @@ namespace Pit2Hi022052.Controllers
     {
         private readonly ApplicationDbContext _context;
         protected virtual UserManager<ApplicationUser> UserManager { get; }
-        public EventsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+
+        // iCloud連携用サービス
+        private readonly ICloudCalDavService _iCloudCalDavService;
+        private readonly IcalParserService _icalParserService;
+        private readonly ILogger<EventsController> _logger;
+
+        public EventsController(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            ICloudCalDavService iCloudCalDavService,
+            IcalParserService icalParserService,
+             ILogger<EventsController> logger 
+        )
         {
             _context = context;
             UserManager = userManager;
+            _iCloudCalDavService = iCloudCalDavService;
+            _icalParserService = icalParserService;
+            _logger = logger;
         }
 
-        // カレンダーの表示用アクション
-        [Authorize(Roles = "Admin,user")]
+    //    [Authorize(Roles = "Admin,user")]
         public IActionResult Index()
         {
             return View();
         }
 
-        // イベントデータを提供するAPIエンドポイント
         [HttpGet]
         public async Task<JsonResult> GetEvents()
         {
             var currentUser = await UserManager.GetUserAsync(User);
-            var events = _context.Events.Select(e => new
+
+            _logger.LogInformation("🌿 [GetEvents] ユーザー {User} のイベントを取得します", currentUser?.UserName);
+
+            // 1. DBイベント取得
+            var dbEvents = _context.Events
+                .Where(e => e.UserId == currentUser.Id)
+                .ToList();
+
+            _logger.LogInformation("✅ DBイベント件数: {Count}", dbEvents.Count);
+
+            // 2. iCloudイベント取得
+            List<Event> iCloudEvents = new List<Event>();
+            try
+            {
+                iCloudEvents = await _iCloudCalDavService.GetAllEventsAsync();
+
+                if (iCloudEvents.Count == 0)
+                {
+                    _logger.LogWarning("⚠ iCloudから取得したイベントは0件です。");
+                }
+                else
+                {
+                    _logger.LogInformation("✅ iCloudイベント件数: {Count}", iCloudEvents.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ iCloudイベントの取得に失敗しました。");
+            }
+
+            // 3. 結合
+            var allEvents = dbEvents.Concat(iCloudEvents).ToList();
+            _logger.LogInformation("🌱 結合後の全イベント件数: {Count}", allEvents.Count);
+
+            // 4. JSONに変換
+            var json = allEvents.Select(e => new
             {
                 id = e.Id,
-                UserId = e.UserId,
                 title = e.Title,
-                start = e.StartDate.ToString("s"),
-                end = e.EndDate.ToString("s"),
+                start = e.StartDate.HasValue
+                    ? e.StartDate.Value.ToString("o", CultureInfo.InvariantCulture)
+                    : null,
+                end = e.EndDate.HasValue
+                    ? e.EndDate.Value.ToString("o", CultureInfo.InvariantCulture)
+                    : null,
                 description = e.Description
-            }).Where(m => m.UserId == currentUser.Id)
-            .ToList();
+            });
 
-            return new JsonResult(events);
+            return new JsonResult(json);
         }
 
-        // イベント作成ページ (GET)
-        [Authorize(Roles = "Admin,user")]
+
+     //   [Authorize(Roles = "Admin,user")]
         [HttpGet]
         public async Task<IActionResult> Create(string startDate = null, string endDate = null)
         {
@@ -55,7 +107,7 @@ namespace Pit2Hi022052.Controllers
             model.Id = Guid.NewGuid().ToString("N");
             var currentUser = await UserManager.GetUserAsync(User);
             model.UserId = currentUser.Id;
-            // クエリ文字列で日時が渡された場合、モデルにデフォルト値を設定
+
             if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var parsedStartDate))
             {
                 model.StartDate = parsedStartDate;
@@ -68,45 +120,37 @@ namespace Pit2Hi022052.Controllers
             return View(model);
         }
 
-        // イベント作成処理 (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create(Event model)
         {
             if (ModelState.IsValid)
             {
-                // モデルの登録
                 _context.Events.Add(model);
                 _context.SaveChanges();
-
-                // 一覧ページにリダイレクト
                 return RedirectToAction("Index");
             }
 
-            // バリデーションエラー時、入力内容を保持したまま再表示
             return View(model);
         }
 
-        // イベント編集処理
-        // GET: Event/Edit/5
-        [Authorize(Roles = "Admin,user")]
-
+    //    [Authorize(Roles = "Admin,user")]
         public async Task<IActionResult> Edit(string id)
         {
             if (id == null)
             {
-                return NotFound();
+                return NotFound("IDが指定されていません。");
             }
 
-            var author = await _context.Events.FindAsync(id);
-            if (author == null)
+            var ev = await _context.Events.FindAsync(id);
+            if (ev == null)
             {
-                return NotFound();
+                return NotFound("指定されたイベントが見つかりません。");
             }
-            return View(author);
+
+            return View(ev);
         }
 
-        // イベント編集処理 (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string id, Event model)
@@ -120,7 +164,6 @@ namespace Pit2Hi022052.Controllers
             {
                 try
                 {
-                    // データベースの状態を更新
                     _context.Update(model);
                     await _context.SaveChangesAsync();
                     return RedirectToAction(nameof(Index));
@@ -129,7 +172,7 @@ namespace Pit2Hi022052.Controllers
                 {
                     if (!_context.Events.Any(e => e.Id == id))
                     {
-                        return NotFound($"指定されたID: {id} のイベントが存在しません。");
+                        return NotFound($"指定されたID({id})のイベントは存在しません。");
                     }
                     else
                     {
@@ -138,55 +181,46 @@ namespace Pit2Hi022052.Controllers
                 }
             }
 
-            // バリデーションエラー時、編集ページを再表示
             return View(model);
         }
 
-        // イベント詳細ページ
-        [Authorize(Roles = "Admin,user")]
+    //    [Authorize(Roles = "Admin,user")]
         public IActionResult Details(string id)
         {
-            // IDがnullまたは空の場合、404エラーを返す
             if (string.IsNullOrEmpty(id))
             {
                 return NotFound("イベントIDが指定されていません。");
             }
 
-            // 指定されたIDのイベントをデータベースから取得
-            var eventDetails = _context.Events.FirstOrDefault(e => e.Id == id);
-
-            // イベントが見つからない場合、404エラーを返す
-            if (eventDetails == null)
+            var ev = _context.Events.FirstOrDefault(e => e.Id == id);
+            if (ev == null)
             {
-                return NotFound($"指定されたID: {id} のイベントは存在しません。");
+                return NotFound($"指定されたID({id})のイベントは存在しません。");
             }
 
-            // ビューにイベントデータを渡して表示
-            return View(eventDetails);
+            return View(ev);
         }
 
-        // イベント削除ページ
         [HttpGet]
         public IActionResult Delete(string id)
         {
-            var eventToDelete = _context.Events.FirstOrDefault(e => e.Id == id);
-            if (eventToDelete == null)
+            var ev = _context.Events.FirstOrDefault(e => e.Id == id);
+            if (ev == null)
             {
-                return NotFound();
+                return NotFound("削除対象のイベントが見つかりません。");
             }
-            return View(eventToDelete);
+            return View(ev);
         }
 
-        // イベント削除処理
         [Authorize(Roles = "Admin,user")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Delete(string id, bool confirm)
         {
-            var eventToDelete = _context.Events.FirstOrDefault(e => e.Id == id);
-            if (eventToDelete != null)
+            var ev = _context.Events.FirstOrDefault(e => e.Id == id);
+            if (ev != null)
             {
-                _context.Events.Remove(eventToDelete);
+                _context.Events.Remove(ev);
                 _context.SaveChanges();
             }
             return RedirectToAction("Index");

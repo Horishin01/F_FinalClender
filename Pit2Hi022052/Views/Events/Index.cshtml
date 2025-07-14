@@ -32,7 +32,8 @@
                     var startDate = info.startStr; // 選択された開始日時（ISOフォーマット）
                     var endDate = info.endStr;     // 選択された終了日時（ISOフォーマット）
                     window.location.href = '/Events/Create?startDate=' + startDate + '&endDate=' + endDate;
-                },
+                },    
+
 
                 eventClick: function (info) {
                     // イベントがクリックされたときの処理
@@ -41,7 +42,7 @@
                         // 詳細ページにリダイレクト
                         window.location.href = '/Events/Details?id=' + eventId;
                     }
-                }
+                }       
             });
             calendar.render();
         });

@@ -231,10 +231,10 @@ namespace Pit2Hi022052.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("EndDate")
+                    b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateTime>("StartDate")
+                    b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Title")
@@ -271,6 +271,32 @@ namespace Pit2Hi022052.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ICCards");
+                });
+
+            modelBuilder.Entity("Pit2Hi022052.Models.ICloudSetting", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ICloudSettings");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -336,6 +362,17 @@ namespace Pit2Hi022052.Migrations
                 });
 
             modelBuilder.Entity("Pit2Hi022052.Models.ICCard", b =>
+                {
+                    b.HasOne("Pit2Hi022052.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Pit2Hi022052.Models.ICloudSetting", b =>
                 {
                     b.HasOne("Pit2Hi022052.Models.ApplicationUser", "User")
                         .WithMany()
