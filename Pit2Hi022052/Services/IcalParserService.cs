@@ -18,23 +18,23 @@ namespace Pit2Hi022052.Services
             {
                 if (string.IsNullOrWhiteSpace(icsData))
                 {
-                    Console.WriteLine("⚠️ ICSデータが空または null です。");
+                    Console.WriteLine(" ICSデータが空または null です。");
                     return result;
                 }
 
-                Console.WriteLine("📄 ICSデータ取得（先頭200文字表示）:");
+                Console.WriteLine("ICSデータ取得（先頭200文字表示）:");
                 Console.WriteLine(icsData.Substring(0, Math.Min(200, icsData.Length)));
 
                 var calendar = Calendar.Load(icsData);
                 if (calendar == null)
                 {
-                    Console.WriteLine("⚠️ Calendar.Load() に失敗しました（null が返されました）");
+                    Console.WriteLine(" Calendar.Load() に失敗しました（null が返されました）");
                     return result;
                 }
 
                 if (calendar.Events == null || !calendar.Events.Any())
                 {
-                    Console.WriteLine("⚠️ calendar.Events が空です。イベントが含まれていない可能性があります。");
+                    Console.WriteLine("calendar.Events が空です。イベントが含まれていない可能性があります。");
                     return result;
                 }
 
@@ -53,11 +53,11 @@ namespace Pit2Hi022052.Services
                     });
                 }
 
-                Console.WriteLine($"✅ イベント数: {result.Count}");
+                Console.WriteLine($" イベント数: {result.Count}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ ICS解析エラー: {ex.GetType().Name} - {ex.Message}");
+                Console.WriteLine($"ICS解析エラー: {ex.GetType().Name} - {ex.Message}");
             }
 
             return result;
