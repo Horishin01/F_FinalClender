@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
-using Ical.Net.DataTypes;
+using Ical.Net.DataTypes; // for IDateTime, CalDateTime
 using Ical.Net.Serialization;
 using Pit2Hi022052.Models;
 
@@ -51,7 +51,6 @@ namespace Pit2Hi022052.Services
                 if (calDateTime.Value == DateTime.MinValue)
                     return null;
 
-                // Localに変換（UnspecifiedもLocalにする）
                 return DateTime.SpecifyKind(calDateTime.Value, DateTimeKind.Local);
             }
 
