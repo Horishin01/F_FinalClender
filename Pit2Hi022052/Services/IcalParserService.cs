@@ -16,7 +16,27 @@ namespace Pit2Hi022052.Services
 
             try
             {
+                if (string.IsNullOrWhiteSpace(icsData))
+                {
+                    Console.WriteLine("⚠️ ICSデータが空または null です。");
+                    return result;
+                }
+
+                Console.WriteLine("📄 ICSデータ取得（先頭200文字表示）:");
+                Console.WriteLine(icsData.Substring(0, Math.Min(200, icsData.Length)));
+
                 var calendar = Calendar.Load(icsData);
+                if (calendar == null)
+                {
+                    Console.WriteLine("⚠️ Calendar.Load() に失敗しました（null が返されました）");
+                    return result;
+                }
+
+                if (calendar.Events == null || !calendar.Events.Any())
+                {
+                    Console.WriteLine("⚠️ calendar.Events が空です。イベントが含まれていない可能性があります。");
+                    return result;
+                }
 
                 foreach (var e in calendar.Events)
                 {
@@ -32,10 +52,12 @@ namespace Pit2Hi022052.Services
                         Description = e.Description ?? ""
                     });
                 }
+
+                Console.WriteLine($"✅ イベント数: {result.Count}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ ICS解析エラー: {ex.Message}");
+                Console.WriteLine($"❌ ICS解析エラー: {ex.GetType().Name} - {ex.Message}");
             }
 
             return result;

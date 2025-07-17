@@ -4,8 +4,12 @@ using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 using Pit2Hi022052.Services;
 
-
 var builder = WebApplication.CreateBuilder(args);
+
+//================ ログレベルの設定 ==================
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug); // ← 重要：CalDAVエラー等の追跡用
 
 //================ DB接続 ==================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -49,7 +53,8 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// HTTPSポートが未指定でも開発時は続行できるようにしておく
+app.UseHttpsRedirection(); // ← 本番用だが、localhostなら無視してもOK
 app.UseStaticFiles();
 app.UseStatusCodePages();
 
