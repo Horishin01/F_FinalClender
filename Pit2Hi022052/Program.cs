@@ -1,27 +1,22 @@
-/*----------------------------------------------------------
- Program.cs
-----------------------------------------------------------*/
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
+using Pit2Hi022052.Services;
 
-//==========================================================
-// トップレベルステートメント
-// エントリーポイント
 
-// -- アプリケーションビルダの生成 --
 var builder = WebApplication.CreateBuilder(args);
 
-// -- アプリケーションビルダへのサービスの追加 –
+//================ DB接続 ==================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-builder.Services.AddDbContext<ApplicationDbContext>(
-    options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+//================ Identity登録 ===============
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = true;
@@ -30,26 +25,20 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
-//---------------- iCloud情報連携 -----------------------
-// iCloud CalDAVサービス登録（Singleton）
-var config = builder.Configuration;
-var username = config["iCloud:Username"];
-var password = config["iCloud:AppPassword"];
+//================ IHttpContextAccessor登録 ===============
+builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddSingleton<ICloudCalDavService>(provider =>
-{
-    var logger = provider.GetRequiredService<ILogger<ICloudCalDavService>>();
-    return new ICloudCalDavService(logger, username, password);
-});
+//================ iCloudCalDAVサービス登録 ===============
+builder.Services.AddScoped<ICloudCalDavService, CloudCalDavService>();
 
-// IcalParserServiceはスコープ登録でOK
+//================ ICSパーサー登録 ===============
 builder.Services.AddScoped<IcalParserService>();
 
-// -- アプリケーションビルダによるアプリケーションの生成 --
+//================ アプリ構築 ===============
 var app = builder.Build();
 
-// -- アプリケーションの設定 --
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -57,15 +46,13 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days.
-    // You may want to change this for production scenarios,
-    // see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseStatusCodePages();
+
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -75,13 +62,4 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}/{id2?}");
 
 app.MapRazorPages();
-
-// -- アプリケーションの実行 --
 app.Run();
-
-// -- 終了 --
-return;
-
-//==========================================================
-// END
-//==========================================================

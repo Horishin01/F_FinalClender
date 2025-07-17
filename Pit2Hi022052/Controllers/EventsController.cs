@@ -2,22 +2,18 @@
 using System.Linq;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-
-// 追加
 using System.Threading.Tasks;
+using Pit2Hi022052.Services; // 追加：ICloudCalDavServiceとIcalParserServiceの名前空間
 
 namespace Pit2Hi022052.Controllers
 {
     public class EventsController : Controller
     {
         private readonly ApplicationDbContext _context;
-        protected virtual UserManager<ApplicationUser> UserManager { get; }
-
-        // iCloud連携用サービス
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICloudCalDavService _iCloudCalDavService;
         private readonly IcalParserService _icalParserService;
         private readonly ILogger<EventsController> _logger;
@@ -27,17 +23,16 @@ namespace Pit2Hi022052.Controllers
             UserManager<ApplicationUser> userManager,
             ICloudCalDavService iCloudCalDavService,
             IcalParserService icalParserService,
-             ILogger<EventsController> logger 
+            ILogger<EventsController> logger
         )
         {
             _context = context;
-            UserManager = userManager;
+            _userManager = userManager;
             _iCloudCalDavService = iCloudCalDavService;
             _icalParserService = icalParserService;
             _logger = logger;
         }
 
-    //    [Authorize(Roles = "Admin,user")]
         public IActionResult Index()
         {
             return View();
@@ -46,75 +41,67 @@ namespace Pit2Hi022052.Controllers
         [HttpGet]
         public async Task<JsonResult> GetEvents()
         {
-            var currentUser = await UserManager.GetUserAsync(User);
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                _logger.LogWarning("\u26a0\ufe0f ユーザーが取得できませんでした。ログインが必要です。");
+                return new JsonResult(new { error = "ユーザーが未認証です。" });
+            }
 
-            _logger.LogInformation("🌿 [GetEvents] ユーザー {User} のイベントを取得します", currentUser?.UserName);
+            _logger.LogInformation("\u2705 [GetEvents] ユーザー {User} のイベントを取得します", currentUser.UserName);
 
-            // 1. DBイベント取得
             var dbEvents = _context.Events
                 .Where(e => e.UserId == currentUser.Id)
                 .ToList();
 
-            _logger.LogInformation("✅ DBイベント件数: {Count}", dbEvents.Count);
+            _logger.LogInformation("\ud83d\udcc6 DBイベント件数: {Count}", dbEvents.Count);
 
-            // 2. iCloudイベント取得
             List<Event> iCloudEvents = new List<Event>();
+
             try
             {
+                _logger.LogInformation("\ud83c\udf10 iCloud CalDAVからイベントを取得中...");
                 iCloudEvents = await _iCloudCalDavService.GetAllEventsAsync();
-
-                if (iCloudEvents.Count == 0)
-                {
-                    _logger.LogWarning("⚠ iCloudから取得したイベントは0件です。");
-                }
-                else
-                {
-                    _logger.LogInformation("✅ iCloudイベント件数: {Count}", iCloudEvents.Count);
-                }
+                _logger.LogInformation("\u2705 iCloudイベント件数: {Count}", iCloudEvents.Count);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "❌ iCloudイベントの取得に失敗しました。");
             }
 
-            // 3. 結合
             var allEvents = dbEvents.Concat(iCloudEvents).ToList();
-            _logger.LogInformation("🌱 結合後の全イベント件数: {Count}", allEvents.Count);
+            _logger.LogInformation("\ud83d\udcca 結合後の全イベント件数: {Count}", allEvents.Count);
 
-            // 4. JSONに変換
             var json = allEvents.Select(e => new
             {
                 id = e.Id,
                 title = e.Title,
-                start = e.StartDate.HasValue
-                    ? e.StartDate.Value.ToString("o", CultureInfo.InvariantCulture)
-                    : null,
-                end = e.EndDate.HasValue
-                    ? e.EndDate.Value.ToString("o", CultureInfo.InvariantCulture)
-                    : null,
+                start = e.StartDate?.ToString("o", CultureInfo.InvariantCulture),
+                end = e.EndDate?.ToString("o", CultureInfo.InvariantCulture),
                 description = e.Description
             });
 
             return new JsonResult(json);
         }
 
-
-     //   [Authorize(Roles = "Admin,user")]
         [HttpGet]
         public async Task<IActionResult> Create(string startDate = null, string endDate = null)
         {
-            var model = new Event();
-            model.Id = Guid.NewGuid().ToString("N");
-            var currentUser = await UserManager.GetUserAsync(User);
+            var model = new Event
+            {
+                Id = Guid.NewGuid().ToString("N")
+            };
+
+            var currentUser = await _userManager.GetUserAsync(User);
             model.UserId = currentUser.Id;
 
-            if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var parsedStartDate))
+            if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var parsedStart))
             {
-                model.StartDate = parsedStartDate;
+                model.StartDate = parsedStart;
             }
-            if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var parsedEndDate))
+            if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var parsedEnd))
             {
-                model.EndDate = parsedEndDate;
+                model.EndDate = parsedEnd;
             }
 
             return View(model);
@@ -122,22 +109,21 @@ namespace Pit2Hi022052.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Event model)
+        public async Task<IActionResult> Create(Event model)
         {
             if (ModelState.IsValid)
             {
                 _context.Events.Add(model);
-                _context.SaveChanges();
-                return RedirectToAction("Index");
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
 
             return View(model);
         }
 
-    //    [Authorize(Roles = "Admin,user")]
         public async Task<IActionResult> Edit(string id)
         {
-            if (id == null)
+            if (string.IsNullOrEmpty(id))
             {
                 return NotFound("IDが指定されていません。");
             }
@@ -172,7 +158,7 @@ namespace Pit2Hi022052.Controllers
                 {
                     if (!_context.Events.Any(e => e.Id == id))
                     {
-                        return NotFound($"指定されたID({id})のイベントは存在しません。");
+                        return NotFound($"ID({id})のイベントは存在しません。");
                     }
                     else
                     {
@@ -184,7 +170,6 @@ namespace Pit2Hi022052.Controllers
             return View(model);
         }
 
-    //    [Authorize(Roles = "Admin,user")]
         public IActionResult Details(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -195,7 +180,7 @@ namespace Pit2Hi022052.Controllers
             var ev = _context.Events.FirstOrDefault(e => e.Id == id);
             if (ev == null)
             {
-                return NotFound($"指定されたID({id})のイベントは存在しません。");
+                return NotFound($"ID({id})のイベントは存在しません。");
             }
 
             return View(ev);
@@ -212,7 +197,6 @@ namespace Pit2Hi022052.Controllers
             return View(ev);
         }
 
-        [Authorize(Roles = "Admin,user")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Delete(string id, bool confirm)
@@ -223,7 +207,7 @@ namespace Pit2Hi022052.Controllers
                 _context.Events.Remove(ev);
                 _context.SaveChanges();
             }
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
     }
 }

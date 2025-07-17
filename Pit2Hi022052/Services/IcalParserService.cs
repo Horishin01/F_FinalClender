@@ -1,32 +1,61 @@
-﻿using Ical.Net;
+﻿using System;
+using System.Collections.Generic;
+using Ical.Net;
+using Ical.Net.CalendarComponents;
+using Ical.Net.DataTypes;
+using Ical.Net.Serialization;
 using Pit2Hi022052.Models;
 
-public class IcalParserService
+namespace Pit2Hi022052.Services
 {
-    public List<Event> ParseIcsToEventList(string icsData)
+    public class IcalParserService
     {
-        var calendars = CalendarCollection.Load(icsData);
-        var result = new List<Event>();
-
-        foreach (var calendar in calendars)
+        public List<Event> ParseIcsToEventList(string icsData)
         {
-            foreach (var e in calendar.Events)
-            {
-                // DtStartがnullでない場合に.Valueを使う
-                DateTime start = e.DtStart != null ? e.DtStart.Value : DateTime.MinValue;
-                DateTime end = e.DtEnd != null ? e.DtEnd.Value : DateTime.MinValue;
+            var result = new List<Event>();
 
-                result.Add(new Event
+            try
+            {
+                var calendar = Calendar.Load(icsData);
+
+                foreach (var e in calendar.Events)
                 {
-                    Id = Guid.NewGuid().ToString("N"),
-                    Title = e.Summary ?? string.Empty,
-                    StartDate = start,
-                    EndDate = end,
-                    Description = e.Description ?? string.Empty
-                });
+                    var start = ToDateTimeSafe(e.DtStart);
+                    var end = ToDateTimeSafe(e.DtEnd);
+
+                    result.Add(new Event
+                    {
+                        Id = Guid.NewGuid().ToString("N"),
+                        Title = e.Summary ?? "(無題)",
+                        StartDate = start,
+                        EndDate = end,
+                        Description = e.Description ?? ""
+                    });
+                }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ICS解析エラー: {ex.Message}");
+            }
+
+            return result;
         }
 
-        return result;
+        private DateTime? ToDateTimeSafe(IDateTime rawDateTime)
+        {
+            if (rawDateTime == null)
+                return null;
+
+            if (rawDateTime is CalDateTime calDateTime)
+            {
+                if (calDateTime.Value == DateTime.MinValue)
+                    return null;
+
+                // Localに変換（UnspecifiedもLocalにする）
+                return DateTime.SpecifyKind(calDateTime.Value, DateTimeKind.Local);
+            }
+
+            return null;
+        }
     }
 }

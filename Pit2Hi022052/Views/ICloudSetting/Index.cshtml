@@ -1,24 +1,24 @@
 ﻿@model Pit2Hi022052.Models.ICloudSetting
-
 @{
-    ViewData["Title"] = "iCloud連携設定";
+    ViewData["Title"] = "iCloud設定";
 }
 
-<h2>iCloud連携設定</h2>
+<h2>iCloud設定</h2>
 
-<form method="post" asp-action="SaveSetting">
-    <div class="form-group">
-        <label for="Username">ユーザー名</label>
-        <input type="email" class="form-control" id="Username" name="Username" value="@Model?.Username" required />
+@if (Model != null)
+{
+    <div>
+        <p><strong>ユーザー名:</strong> @Model.Username</p>
+        <p><strong>パスワード:</strong> @Model.Password</p>
+
+        <a asp-action="Edit" class="btn btn-primary">編集</a>
+        <form method="post" asp-action="Delete" class="mt-2">
+            <button type="submit" class="btn btn-danger">削除</button>
+        </form>
     </div>
-    <div class="form-group mt-2">
-        <label for="Password">アプリ専用パスワード</label>
-        <input type="text" class="form-control" id="Password" name="Password"
-               placeholder="xxxx-xxxx-xxxx-xxxx"
-               value="@Model?.Password" required />
-        <small class="form-text text-muted">
-            Apple IDの「アプリ専用パスワード」を入力してください。（例: abcd-efgh-ijkl-mnop）
-        </small>
-    </div>
-    <button type="submit" class="btn btn-primary mt-2">保存</button>
-</form>
+}
+else
+{
+    <p>iCloud設定は登録されていません。</p>
+    <a asp-action="Create" class="btn btn-success">新規登録</a>
+}
