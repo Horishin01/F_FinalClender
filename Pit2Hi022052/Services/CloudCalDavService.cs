@@ -134,10 +134,10 @@ namespace Pit2Hi022052.Services
                     ? calendarHome
                     : $"https://caldav.icloud.com{calendarHome}";
 
-                _logger.LogInformation($"📁 calendar-home: {calendarRootUrl}");
+                _logger.LogInformation($"calendar-home: {calendarRootUrl}");
 
                 // Step 3: カレンダー一覧取得
-                _logger.LogInformation("📂 Step3: カレンダー一覧取得中...");
+                _logger.LogInformation(" Step3: カレンダー一覧取得中...");
                 var calendarListXml = new StringContent(
 @"<?xml version='1.0' encoding='UTF-8' ?>
 <d:propfind xmlns:d='DAV:' xmlns:cal='urn:ietf:params:xml:ns:caldav'>
@@ -155,7 +155,7 @@ namespace Pit2Hi022052.Services
 
                 if (!calendarListResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogError($"❌ カレンダー一覧取得失敗: {calendarListResponse.StatusCode}");
+                    _logger.LogError($"カレンダー一覧取得失敗: {calendarListResponse.StatusCode}");
                     _logger.LogDebug(calendarListContent);
                     return new List<Event>();
                 }
@@ -167,7 +167,7 @@ namespace Pit2Hi022052.Services
                     .Select(x => $"https://caldav.icloud.com{x}")
                     .ToList();
 
-                _logger.LogInformation($"📂 カレンダー件数: {calendarUrls.Count}");
+                _logger.LogInformation($" カレンダー件数: {calendarUrls.Count}");
 
                 var allEvents = new List<Event>();
 
@@ -191,13 +191,13 @@ namespace Pit2Hi022052.Services
                     reportRequest.Headers.Add("Depth", "1");
                     reportRequest.Content = reportXml;
 
-                    _logger.LogInformation($"📅 イベント取得中: {calendarUrl}");
+                    _logger.LogInformation($"イベント取得中: {calendarUrl}");
                     var reportResponse = await httpClient.SendAsync(reportRequest);
                     var reportContent = await reportResponse.Content.ReadAsStringAsync();
 
                     if (!reportResponse.IsSuccessStatusCode)
                     {
-                        _logger.LogWarning($"⚠️ CalDAV REPORT失敗: {reportResponse.StatusCode} @ {calendarUrl}");
+                        _logger.LogWarning($"CalDAV REPORT失敗: {reportResponse.StatusCode} @ {calendarUrl}");
                         _logger.LogDebug(reportContent);
                         continue;
                     }
@@ -209,7 +209,7 @@ namespace Pit2Hi022052.Services
                         allEvents.AddRange(_icalParser.ParseIcsToEventList(ics));
                 }
 
-                _logger.LogInformation($"✅ iCloudからの取得イベント数: {allEvents.Count}");
+                _logger.LogInformation($" iCloudからの取得イベント数: {allEvents.Count}");
                 return allEvents;
             }
             catch (Exception ex)
