@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace Pit2Hi022052.Services
 {
@@ -36,15 +37,15 @@ namespace Pit2Hi022052.Services
 
         public async Task<List<Event>> GetAllEventsAsync()
         {
+            var stopwatch = Stopwatch.StartNew();
             var user = await GetCurrentUserAsync();
             if (user == null)
             {
-                _logger.LogWarning("❌ ユーザー情報が取得できませんでした。");
+                _logger.LogWarning("ユーザー情報が取得できませんでした。");
                 return new List<Event>();
             }
 
-            string username = user.Username; // ← @icloud.com付きでOK
-
+            string username = user.Username;
             var authBytes = Encoding.UTF8.GetBytes($"{username}:{user.Password}");
             var authHeader = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authBytes));
 
@@ -53,27 +54,27 @@ namespace Pit2Hi022052.Services
 
             try
             {
-                // Step 1: current-user-principal
-                _logger.LogInformation("🌐 Step1: current-user-principal を取得中...");
                 var propfindXml = new StringContent(
-@"<?xml version='1.0' encoding='UTF-8' ?>
+"""
+<?xml version='1.0' encoding='UTF-8' ?>
 <d:propfind xmlns:d='DAV:'>
   <d:prop>
     <d:current-user-principal />
   </d:prop>
-</d:propfind>", Encoding.UTF8, "application/xml");
+</d:propfind>
+""", Encoding.UTF8, "application/xml");
 
-                var propfindRequest = new HttpRequestMessage(new HttpMethod("PROPFIND"), "https://caldav.icloud.com/");
-                propfindRequest.Headers.Add("Depth", "0");
-                propfindRequest.Content = propfindXml;
+                var principalRequest = new HttpRequestMessage(new HttpMethod("PROPFIND"), "https://caldav.icloud.com/");
+                principalRequest.Headers.Add("Depth", "0");
+                principalRequest.Content = propfindXml;
 
-                var principalResponse = await httpClient.SendAsync(propfindRequest);
+                var principalResponse = await httpClient.SendAsync(principalRequest);
                 var principalContent = await principalResponse.Content.ReadAsStringAsync();
 
                 if (!principalResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogError($"❌ Step1失敗: {principalResponse.StatusCode} {principalResponse.ReasonPhrase}");
-                    _logger.LogDebug($"レスポンス内容: {principalContent}");
+                    _logger.LogError($"Step1失敗: {principalResponse.StatusCode}");
+                    _logger.LogDebug(principalContent);
                     return new List<Event>();
                 }
 
@@ -85,22 +86,20 @@ namespace Pit2Hi022052.Services
 
                 if (string.IsNullOrEmpty(principalHref))
                 {
-                    _logger.LogError("❌ current-user-principal の href が取得できませんでした。");
+                    _logger.LogError("current-user-principal の href が取得できませんでした。");
                     _logger.LogDebug(principalContent);
                     return new List<Event>();
                 }
 
-                _logger.LogInformation($"✅ principal: {principalHref}");
-
-                // Step 2: calendar-home-set
-                _logger.LogInformation("📁 Step2: calendar-home-set を取得中...");
                 var homeRequestXml = new StringContent(
-@"<?xml version='1.0' encoding='UTF-8' ?>
+"""
+<?xml version='1.0' encoding='UTF-8' ?>
 <d:propfind xmlns:d='DAV:' xmlns:cal='urn:ietf:params:xml:ns:caldav'>
   <d:prop>
     <cal:calendar-home-set />
   </d:prop>
-</d:propfind>", Encoding.UTF8, "application/xml");
+</d:propfind>
+""", Encoding.UTF8, "application/xml");
 
                 var homeRequest = new HttpRequestMessage(new HttpMethod("PROPFIND"), $"https://caldav.icloud.com{principalHref}");
                 homeRequest.Headers.Add("Depth", "0");
@@ -111,8 +110,8 @@ namespace Pit2Hi022052.Services
 
                 if (!homeResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogError($"❌ Step2失敗: {homeResponse.StatusCode} {homeResponse.ReasonPhrase}");
-                    _logger.LogDebug($"レスポンス内容: {homeContent}");
+                    _logger.LogError($"Step2失敗: {homeResponse.StatusCode}");
+                    _logger.LogDebug(homeContent);
                     return new List<Event>();
                 }
 
@@ -124,27 +123,22 @@ namespace Pit2Hi022052.Services
 
                 if (string.IsNullOrEmpty(calendarHome))
                 {
-                    _logger.LogError("❌ calendar-home-set href が取得できませんでした。");
+                    _logger.LogError("calendar-home-set href が取得できませんでした。");
                     _logger.LogDebug(homeContent);
                     return new List<Event>();
                 }
 
-                // 修正箇所：calendarHome が絶対URLか相対URLかを判別
-                string calendarRootUrl = calendarHome.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                    ? calendarHome
-                    : $"https://caldav.icloud.com{calendarHome}";
+                string calendarRootUrl = calendarHome.StartsWith("http") ? calendarHome : $"https://caldav.icloud.com{calendarHome}";
 
-                _logger.LogInformation($"calendar-home: {calendarRootUrl}");
-
-                // Step 3: カレンダー一覧取得
-                _logger.LogInformation(" Step3: カレンダー一覧取得中...");
                 var calendarListXml = new StringContent(
-@"<?xml version='1.0' encoding='UTF-8' ?>
+"""
+<?xml version='1.0' encoding='UTF-8' ?>
 <d:propfind xmlns:d='DAV:' xmlns:cal='urn:ietf:params:xml:ns:caldav'>
   <d:prop>
     <d:displayname />
   </d:prop>
-</d:propfind>", Encoding.UTF8, "application/xml");
+</d:propfind>
+""", Encoding.UTF8, "application/xml");
 
                 var calendarListRequest = new HttpRequestMessage(new HttpMethod("PROPFIND"), calendarRootUrl);
                 calendarListRequest.Headers.Add("Depth", "1");
@@ -156,7 +150,6 @@ namespace Pit2Hi022052.Services
                 if (!calendarListResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError($"カレンダー一覧取得失敗: {calendarListResponse.StatusCode}");
-                    _logger.LogDebug(calendarListContent);
                     return new List<Event>();
                 }
 
@@ -164,16 +157,18 @@ namespace Pit2Hi022052.Services
                 var calendarUrls = calendarListDoc.Descendants(nsDav + "response")
                     .Select(x => x.Element(nsDav + "href")?.Value)
                     .Where(x => !string.IsNullOrEmpty(x) && x.EndsWith("/"))
+                    .Where(x => !x.Contains("/notification/") && !x.Contains("/outbox/"))
                     .Select(x => $"https://caldav.icloud.com{x}")
                     .ToList();
 
-                _logger.LogInformation($" カレンダー件数: {calendarUrls.Count}");
-
                 var allEvents = new List<Event>();
+                var startRange = DateTime.UtcNow.AddYears(-2);
+                var endRange = DateTime.UtcNow.AddYears(2);
 
                 foreach (var calendarUrl in calendarUrls)
                 {
-                    var reportXml = new StringContent(@"<?xml version='1.0' encoding='utf-8' ?>
+                    var reportXml = new StringContent($"""
+<?xml version='1.0' encoding='utf-8' ?>
 <calendar-query xmlns='urn:ietf:params:xml:ns:caldav'
                 xmlns:d='DAV:' xmlns:cs='http://calendarserver.org/ns/'>
   <d:prop>
@@ -182,23 +177,24 @@ namespace Pit2Hi022052.Services
   </d:prop>
   <filter>
     <comp-filter name='VCALENDAR'>
-      <comp-filter name='VEVENT' />
+      <comp-filter name='VEVENT'>
+        <time-range start='{startRange:yyyyMMddTHHmmssZ}' end='{endRange:yyyyMMddTHHmmssZ}' />
+      </comp-filter>
     </comp-filter>
   </filter>
-</calendar-query>", Encoding.UTF8, "application/xml");
+</calendar-query>
+""", Encoding.UTF8, "application/xml");
 
                     var reportRequest = new HttpRequestMessage(new HttpMethod("REPORT"), calendarUrl);
                     reportRequest.Headers.Add("Depth", "1");
                     reportRequest.Content = reportXml;
 
-                    _logger.LogInformation($"イベント取得中: {calendarUrl}");
                     var reportResponse = await httpClient.SendAsync(reportRequest);
                     var reportContent = await reportResponse.Content.ReadAsStringAsync();
 
                     if (!reportResponse.IsSuccessStatusCode)
                     {
                         _logger.LogWarning($"CalDAV REPORT失敗: {reportResponse.StatusCode} @ {calendarUrl}");
-                        _logger.LogDebug(reportContent);
                         continue;
                     }
 
@@ -209,12 +205,13 @@ namespace Pit2Hi022052.Services
                         allEvents.AddRange(_icalParser.ParseIcsToEventList(ics));
                 }
 
-                _logger.LogInformation($" iCloudからの取得イベント数: {allEvents.Count}");
+                stopwatch.Stop();
+                _logger.LogInformation($"✅ CalDAV取得完了。イベント数: {allEvents.Count} 件, 所要時間: {stopwatch.ElapsedMilliseconds} ms");
                 return allEvents;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"❌ CalDAV通信エラー: {ex.Message}");
+                _logger.LogError($"CalDAV通信エラー: {ex.Message}");
                 return new List<Event>();
             }
         }

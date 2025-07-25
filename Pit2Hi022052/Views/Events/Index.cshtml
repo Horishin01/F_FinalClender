@@ -1,5 +1,4 @@
-﻿
-@model IEnumerable<Event>
+﻿@model IEnumerable<Event>
 
 @{
     ViewData["Title"] = "Calendars";
@@ -15,37 +14,49 @@
         document.addEventListener('DOMContentLoaded', function () {
             var calendarEl = document.getElementById('calendar');
             var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek', // 週表示
-                events: '/Events/GetEvents', // イベントデータ取得用のAPIエンドポイント
+                initialView: 'timeGridWeek', // 週表示（デフォルトビュー）
+                events: '/Events/GetEvents', // イベント取得用APIエンドポイント
+
                 headerToolbar: {
-                    start: 'today prev,next', // 左側に「今日」「前」「次」
-                    center: 'title',         // 中央にカレンダーのタイトル
-                    end: 'dayGridMonth,timeGridWeek,timeGridDay' // 右側にビュー切り替えボタン
+                    start: 'today prev,next', // 左側：「今日」「前」「次」
+                    center: 'title',          // 中央：カレンダーのタイトル
+                    end: 'dayGridMonth,timeGridWeek,timeGridDay' // 右側：表示切替
                 },
-                timeZone: 'Asia/Tokyo', //東京に時間を指定
-                locale: 'ja',　　　//日本語化
-                selectable: true, // 日付範囲の選択を有効化
-                eventTimeFormat: { hour: 'numeric', minute: '2-digit' }, //時→h
+
+                timeZone: 'Asia/Tokyo', // タイムゾーン：日本
+                locale: 'ja',           // 表示言語：日本語
+                selectable: true,       // 日付範囲の選択を有効化
+                nowIndicator: true,     // 現在時刻を赤線で表示
+                allDaySlot: true,       // ✅ 「終日」スロットを有効化
+                slotEventOverlap: false, // ✅ イベントの重なりを回避（Outlook風）
+                slotMinTime: "06:00:00", // 表示時間開始（6時）
+                slotMaxTime: "22:00:00", // 表示時間終了（22時）
+
+                eventTimeFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    meridiem: false // 午前/午後を表示しない（24時間制）
+                },
 
                 select: function (info) {
-                    // ダブルクリックで入力画面にリダイレクト
-                    var startDate = info.startStr; // 選択された開始日時（ISOフォーマット）
-                    var endDate = info.endStr;     // 選択された終了日時（ISOフォーマット）
+                    // 日付範囲を選択したとき（新規作成へ）
+                    var startDate = info.startStr;
+                    var endDate = info.endStr;
                     window.location.href = '/Events/Create?startDate=' + startDate + '&endDate=' + endDate;
-                },    
-
+                },
 
                 eventClick: function (info) {
-                    // イベントがクリックされたときの処理
-                    var eventId = info.event.id; // イベントのIDを取得
+                    // イベントをクリックしたとき（詳細ページへ）
+                    var eventId = info.event.id;
                     if (eventId) {
-                        // 詳細ページにリダイレクト
                         window.location.href = '/Events/Details?id=' + eventId;
                     }
-                }       
+                }
             });
+
             calendar.render();
         });
     </script>
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css" rel="stylesheet" /> <!-- FullCalendarのスタイル -->
+
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css" rel="stylesheet" />
 }

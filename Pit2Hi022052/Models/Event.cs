@@ -17,6 +17,8 @@ namespace Pit2Hi022052.Models
 
         public virtual string Description { get; set; } = string.Empty;// イベントの説明
 
+        public bool AllDay { get; set; }   
+
         [ForeignKey(nameof(UserId))] 
         public virtual ApplicationUser? User { get; set; }
     }

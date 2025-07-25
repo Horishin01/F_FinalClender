@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Threading.Tasks;
-using Pit2Hi022052.Services; // 追加：ICloudCalDavServiceとIcalParserServiceの名前空間
+using Pit2Hi022052.Services;
 
 namespace Pit2Hi022052.Controllers
 {
@@ -78,6 +78,7 @@ namespace Pit2Hi022052.Controllers
                 title = e.Title,
                 start = e.StartDate?.ToString("o", CultureInfo.InvariantCulture),
                 end = e.EndDate?.ToString("o", CultureInfo.InvariantCulture),
+                allDay = e.AllDay, // フルカレンダーで終日イベントとして扱うため追加
                 description = e.Description
             });
 
