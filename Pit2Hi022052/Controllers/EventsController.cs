@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Threading.Tasks;
-using Pit2Hi022052.Services; // 追加：ICloudCalDavServiceとIcalParserServiceの名前空間
+using Pit2Hi022052.Services;
 
 namespace Pit2Hi022052.Controllers
 {
@@ -23,8 +23,7 @@ namespace Pit2Hi022052.Controllers
             UserManager<ApplicationUser> userManager,
             ICloudCalDavService iCloudCalDavService,
             IcalParserService icalParserService,
-            ILogger<EventsController> logger
-        )
+            ILogger<EventsController> logger)
         {
             _context = context;
             _userManager = userManager;
@@ -39,30 +38,31 @@ namespace Pit2Hi022052.Controllers
         }
 
         [HttpGet]
+        [HttpGet]
         public async Task<JsonResult> GetEvents()
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
             {
-                _logger.LogWarning("\u26a0\ufe0f ユーザーが取得できませんでした。ログインが必要です。");
+                _logger.LogWarning("⚠️ ユーザーが取得できませんでした。ログインが必要です。");
                 return new JsonResult(new { error = "ユーザーが未認証です。" });
             }
 
-            _logger.LogInformation("\u2705 [GetEvents] ユーザー {User} のイベントを取得します", currentUser.UserName);
+            _logger.LogInformation("✅ [GetEvents] ユーザー {User} のイベントを取得します", currentUser.UserName);
 
             var dbEvents = _context.Events
                 .Where(e => e.UserId == currentUser.Id)
                 .ToList();
 
-            _logger.LogInformation("\ud83d\udcc6 DBイベント件数: {Count}", dbEvents.Count);
+            _logger.LogInformation("📆 DBイベント件数: {Count}", dbEvents.Count);
 
             List<Event> iCloudEvents = new List<Event>();
 
             try
             {
-                _logger.LogInformation("\ud83c\udf10 iCloud CalDAVからイベントを取得中...");
-                iCloudEvents = await _iCloudCalDavService.GetAllEventsAsync();
-                _logger.LogInformation("\u2705 iCloudイベント件数: {Count}", iCloudEvents.Count);
+                _logger.LogInformation("🌐 iCloud CalDAVからイベントを取得中...");
+                iCloudEvents = await _iCloudCalDavService.GetAllEventsAsync(); // ※UserId渡していない版
+                _logger.LogInformation("✅ iCloudイベント件数: {Count}", iCloudEvents.Count);
             }
             catch (Exception ex)
             {
@@ -70,7 +70,7 @@ namespace Pit2Hi022052.Controllers
             }
 
             var allEvents = dbEvents.Concat(iCloudEvents).ToList();
-            _logger.LogInformation("\ud83d\udcca 結合後の全イベント件数: {Count}", allEvents.Count);
+            _logger.LogInformation("📊 結合後の全イベント件数: {Count}", allEvents.Count);
 
             var json = allEvents.Select(e => new
             {
@@ -87,22 +87,15 @@ namespace Pit2Hi022052.Controllers
         [HttpGet]
         public async Task<IActionResult> Create(string startDate = null, string endDate = null)
         {
-            var model = new Event
-            {
-                Id = Guid.NewGuid().ToString("N")
-            };
-
+            var model = new Event { Id = Guid.NewGuid().ToString("N") };
             var currentUser = await _userManager.GetUserAsync(User);
-            model.UserId = currentUser.Id;
+            model.UserId = currentUser?.Id;
 
             if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var parsedStart))
-            {
                 model.StartDate = parsedStart;
-            }
+
             if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var parsedEnd))
-            {
                 model.EndDate = parsedEnd;
-            }
 
             return View(model);
         }
@@ -117,22 +110,15 @@ namespace Pit2Hi022052.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-
             return View(model);
         }
 
         public async Task<IActionResult> Edit(string id)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                return NotFound("IDが指定されていません。");
-            }
+            if (string.IsNullOrEmpty(id)) return NotFound("IDが指定されていません。");
 
             var ev = await _context.Events.FindAsync(id);
-            if (ev == null)
-            {
-                return NotFound("指定されたイベントが見つかりません。");
-            }
+            if (ev == null) return NotFound("指定されたイベントが見つかりません。");
 
             return View(ev);
         }
@@ -141,10 +127,7 @@ namespace Pit2Hi022052.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string id, Event model)
         {
-            if (id != model.Id)
-            {
-                return BadRequest("IDが一致しません。");
-            }
+            if (id != model.Id) return BadRequest("IDが一致しません。");
 
             if (ModelState.IsValid)
             {
@@ -157,31 +140,19 @@ namespace Pit2Hi022052.Controllers
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!_context.Events.Any(e => e.Id == id))
-                    {
                         return NotFound($"ID({id})のイベントは存在しません。");
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    else throw;
                 }
             }
-
             return View(model);
         }
 
         public IActionResult Details(string id)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                return NotFound("イベントIDが指定されていません。");
-            }
+            if (string.IsNullOrEmpty(id)) return NotFound("イベントIDが指定されていません。");
 
             var ev = _context.Events.FirstOrDefault(e => e.Id == id);
-            if (ev == null)
-            {
-                return NotFound($"ID({id})のイベントは存在しません。");
-            }
+            if (ev == null) return NotFound($"ID({id})のイベントは存在しません。");
 
             return View(ev);
         }
@@ -190,10 +161,7 @@ namespace Pit2Hi022052.Controllers
         public IActionResult Delete(string id)
         {
             var ev = _context.Events.FirstOrDefault(e => e.Id == id);
-            if (ev == null)
-            {
-                return NotFound("削除対象のイベントが見つかりません。");
-            }
+            if (ev == null) return NotFound("削除対象のイベントが見つかりません。");
             return View(ev);
         }
 
