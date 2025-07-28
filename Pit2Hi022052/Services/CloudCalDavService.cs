@@ -157,7 +157,7 @@ namespace Pit2Hi022052.Services
                 _logger.LogInformation("カレンダー取得対象: {Name} ({Href})", cal.Name, cal.Href);
 
                 var now = DateTime.UtcNow;
-                var past = now.AddMonths(-1);
+                var past = now.AddMonths(-2);
                 var future = now.AddMonths(6);
 
                 var eventQuery = new HttpRequestMessage(new HttpMethod("REPORT"), cal.Href);

@@ -44,33 +44,33 @@ namespace Pit2Hi022052.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
             {
-                _logger.LogWarning("⚠️ ユーザーが取得できませんでした。ログインが必要です。");
+                _logger.LogWarning("ユーザーが取得できませんでした。ログインが必要です。");
                 return new JsonResult(new { error = "ユーザーが未認証です。" });
             }
 
-            _logger.LogInformation("✅ [GetEvents] ユーザー {User} のイベントを取得します", currentUser.UserName);
+            _logger.LogInformation("[GetEvents] ユーザー {User} のイベントを取得します", currentUser.UserName);
 
             var dbEvents = _context.Events
                 .Where(e => e.UserId == currentUser.Id)
                 .ToList();
 
-            _logger.LogInformation("📆 DBイベント件数: {Count}", dbEvents.Count);
+            _logger.LogInformation("DBイベント件数: {Count}", dbEvents.Count);
 
             List<Event> iCloudEvents = new List<Event>();
 
             try
             {
-                _logger.LogInformation("🌐 iCloud CalDAVからイベントを取得中...");
+                _logger.LogInformation("iCloud CalDAVからイベントを取得中...");
                 iCloudEvents = await _iCloudCalDavService.GetAllEventsAsync(); // ※UserId渡していない版
-                _logger.LogInformation("✅ iCloudイベント件数: {Count}", iCloudEvents.Count);
+                _logger.LogInformation("iCloudイベント件数: {Count}", iCloudEvents.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ iCloudイベントの取得に失敗しました。");
+                _logger.LogError(ex, "iCloudイベントの取得に失敗しました。");
             }
 
             var allEvents = dbEvents.Concat(iCloudEvents).ToList();
-            _logger.LogInformation("📊 結合後の全イベント件数: {Count}", allEvents.Count);
+            _logger.LogInformation("結合後の全イベント件数: {Count}", allEvents.Count);
 
             var json = allEvents.Select(e => new
             {

@@ -34,7 +34,7 @@ namespace Pit2Hi022052.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ ICS解析エラー: {ex.Message}");
+                Console.WriteLine($"ICS解析エラー: {ex.Message}");
             }
 
             return result;
