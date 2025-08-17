@@ -78,7 +78,8 @@ namespace Pit2Hi022052.Controllers
                 title = e.Title,
                 start = e.StartDate?.ToString("o", CultureInfo.InvariantCulture),
                 end = e.EndDate?.ToString("o", CultureInfo.InvariantCulture),
-                description = e.Description
+                description = e.Description,
+                allDay = e.AllDay
             });
 
             return new JsonResult(json);
