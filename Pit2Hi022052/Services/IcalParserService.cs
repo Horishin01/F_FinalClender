@@ -28,7 +28,9 @@ namespace Pit2Hi022052.Services
                         Title = e.Summary ?? "(無題)",
                         StartDate = start,
                         EndDate = end,
-                        Description = e.Description ?? ""
+                        Description = e.Description ?? "",
+                        AllDay = e.IsAllDay  // ← ここを追加
+
                     });
                 }
             }

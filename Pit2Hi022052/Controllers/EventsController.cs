@@ -37,7 +37,7 @@ namespace Pit2Hi022052.Controllers
             return View();
         }
 
-        [HttpGet]
+
         [HttpGet]
         public async Task<JsonResult> GetEvents()
         {
@@ -79,6 +79,7 @@ namespace Pit2Hi022052.Controllers
                 start = e.StartDate?.ToString("o", CultureInfo.InvariantCulture),
                 end = e.EndDate?.ToString("o", CultureInfo.InvariantCulture),
                 description = e.Description,
+
                 allDay = e.AllDay
             });
 
