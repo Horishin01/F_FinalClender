@@ -1,42 +1,65 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using System.Globalization;
-using System.Threading.Tasks;
 using Pit2Hi022052.Services;
 
 namespace Pit2Hi022052.Controllers
 {
     public class EventsController : Controller
     {
+        // ================================
+        // フィールド定義
+        // ================================
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICloudCalDavService _iCloudCalDavService;
         private readonly IcalParserService _icalParserService;
         private readonly ILogger<EventsController> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
+        // ================================
+        // コンストラクタ（依存性注入）
+        // ================================
         public EventsController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             ICloudCalDavService iCloudCalDavService,
             IcalParserService icalParserService,
-            ILogger<EventsController> logger)
+            ILogger<EventsController> logger,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _userManager = userManager;
             _iCloudCalDavService = iCloudCalDavService;
             _icalParserService = icalParserService;
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        public IActionResult Index()
+        // ================================
+        // Index アクション（イベント一覧表示）
+        // ================================
+        public async Task<IActionResult> Index()
         {
-            return View();
-        }
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Unauthorized();
 
+            var events = await _context.Events
+                .Where(e => e.UserId == currentUser.Id)
+                .OrderBy(e => e.StartDate ?? DateTime.MinValue)
+                .ToListAsync();
+
+            return View(events);
+        }
 
         [HttpGet]
         public async Task<JsonResult> GetEvents()
@@ -50,36 +73,33 @@ namespace Pit2Hi022052.Controllers
 
             _logger.LogInformation("[GetEvents] ユーザー {User} のイベントを取得します", currentUser.UserName);
 
-            var dbEvents = _context.Events
-                .Where(e => e.UserId == currentUser.Id)
-                .ToList();
-
-            _logger.LogInformation("DBイベント件数: {Count}", dbEvents.Count);
-
-            List<Event> iCloudEvents = new List<Event>();
-
+            // iCloud → DB 同期（保存のみ。表示には使わない）
             try
             {
                 _logger.LogInformation("iCloud CalDAVからイベントを取得中...");
-                iCloudEvents = await _iCloudCalDavService.GetAllEventsAsync(); // ※UserId渡していない版
-                _logger.LogInformation("iCloudイベント件数: {Count}", iCloudEvents.Count);
+                var pulled = await _iCloudCalDavService.GetAllEventsAsync(currentUser.Id);
+                _logger.LogInformation("iCloudイベント取得: {Count} 件（保存対象はサービス内で判定）", pulled.Count);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "iCloudイベントの取得に失敗しました。");
             }
 
-            var allEvents = dbEvents.Concat(iCloudEvents).ToList();
-            _logger.LogInformation("結合後の全イベント件数: {Count}", allEvents.Count);
+            // 表示はDBのみ
+            var dbEvents = await _context.Events
+                .Where(e => e.UserId == currentUser.Id)
+                .OrderBy(e => e.StartDate ?? DateTime.MinValue)
+                .ToListAsync();
 
-            var json = allEvents.Select(e => new
+            _logger.LogInformation("DBイベント件数: {Count}", dbEvents.Count);
+
+            var json = dbEvents.Select(e => new
             {
                 id = e.Id,
                 title = e.Title,
                 start = e.StartDate?.ToString("o", CultureInfo.InvariantCulture),
                 end = e.EndDate?.ToString("o", CultureInfo.InvariantCulture),
                 description = e.Description,
-
                 allDay = e.AllDay
             });
 
@@ -91,7 +111,7 @@ namespace Pit2Hi022052.Controllers
         {
             var model = new Event { Id = Guid.NewGuid().ToString("N") };
             var currentUser = await _userManager.GetUserAsync(User);
-            model.UserId = currentUser?.Id;
+            model.UserId = currentUser?.Id ?? string.Empty;
 
             if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var parsedStart))
                 model.StartDate = parsedStart;
@@ -108,6 +128,12 @@ namespace Pit2Hi022052.Controllers
         {
             if (ModelState.IsValid)
             {
+                if (string.IsNullOrEmpty(model.Id))
+                    model.Id = Guid.NewGuid().ToString("N");
+
+                var currentUser = await _userManager.GetUserAsync(User);
+                model.UserId = currentUser?.Id ?? string.Empty;
+
                 _context.Events.Add(model);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
