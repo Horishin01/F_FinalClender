@@ -11,9 +11,13 @@ using Microsoft.Extensions.Logging;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 
-
 namespace Pit2Hi022052.Services
 {
+    public interface ICloudCalDavService
+    {
+        Task<List<Event>> GetAllEventsAsync(string userId);
+    }
+
     public class CloudCalDavService : ICloudCalDavService
     {
         private readonly ILogger<CloudCalDavService> _logger;
@@ -33,38 +37,39 @@ namespace Pit2Hi022052.Services
             _parser = parser;
         }
 
-        public async Task<List<Event>> GetAllEventsAsync()
+        public async Task<List<Event>> GetAllEventsAsync(string userId)
         {
             var events = new List<Event>();
-            var user = _httpContext.HttpContext?.User?.Identity?.Name;
-            if (string.IsNullOrEmpty(user))
+            if (string.IsNullOrWhiteSpace(userId))
             {
-                _logger.LogWarning("ユーザー情報が取得できません。");
+                _logger.LogWarning("UserIdが空です。");
                 return events;
             }
 
-            var icloudSetting = _db.ICloudSettings.FirstOrDefault(x => x.User.UserName == user);
-            if (icloudSetting == null)
+            // iCloud資格情報
+            var icloud = _db.ICloudSettings.FirstOrDefault(x => x.UserId == userId);
+            if (icloud == null)
             {
                 _logger.LogWarning("iCloud設定が見つかりません。");
                 return events;
             }
 
-            var username = icloudSetting.Username;
-            var password = icloudSetting.Password;
-
             var handler = new HttpClientHandler
             {
                 PreAuthenticate = true,
-                Credentials = new System.Net.NetworkCredential(username, password)
+                Credentials = new System.Net.NetworkCredential(icloud.Username, icloud.Password)
             };
 
-            using var client = new HttpClient(handler);
-            client.BaseAddress = new Uri("https://caldav.icloud.com/");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")));
+            using var client = new HttpClient(handler)
+            {
+                BaseAddress = new Uri("https://caldav.icloud.com/")
+            };
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Basic",
+                Convert.ToBase64String(Encoding.ASCII.GetBytes($"{icloud.Username}:{icloud.Password}"))
+            );
 
-            // Step1: principalHrefの取得
+            // current-user-principal
             var propfindHome = new HttpRequestMessage(new HttpMethod("PROPFIND"), "/.well-known/caldav");
             propfindHome.Headers.Add("Depth", "0");
             propfindHome.Content = new StringContent(@"<?xml version='1.0' encoding='utf-8' ?>
@@ -80,7 +85,7 @@ namespace Pit2Hi022052.Services
                 homeResponse = await client.SendAsync(propfindHome);
                 if (!homeResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning("calendar-home-set取得失敗: {StatusCode}", homeResponse.StatusCode);
+                    _logger.LogWarning("calendar-home-set取得失敗: {Status}", homeResponse.StatusCode);
                     return events;
                 }
             }
@@ -92,19 +97,23 @@ namespace Pit2Hi022052.Services
 
             var homeXml = XDocument.Parse(await homeResponse.Content.ReadAsStringAsync());
             XNamespace dav = "DAV:";
-            var principalHref = homeXml.Descendants(dav + "current-user-principal").Descendants(dav + "href").FirstOrDefault()?.Value;
-            _logger.LogInformation("取得した principalHref: {Href}", principalHref);
+            var principalHref = homeXml
+                .Descendants(dav + "current-user-principal")
+                .Descendants(dav + "href")
+                .FirstOrDefault()?.Value;
 
+            _logger.LogInformation("取得した principalHref: {Href}", principalHref);
             if (string.IsNullOrEmpty(principalHref))
             {
                 _logger.LogWarning("current-user-principal の href が取得できませんでした。");
                 return events;
             }
 
-            // iCloudでは "principal" → "calendars" に変換
+            // principal → calendars
             var calendarHomeUrl = principalHref.Replace("principal/", "calendars/");
             _logger.LogInformation("使用する calendarHomeUrl: {Href}", calendarHomeUrl);
 
+            // カレンダー一覧
             var calendarQuery = new HttpRequestMessage(new HttpMethod("PROPFIND"), calendarHomeUrl);
             calendarQuery.Headers.Add("Depth", "1");
             calendarQuery.Content = new StringContent(@"<?xml version='1.0' encoding='utf-8'?>
@@ -124,7 +133,7 @@ namespace Pit2Hi022052.Services
                 calListResponse = await client.SendAsync(calendarQuery);
                 if (!calListResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning("カレンダーリスト取得失敗: {StatusCode}", calListResponse.StatusCode);
+                    _logger.LogWarning("カレンダーリスト取得失敗: {Status}", calListResponse.StatusCode);
                     return events;
                 }
             }
@@ -137,23 +146,24 @@ namespace Pit2Hi022052.Services
             var calListXml = XDocument.Parse(await calListResponse.Content.ReadAsStringAsync());
             XNamespace calNs = "urn:ietf:params:xml:ns:caldav";
 
-            var validCalendars = calListXml.Descendants(dav + "response")
-                .Where(resp => resp.Descendants(dav + "resourcetype").Any(rt => rt.Elements(calNs + "calendar").Any()))
-                .Select(resp => new
+            var calendars = calListXml.Descendants(dav + "response")
+                .Where(r => r.Descendants(dav + "resourcetype").Any(rt => rt.Elements(calNs + "calendar").Any()))
+                .Select(r => new
                 {
-                    Href = resp.Element(dav + "href")?.Value,
-                    Name = resp.Descendants(dav + "displayname").FirstOrDefault()?.Value
+                    Href = r.Element(dav + "href")?.Value,
+                    Name = r.Descendants(dav + "displayname").FirstOrDefault()?.Value
                 })
                 .Where(x => !string.IsNullOrEmpty(x.Href) && x.Name != null)
                 .ToList();
 
-            if (!validCalendars.Any())
+            if (!calendars.Any())
             {
                 _logger.LogWarning("有効なカレンダーが見つかりませんでした。");
                 return events;
             }
 
-            foreach (var cal in validCalendars)
+            // 各カレンダーから期間内のVEVENTを取得
+            foreach (var cal in calendars)
             {
                 _logger.LogInformation("カレンダー取得対象: {Name} ({Href})", cal.Name, cal.Href);
 
@@ -161,9 +171,9 @@ namespace Pit2Hi022052.Services
                 var past = now.AddMonths(-1);
                 var future = now.AddMonths(5);
 
-                var eventQuery = new HttpRequestMessage(new HttpMethod("REPORT"), cal.Href);
-                eventQuery.Headers.Add("Depth", "1");
-                eventQuery.Content = new StringContent($@"<?xml version='1.0' encoding='utf-8'?>
+                var report = new HttpRequestMessage(new HttpMethod("REPORT"), cal.Href);
+                report.Headers.Add("Depth", "1");
+                report.Content = new StringContent($@"<?xml version='1.0' encoding='utf-8'?>
 <c:calendar-query xmlns:d='DAV:' xmlns:c='urn:ietf:params:xml:ns:caldav'>
   <d:prop>
     <d:getetag/>
@@ -180,26 +190,62 @@ namespace Pit2Hi022052.Services
 
                 try
                 {
-                    var response = await client.SendAsync(eventQuery);
-                    if (!response.IsSuccessStatusCode)
+                    var resp = await client.SendAsync(report);
+                    if (!resp.IsSuccessStatusCode)
                     {
-                        _logger.LogWarning("CalDAV応答エラー（イベント取得）: {StatusCode}", response.StatusCode);
+                        _logger.LogWarning("CalDAV応答エラー: {Status}", resp.StatusCode);
                         continue;
                     }
 
-                    var responseXml = XDocument.Parse(await response.Content.ReadAsStringAsync());
-                    var icalData = responseXml.Descendants().Where(x => x.Name.LocalName == "calendar-data").Select(x => x.Value);
+                    var xml = XDocument.Parse(await resp.Content.ReadAsStringAsync());
+                    var icsList = xml.Descendants().Where(x => x.Name.LocalName == "calendar-data").Select(x => x.Value);
 
-                    foreach (var ical in icalData)
+                    foreach (var ics in icsList)
                     {
-                        var parsedEvents = _parser.ParseIcsToEventList(ical);
-                        events.AddRange(parsedEvents);
+                        var parsed = _parser.ParseIcsToEventList(ics);
+                        events.AddRange(parsed);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "カレンダー {Name} のイベント取得で例外が発生しました", cal.Name);
+                    _logger.LogError(ex, "カレンダー {Name} のイベント取得で例外が発生", cal.Name);
                 }
+            }
+
+            // メトリクス
+            _logger.LogInformation("iCloudパース結果: {Total} 件（UID空 {Empty} 件）",
+                events.Count, events.Count(e => string.IsNullOrWhiteSpace(e.UID)));
+
+            // 既存UID（空は除外）
+            var existingUIDs = _db.Events
+                .Where(e => e.UserId == userId && !string.IsNullOrEmpty(e.UID))
+                .Select(e => e.UID!)
+                .ToHashSet(StringComparer.Ordinal);
+
+            var newEvents = new List<Event>();
+
+            // 保存対象（UID必須）
+            foreach (var ev in events.Where(x => !string.IsNullOrWhiteSpace(x.UID)))
+            {
+                if (!existingUIDs.Contains(ev.UID))
+                {
+                    if (string.IsNullOrEmpty(ev.Id))
+                        ev.Id = Guid.NewGuid().ToString("N");
+
+                    ev.UserId = userId;
+                    newEvents.Add(ev);
+                }
+            }
+
+            if (newEvents.Any())
+            {
+                _db.Events.AddRange(newEvents);
+                await _db.SaveChangesAsync();
+                _logger.LogInformation("新規CalDAVイベントを {Count} 件保存しました。", newEvents.Count);
+            }
+            else
+            {
+                _logger.LogInformation("新規保存対象のCalDAVイベントはありませんでした。");
             }
 
             return events;
