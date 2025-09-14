@@ -36,6 +36,12 @@ builder.Services.AddScoped<ICloudCalDavService, CloudCalDavService>();
 //================ ICSパーサー登録 ===============
 builder.Services.AddScoped<IcalParserService>();
 
+
+//================XXXXXX ===============
+builder.Services.AddMemoryCache();
+builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
+
+
 //================ アプリ構築 ===============
 var app = builder.Build();
 

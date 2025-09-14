@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
@@ -16,26 +18,22 @@ namespace Pit2Hi022052.Controllers
 {
     public class EventsController : Controller
     {
-        // ================================
-        // フィールド定義
-        // ================================
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICloudCalDavService _iCloudCalDavService;
         private readonly IcalParserService _icalParserService;
         private readonly ILogger<EventsController> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMemoryCache _cache;
 
-        // ================================
-        // コンストラクタ（依存性注入）
-        // ================================
         public EventsController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             ICloudCalDavService iCloudCalDavService,
             IcalParserService icalParserService,
             ILogger<EventsController> logger,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IMemoryCache cache)
         {
             _context = context;
             _userManager = userManager;
@@ -43,11 +41,9 @@ namespace Pit2Hi022052.Controllers
             _icalParserService = icalParserService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _cache = cache;
         }
 
-        // ================================
-        // Index アクション（イベント一覧表示）
-        // ================================
         public async Task<IActionResult> Index()
         {
             var currentUser = await _userManager.GetUserAsync(User);
@@ -61,37 +57,21 @@ namespace Pit2Hi022052.Controllers
             return View(events);
         }
 
+        // ======= DBからの表示専用（同期はしない）=======
         [HttpGet]
         public async Task<JsonResult> GetEvents()
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
             {
-                _logger.LogWarning("ユーザーが取得できませんでした。ログインが必要です。");
+                _logger.LogWarning("未認証ユーザーからの GetEvents。");
                 return new JsonResult(new { error = "ユーザーが未認証です。" });
             }
 
-            _logger.LogInformation("[GetEvents] ユーザー {User} のイベントを取得します", currentUser.UserName);
-
-            // iCloud → DB 同期（保存のみ。表示には使わない）
-            try
-            {
-                _logger.LogInformation("iCloud CalDAVからイベントを取得中...");
-                var pulled = await _iCloudCalDavService.GetAllEventsAsync(currentUser.Id);
-                _logger.LogInformation("iCloudイベント取得: {Count} 件（保存対象はサービス内で判定）", pulled.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "iCloudイベントの取得に失敗しました。");
-            }
-
-            // 表示はDBのみ
             var dbEvents = await _context.Events
                 .Where(e => e.UserId == currentUser.Id)
                 .OrderBy(e => e.StartDate ?? DateTime.MinValue)
                 .ToListAsync();
-
-            _logger.LogInformation("DBイベント件数: {Count}", dbEvents.Count);
 
             var json = dbEvents.Select(e => new
             {
@@ -104,6 +84,52 @@ namespace Pit2Hi022052.Controllers
             });
 
             return new JsonResult(json);
+        }
+
+        // ======= 手動同期（60秒レート制御）=======
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Sync()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Unauthorized();
+
+            var cacheKey = $"events:sync:{currentUser.Id}";
+            if (_cache.TryGetValue(cacheKey, out _))
+            {
+                return StatusCode(429, new { message = "同期は60秒に1回までです。" });
+            }
+
+            _cache.Set(cacheKey, true, TimeSpan.FromSeconds(60));
+
+            var sw = Stopwatch.StartNew();
+
+            // 同期前のUID集合（保存件数の推定用）
+            var beforeUids = await _context.Events
+                .Where(e => e.UserId == currentUser.Id && e.UID != null && e.UID != "")
+                .Select(e => e.UID!)
+                .ToHashSetAsync();
+
+            List<Event> pulled;
+            try
+            {
+                pulled = await _iCloudCalDavService.GetAllEventsAsync(currentUser.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "手動同期に失敗");
+                return StatusCode(500, new { message = "同期に失敗しました。" });
+            }
+
+            // 新規保存されたであろう件数（サービス内のロジックと対応）
+            var saved = pulled
+                .Where(ev => !string.IsNullOrWhiteSpace(ev.UID))
+                .Select(ev => ev.UID!)
+                .Distinct(StringComparer.Ordinal)
+                .Count(uid => !beforeUids.Contains(uid));
+
+            sw.Stop();
+            return Json(new { saved, scanned = pulled.Count, durationMs = sw.ElapsedMilliseconds });
         }
 
         [HttpGet]

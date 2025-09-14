@@ -4,19 +4,27 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 
-//同期強化
 namespace Pit2Hi022052.Services
 {
+    // 同期APIの戻り値
+    public record CalDavSyncResult(int Scanned, int Saved);
+
     public interface ICloudCalDavService
     {
+        // 既存：CalDAVから取得（内部で新規だけDB保存する実装のままでOK）
         Task<List<Event>> GetAllEventsAsync(string userId);
+
+        // 追加：手動同期用の薄いラッパ
+        Task<CalDavSyncResult> SyncAsync(string userId, CancellationToken ct = default);
     }
 
     public class CloudCalDavService : ICloudCalDavService
@@ -36,6 +44,23 @@ namespace Pit2Hi022052.Services
             _db = db;
             _httpContext = httpContext;
             _parser = parser;
+        }
+
+        // ★ 追加：同期（GetAllEventsAsync を呼び、その前後の件数差分を返すだけ）
+        public async Task<CalDavSyncResult> SyncAsync(string userId, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                return new CalDavSyncResult(0, 0);
+
+            var before = await _db.Events.Where(e => e.UserId == userId).CountAsync(ct);
+
+            var fetched = await GetAllEventsAsync(userId); // 内部で新規保存する実装のままでOK
+
+            var after = await _db.Events.Where(e => e.UserId == userId).CountAsync(ct);
+            var saved = Math.Max(0, after - before);
+
+            _logger.LogInformation("手動同期完了: scanned={Scanned}, saved={Saved}", fetched.Count, saved);
+            return new CalDavSyncResult(fetched.Count, saved);
         }
 
         public async Task<List<Event>> GetAllEventsAsync(string userId)

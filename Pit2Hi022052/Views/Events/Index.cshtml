@@ -1,51 +1,78 @@
-﻿
-@model IEnumerable<Event>
-
+﻿@model IEnumerable<Event>
 @{
     ViewData["Title"] = "Calendars";
 }
 
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="m-0">カレンダー</h3>
+
+    <div>
+        <form id="syncForm" method="post">
+            @Html.AntiForgeryToken()
+            <button id="syncBtn" type="button" class="btn btn-primary">今すぐ同期</button>
+        </form>
+    </div>
+</div>
+
 <div id="calendar"></div>
 
 @section Scripts {
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
     <script src="../js/locales-all.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var calendarEl = document.getElementById('calendar');
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek', // 週表示
-                events: '/Events/GetEvents', // イベントデータ取得用のAPIエンドポイント
+            const calendarEl = document.getElementById('calendar');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                events: '/Events/GetEvents',
                 headerToolbar: {
-                    start: 'today prev,next', // 左側に「今日」「前」「次」
-                    center: 'title',         // 中央にカレンダーのタイトル
-                    end: 'dayGridMonth,timeGridWeek,timeGridDay' // 右側にビュー切り替えボタン
+                    start: 'today prev,next',
+                    center: 'title',
+                    end: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
-                timeZone: 'Asia/Tokyo', //東京に時間を指定
-                locale: 'ja',　　　//日本語化
-                selectable: true, // 日付範囲の選択を有効化
-                eventTimeFormat: { hour: 'numeric', minute: '2-digit' }, //時→h
-
+                timeZone: 'Asia/Tokyo',
+                locale: 'ja',
+                selectable: true,
+                eventTimeFormat: { hour: 'numeric', minute: '2-digit' },
                 select: function (info) {
-                    // ダブルクリックで入力画面にリダイレクト
-                    var startDate = info.startStr; // 選択された開始日時（ISOフォーマット）
-                    var endDate = info.endStr;     // 選択された終了日時（ISOフォーマット）
-                    window.location.href = '/Events/Create?startDate=' + startDate + '&endDate=' + endDate;
-                },    
-
-
+                    window.location.href = '/Events/Create?startDate=' + info.startStr + '&endDate=' + info.endStr;
+                },
                 eventClick: function (info) {
-                    // イベントがクリックされたときの処理
-                    var eventId = info.event.id; // イベントのIDを取得
-                    if (eventId) {
-                        // 詳細ページにリダイレクト
-                        window.location.href = '/Events/Details?id=' + eventId;
-                    }
-                }       
+                    const eventId = info.event.id;
+                    if (eventId) window.location.href = '/Events/Details?id=' + eventId;
+                }
             });
             calendar.render();
+
+            // 手動同期
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const syncBtn = document.getElementById('syncBtn');
+
+            syncBtn.addEventListener('click', async () => {
+                syncBtn.disabled = true;
+                try {
+                    const res = await fetch('/Events/Sync', {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': token }
+                    });
+
+                    if (res.status === 429) {
+                        alert('同期は60秒に1回までです。');
+                    } else if (res.ok) {
+                        const r = await res.json();
+                        alert(`同期完了: 保存 ${r.saved} 件 / 取得 ${r.scanned} 件`);
+                        calendar.refetchEvents();
+                    } else {
+                        alert('同期に失敗しました。');
+                    }
+                } catch {
+                    alert('同期でエラーが発生しました。');
+                } finally {
+                    syncBtn.disabled = false;
+                }
+            });
         });
     </script>
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css" rel="stylesheet" /> <!-- FullCalendarのスタイル -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css" rel="stylesheet" />
 }
