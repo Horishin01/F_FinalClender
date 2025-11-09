@@ -1,0 +1,31 @@
+﻿/* Event forms shared UI */
+.details dt {
+    font-weight: 700;
+}
+
+.details dd {
+    margin-bottom: .5rem;
+}
+
+.evchip {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .25rem .6rem;
+    border-radius: 10px;
+    background: #eef3ff;
+    color: #1d4ed8;
+    border-left: 4px solid #3b82f6;
+    font-weight: 700;
+}
+
+    .evchip .t {
+        opacity: .8;
+        margin-right: .25rem;
+    }
+
+.sw {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 4px;
+}

@@ -1,92 +1,50 @@
-﻿<!--
-[Module] イベントカレンダー画面（UI/UX専用）
-[目的] FullCalendar をレイアウト内ヘッダーと連動させて表示。モーダルはフロントのみで作成/閲覧を確認。
-[構成/フロー]
-  1) 外部ツールバー: 前月/次月・月/週/日・今日・同期
-  2) FullCalendar: 月/週/日。週/日ビューは 0–23時表示。イベントは左アクセント＋淡色背景のチップで描画
-  3) 「＋」/日付クリックでモーダルを開く。色はプリセット/カラーピッカー＋ライブプレビュー
-[注意] _Layout.cshtml は触らない。CSS/JSは本ビューから直接読み込む。
--->
-@{
+﻿@{
     ViewData["Title"] = "イベントカレンダー";
 }
+
 <div class="cal-card glass">
     <div class="cal-head">
-        <div class="cal-title"><i class="fa-solid fa-calendar-alt"></i> イベントカレンダー</div>
+        <div class="cal-title">
+            <i class="fc-icon-calendar"></i> イベントカレンダー
+        </div>
+
         <div class="controls">
             <div class="month-nav">
-                <button class="btn btn-primary nav-btn" id="calPrev"><i class="fa-solid fa-chevron-left"></i></button>
-                <div class="period" id="calPeriod"></div>
-                <button class="btn btn-primary nav-btn" id="calNext"><i class="fa-solid fa-chevron-right"></i></button>
+                <button class="btn btn-primary nav-btn" id="calPrev" aria-label="前へ">‹</button>
+                <div class="period" id="calPeriod">----</div>
+                <button class="btn btn-primary nav-btn" id="calNext" aria-label="次へ">›</button>
             </div>
+
             <div class="view-toggle">
                 <button class="view-btn active" id="viewMonth">月</button>
                 <button class="view-btn" id="viewWeek">週</button>
                 <button class="view-btn" id="viewDay">日</button>
             </div>
+
             <div>
-                <button class="btn btn-secondary" id="calToday"><i class="fa-solid fa-calendar-day"></i> 今日</button>
-                <button class="btn btn-success" id="calSync"><i class="fa-solid fa-rotate"></i> 同期</button>
+                <button class="btn btn-secondary" id="calToday">今日</button>
+
+                <form id="syncForm" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button id="syncBtn" type="button" class="btn btn-success">同期</button>
+                </form>
             </div>
         </div>
     </div>
-    <div class="fc-wrap"><div id="fc"></div></div>
-</div>
 
-<button class="fab" id="fab" title="新規イベント"><i class="fa-solid fa-plus"></i></button>
-
-<!-- 作成/閲覧モーダル（フロントのみ） -->
-<div id="eventModal" class="modal d-none" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
-    <div class="dlg">
-        <div class="hd">
-            <div id="eventModalTitle"><i class="fa-solid fa-square-plus"></i> 新規イベント</div>
-            <button class="btn btn-secondary" id="btnModalEdit">編集</button>
-        </div>
-        <div class="bd">
-            <div class="row"><div class="lbl">タイトル</div><div><input id="emTitle" class="ctl" placeholder="件名"></div></div>
-            <div class="row"><div class="lbl">日付</div><div><input id="emDate" class="ctl" type="date"></div></div>
-            <div class="row"><div class="lbl">開始</div><div><input id="emStart" class="ctl" type="time"></div></div>
-            <div class="row"><div class="lbl">終了</div><div><input id="emEnd" class="ctl" type="time"></div></div>
-            <div class="row">
-                <div class="lbl">種別</div><div>
-                    <select id="emType" class="ctl">
-                        <option value="meeting">会議/発表</option>
-                        <option value="work">仕事/学業</option>
-                        <option value="personal">個人</option>
-                        <option value="deadline">期限</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row">
-                <div class="lbl">色</div>
-                <div>
-                    <div class="color-row">
-                        <input id="emColor" class="ctl color-input" type="color" value="#4299e1">
-                        <div id="colorSwatches" class="swatches"></div>
-                        <div class="preview-wrap">
-                            <div id="colorPreview" class="evchip"><span class="t">14:00</span> プレビュー</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row"><div class="lbl">詳細</div><div><textarea id="emDesc" class="ctl" rows="3" placeholder="メモ"></textarea></div></div>
-        </div>
-        <div class="ft">
-            <button class="btn btn-secondary" id="btnModalClose">閉じる</button>
-            <button class="btn btn-primary" id="btnModalSave" disabled>保存</button>
-        </div>
+    <div class="fc-wrap">
+        <div id="calendar"></div>
     </div>
 </div>
 
-<!-- CSS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/main.min.css" />
-<link rel="stylesheet" href="~/css/calendar-ui.css" asp-append-version="true" />
+<a class="fab" id="fab" href="#" aria-label="新規作成">＋</a>
 
-<!-- JS: FullCalendar + ロケール -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
-<script src="~/js/locales-all.min.js"></script>
-
-<!-- JS: このビュー専用 -->
-<script src="~/js/calendar-ui.js" asp-append-version="true"></script>
-<script src="~/js/event-modal.js" asp-append-version="true"></script>
+@section Styles {
+    <link rel="stylesheet" href="~/lib/fullcalendar/main.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/calendar-ui.css" asp-append-version="true" />
+}
+@section Scripts {
+    <script src="~/lib/fullcalendar/index.global.min.js"></script>
+    <script src="~/js/locales-all.min.js"></script>
+    <script src="~/js/calendar-ui-backend.js" asp-append-version="true"></script>
+}
