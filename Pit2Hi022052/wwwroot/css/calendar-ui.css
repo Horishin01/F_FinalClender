@@ -1,75 +1,92 @@
-﻿/* Calendar UI (可読性最重視) */
-.fc-wrap {
-    padding: 1rem;
-    height: calc(85vh);
+﻿/* calendar-ui.css
+ * 目的: カレンダー画面のUIレイアウトとイベント表示チップの意匠
+ * ポイント: 親の高さに依存させず、FullCalendarは height:auto + min-height を採用
+ */
+
+:root {
+    --bg: #fff;
+    --panel: #fff;
+    --line: #e5e7eb;
+    --text: #212529;
+    --pri: #0d6efd;
+    --pri-600: #0b5ed7;
+    --ok: #198754;
+    --muted: #6c757d;
 }
 
-.fc .fc-col-header-cell {
-    background: #f1f3f5;
-    font-weight: 700;
+.cal-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.04);
+    overflow: hidden
 }
 
-.fc-theme-standard .fc-scrollgrid {
-    border: none;
-}
-
-.fc .fc-daygrid-day {
-    border: 1px solid #f1f3f5;
-}
-
-    .fc .fc-daygrid-day.fc-day-today {
-        background: #fafcff;
-        outline: 2px solid #0d6efd;
-        outline-offset: -2px;
-    }
-
-/* 既定のイベント背景は殺して、チップで色を出す */
-.fc .fc-event {
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-}
-
-.fc .fc-daygrid-event {
-    margin: 2px 4px;
-}
-
-/* pillチップ */
-.evchip {
-    --evc: #4299e1; /* main color */
-    --evbg: rgba(66,153,225,.22); /* 背景: 濃くして視認性UP */
-    display: inline-flex;
+.cal-head {
+    display: flex;
+    gap: 1rem;
     align-items: center;
-    gap: .35rem;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: var(--evbg);
-    color: #0f172a; /* 常に濃いテキスト */
-    border-left: 6px solid var(--evc);
-    font-weight: 700;
-    font-size: .82rem;
-    line-height: 1.25;
+    justify-content: space-between;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid #eee
 }
 
-    .evchip .t {
-        color: var(--evc);
-        font-variant-numeric: tabular-nums;
-        margin-right: .15rem;
+.cal-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    display: flex;
+    gap: .5rem;
+    align-items: center
+}
+
+.fc-icon-calendar {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background: #333;
+    -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23000" d="M19 4h-1V2h-2v2H8V2H6v2H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V10h16v9z"/></svg>') no-repeat center/contain
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap
+}
+
+.month-nav {
+    display: flex;
+    gap: .4rem;
+    align-items: center
+}
+
+.nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: none;
+    color: #fff;
+    background: var(--pri);
+    cursor: pointer
+}
+
+    .nav-btn:hover {
+        background: var(--pri-600)
     }
 
-/* 週・日ビューの行間 */
-.fc .fc-timegrid-slot {
-    height: 56px;
+.period {
+    min-width: 220px;
+    text-align: center;
+    font-weight: 800
 }
 
-/* 外部ツールバー */
 .view-toggle {
     display: flex;
     background: #fff;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--line);
     border-radius: 6px;
     padding: 3px;
-    gap: 2px;
+    gap: 2px
 }
 
 .view-btn {
@@ -78,28 +95,145 @@
     padding: .4rem .8rem;
     border-radius: 6px;
     font-weight: 700;
-    cursor: pointer;
+    cursor: pointer
 }
 
     .view-btn.active {
-        background: #0d6efd;
-        color: #fff;
+        background: var(--pri);
+        color: #fff
     }
 
-/* ナビボタン */
-.nav-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    background: #0d6efd;
+.btn {
+    border: none;
+    padding: .6rem 1rem;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer
 }
 
-.period {
-    min-width: 220px;
-    text-align: center;
-    font-weight: 800;
+.btn-secondary {
+    background: var(--muted);
+    color: #fff
 }
+
+.btn-success {
+    background: var(--ok);
+    color: #fff
+}
+
+.fc-wrap {
+    padding: 1rem
+}
+
+#calendar {
+    min-height: 70vh
+}
+/* ← ここで高さを担保 */
+
+/* FullCalendar の意匠微調整 */
+.fc .fc-col-header-cell {
+    background: #f8f9fa;
+    font-weight: 700
+}
+
+.fc-theme-standard .fc-scrollgrid {
+    border: none
+}
+
+.fc .fc-daygrid-day {
+    border: 1px solid #f1f3f5
+}
+
+    .fc .fc-daygrid-day.fc-day-today {
+        background: #fafcff;
+        outline: 2px solid var(--pri);
+        outline-offset: -2px
+    }
+
+.fc .fc-event {
+    border: none;
+    border-radius: 10px;
+    overflow: hidden
+}
+
+    .fc .fc-event .fc-event-main {
+        padding: 2px 6px
+    }
+
+/* 予定チップ: 左帯＋淡色背景（過去バージョンの見た目に近づける） */
+.fc-event.meeting {
+    background: #fdecec;
+    color: #b02a37
+}
+
+    .fc-event.meeting .fc-event-title {
+        font-weight: 700
+    }
+
+    .fc-event.meeting .fc-event-main {
+        position: relative
+    }
+
+        .fc-event.meeting .fc-event-main::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #dc3545;
+            border-radius: 10px 0 0 10px
+        }
+
+.fc-event.work {
+    background: #e7f1ff;
+    color: #084298
+}
+
+    .fc-event.work .fc-event-main::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #0d6efd;
+        border-radius: 10px 0 0 10px
+    }
+
+.fc-event.personal {
+    background: #e9f7ef;
+    color: #0f5132
+}
+
+    .fc-event.personal .fc-event-main::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #198754;
+        border-radius: 10px 0 0 10px
+    }
+
+/* FAB */
+.fab {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--ok);
+    color: #fff;
+    font-size: 26px;
+    text-decoration: none;
+    box-shadow: 0 10px 24px rgba(25,135,84,.35)
+}
+
+    .fab:hover {
+        filter: brightness(.95)
+    }

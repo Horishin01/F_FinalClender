@@ -1,72 +1,52 @@
-﻿@* [概要] イベントカレンダー画面（UI/UX改修 + FullCalendar統合）
-   [流れ]
-   1) 上部ツールバー（前月/次月・月/週/日・今日・同期）を自前で配置
-   2) FullCalendar 本体は headerToolbar:false で初期化し、ツールバーはJSで制御
-   3) イベント取得: /Events/GetEvents（GET）
-   4) 同期: /Events/Sync（POST, AntiForgeryToken必須）
-   5) 週/日ビューは 0:00–23:00 表示、月ビューは行の高さを拡張
-*@
-@model IEnumerable<Event>
-@{
+﻿@{
     ViewData["Title"] = "イベントカレンダー";
 }
 
-<!-- アイコン（CDN） + FullCalendar CSS + 画面専用CSS -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css" rel="stylesheet" />
-<link href="~/css/calendar-ui.css" rel="stylesheet" asp-append-version="true" />
-
-<div class="cal-container glass">
-    <div class="cal-toolbar">
+<div class="cal-card glass">
+    <div class="cal-head">
         <div class="cal-title">
-            <i class="fa-solid fa-calendar-days" data-fallback="📅"></i>
-            <span>イベントカレンダー</span>
+            <i class="fc-icon-calendar"></i> イベントカレンダー
         </div>
 
-        <div class="cal-controls">
-            <div class="cal-nav">
-                <button id="calPrev" class="btn btn-primary nav-btn" aria-label="前へ">
-                    <i class="fa-solid fa-chevron-left" data-fallback="‹"></i>
-                </button>
-                <div id="calPeriod" class="period"></div>
-                <button id="calNext" class="btn btn-primary nav-btn" aria-label="次へ">
-                    <i class="fa-solid fa-chevron-right" data-fallback="›"></i>
-                </button>
+        <div class="controls">
+            <div class="month-nav">
+                <button class="btn btn-primary nav-btn" id="calPrev" aria-label="前へ">‹</button>
+                <div class="period" id="calPeriod">----</div>
+                <button class="btn btn-primary nav-btn" id="calNext" aria-label="次へ">›</button>
             </div>
 
-            <div class="cal-views">
-                <button id="viewMonth" class="view-btn active">月</button>
-                <button id="viewWeek" class="view-btn">週</button>
-                <button id="viewDay" class="view-btn">日</button>
+            <div class="view-toggle">
+                <button class="view-btn active" id="viewMonth">月</button>
+                <button class="view-btn" id="viewWeek">週</button>
+                <button class="view-btn" id="viewDay">日</button>
             </div>
 
-            <div class="cal-actions">
-                <button id="calToday" class="btn btn-secondary">
-                    <i class="fa-solid fa-calendar-day" data-fallback="📅"></i> 今日
-                </button>
+            <div>
+                <button class="btn btn-secondary" id="calToday">今日</button>
+
                 <form id="syncForm" method="post" class="d-inline">
                     @Html.AntiForgeryToken()
-                    <button id="calSync" type="button" class="btn btn-success">
-                        <i class="fa-solid fa-rotate" data-fallback="⟳"></i> 同期
-                    </button>
+                    <button id="syncBtn" type="button" class="btn btn-success">同期</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="cal-body">
+    <div class="fc-wrap">
         <div id="calendar"></div>
     </div>
 </div>
 
-<!-- 右下の作成ボタン（画面遷移。編集フローは従来通り） -->
-<a id="fabCreate" class="fab" href="/Events/Create" title="新規イベント">
-    <i class="fa-solid fa-plus" data-fallback="＋"></i>
-</a>
+<a class="fab" id="fab" href="#" aria-label="新規作成">＋</a>
 
-<!-- FullCalendar + ロケール -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-<script src="~/js/locales-all.min.js"></script>
+@section Styles {
+    <!-- FullCalendar をローカルから -->
+    <link rel="stylesheet" href="~/lib/fullcalendar/main.min.css" />
+    <link rel="stylesheet" href="~/css/calendar-ui.css" asp-append-version="true" />
+}
 
-<!-- 画面専用JS -->
-<script src="~/js/calendar-ui-backend.js" asp-append-version="true"></script>
+@section Scripts {
+    <script src="~/lib/fullcalendar/index.global.min.js"></script>
+    <script src="~/js/locales-all.min.js"></script>
+    <script src="~/js/calendar-ui-backend.js" asp-append-version="true"></script>
+}
