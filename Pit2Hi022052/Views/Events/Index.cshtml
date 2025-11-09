@@ -22,11 +22,15 @@
             </div>
 
             <div>
-                <button class="btn btn-secondary" id="calToday">今日</button>
+                <button class="btn btn-secondary" id="calToday">
+                    <i class="fa-solid fa-calendar-day"></i> 今日
+                </button>
 
                 <form id="syncForm" method="post" class="d-inline">
                     @Html.AntiForgeryToken()
-                    <button id="syncBtn" type="button" class="btn btn-success">同期</button>
+                    <button id="syncBtn" type="button" class="btn btn-success">
+                        <i id="syncIcon" class="fa-solid fa-arrows-rotate"></i> 同期
+                    </button>
                 </form>
             </div>
         </div>

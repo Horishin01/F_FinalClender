@@ -237,3 +237,8 @@
     .fab:hover {
         filter: brightness(.95)
     }
+
+/* ボタン内アイコンの前後余白 */
+.btn i {
+    margin-right: .4rem;
+}
