@@ -1,4 +1,4 @@
-﻿@* Views/Shared/_Layout.cshtml  — 全面置換 *@
+﻿@* Views/Shared/_Layout.cshtml — 全面置換 *@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 <!DOCTYPE html>
 <html lang="ja">
@@ -8,16 +8,16 @@
     <title>@ViewData["Title"] - Pit2Hi022052</title>
 
     <!-- ローカルCSS -->
-    <!-- Font Awesome（ローカル） -->
     <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Views/Shared/_Layout.cshtml.css" asp-append-version="true" />
 
-    @* ページ固有のスタイル（FullCalendarやFontAwesome等）はここで描画 *@
+    @* ページ固有スタイル（FullCalendar 等） *@
     @RenderSection("Styles", required: false)
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
+    <!-- スティッキーフッター用 -->
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
@@ -52,23 +52,26 @@
         </nav>
     </header>
 
-    <div class="container">
+    <div class="container flex-grow-1">
+        <!-- 本文を伸ばしてフッターを押し下げる -->
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="border-top footer text-muted mt-auto">
+        <!-- 最下部固定 -->
         <div class="container">
-            &copy; @DateTime.Now.Year - Pit2Hi022052 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; @DateTime.Now.Year - Pit2Hi022052 -
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
-    <!-- ローカルJS -->
+    <!-- ローカルJS（既存のまま） -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    @* ページ固有のスクリプト（FullCalendar等）はここで描画 *@
+    @* ページ固有スクリプト（FullCalendar 等） *@
     @RenderSection("Scripts", required: false)
 </body>
 </html>

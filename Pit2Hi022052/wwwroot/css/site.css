@@ -20,3 +20,23 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* --- Sticky footer 基本形（Bootstrap なしでも効く） --- */
+html, body {
+    height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+/* 中身が少ないページでも main が余白を食う */
+footer {
+    margin-top: auto;
+}
+/* 最下段へ押し下げ */
