@@ -1,50 +1,28 @@
-﻿@model Event
-
+@model Event
 @{
-    if (!(Model is not null)) { throw new NullReferenceException(); }
+    if (Model is null) { throw new NullReferenceException(); }
+    string FormatDate(DateTime? dt) => dt?.ToString("yyyy-MM-dd HH:mm") ?? "-";
 }
 
-   <dl class="row">
-        <dt class = "col-sm-2">
-        @Html.DisplayNameFor(model => model.Id)
-        </dt>
-        <dd class = "col-sm-10">
-        @Html.DisplayFor(model => model.Id)
-        </dd>
+<dl class="details-grid">
+    <dt>タイトル</dt>
+    <dd>@Model.Title</dd>
 
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.UserId)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.UserId)
-    </dd>
+    <dt>開始時刻</dt>
+    <dd>@FormatDate(Model.StartDate)</dd>
 
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.Title)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.Title)
-    </dd>
+    <dt>終了時刻</dt>
+    <dd>@FormatDate(Model.EndDate)</dd>
 
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.StartDate)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.StartDate)
-    </dd>
+    <dt>種別</dt>
+    <dd>@(Model.AllDay ? "終日イベント" : "時間指定")</dd>
 
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.EndDate)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.EndDate)
-    </dd>
+    <dt>詳細</dt>
+    <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "（未入力）" : Model.Description)</dd>
 
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.Description)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.Description)
-    </dd>
+    <dt>ユーザーID</dt>
+    <dd><span class="details-chip">@Model.UserId</span></dd>
+
+    <dt>UID</dt>
+    <dd><span class="details-chip">@(!string.IsNullOrWhiteSpace(Model.UID) ? Model.UID : "未登録")</span></dd>
 </dl>
-

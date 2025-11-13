@@ -1,40 +1,34 @@
-﻿@model Event
+@model Event
+
+<input type="hidden" asp-for="Id" />
+<input type="hidden" asp-for="UserId" />
 
 <div class="form-group">
-	<label asp-for="UserId" class="control-label"></label>
-	<input asp-for="UserId" class="form-control" disabled />
-	<input type="hidden" asp-for="UserId" />
-	<span asp-validation-for="UserId" class="text-danger"></span>
-</div>
-
-
-<div class="form-group">
-	<label asp-for="Title" class="control-label"></label>
-	<input asp-for="Title" class="form-control" autofocus />
-	<span asp-validation-for="Title" class="text-danger"></span>
+    <label asp-for="Title">タイトル *</label>
+    <input asp-for="Title" class="form-control" placeholder="例: 面談練習" required />
+    <span asp-validation-for="Title" class="text-danger"></span>
 </div>
 
 <div class="form-group">
-	<label asp-for="StartDate" class="control-label"></label>
-	<input asp-for="StartDate" class="form-control" />
-	<span asp-validation-for="StartDate" class="text-danger"></span>
+    <label asp-for="StartDate">開始日時 *</label>
+    <input asp-for="StartDate" class="form-control" required />
+    <span asp-validation-for="StartDate" class="text-danger"></span>
 </div>
 
 <div class="form-group">
-	<label asp-for="EndDate" class="control-label"></label>
-	<input asp-for="EndDate" class="form-control" />
-	<span asp-validation-for="EndDate" class="text-danger"></span>
+    <label asp-for="EndDate">終了日時</label>
+    <input asp-for="EndDate" class="form-control" />
+    <small class="hint">未入力の場合は開始日時のみ表示されます。</small>
+    <span asp-validation-for="EndDate" class="text-danger"></span>
 </div>
 
 <div class="form-group">
-	<label asp-for="Description" class="control-label"></label>
-	<input asp-for="Description" class="form-control" />
-	<span asp-validation-for="Description" class="text-danger"></span>
+    <label asp-for="Description">詳細</label>
+    <textarea asp-for="Description" class="form-control" rows="4" placeholder="メモやオンライン会議URLなどを記入してください。"></textarea>
+    <span asp-validation-for="Description" class="text-danger"></span>
 </div>
 
 <div class="form-group form-check">
-	<input asp-for="AllDay" class="form-check-input" />
-	<label asp-for="AllDay" class="form-check-label"></label>
+    <input asp-for="AllDay" class="form-check-input" />
+    <label asp-for="AllDay" class="form-check-label">終日イベントとして扱う</label>
 </div>
-
-

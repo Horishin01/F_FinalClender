@@ -1,42 +1,238 @@
-html {
-  font-size: 14px;
+:root {
+    --brand-start: #6272ff;
+    --brand-end: #7de9f2;
+    --surface: #ffffff;
+    --surface-muted: rgba(255, 255, 255, 0.9);
+    --ink-900: #1f2933;
+    --ink-700: #374151;
+    --ink-600: #4b5563;
+    --line-soft: #e2e8f0;
+    --accent-green: #1dd1a1;
+    --accent-orange: #ff9f43;
+    --accent-red: #ff6b6b;
 }
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
-body {
-  margin-bottom: 60px;
-}
-
-/* --- Sticky footer 基本形（Bootstrap なしでも効く） --- */
 html, body {
-    height: 100%;
+    min-height: 100%;
 }
 
 body {
-    min-height: 100vh;
+    font-family: 'Noto Sans JP', 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    color: var(--ink-900);
+}
+
+body.app-body {
+    background: linear-gradient(145deg, #eef3ff 0%, #dff6ff 45%, #c9f0f4 100%) fixed;
     display: flex;
     flex-direction: column;
+}
+
+.container-xl {
+    max-width: 1200px;
+}
+
+.app-header {
+    padding: 1.25rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.app-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 0.35rem 1.8rem;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 999px;
+    box-shadow: 0 18px 45px rgba(107, 125, 255, 0.12);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-900);
+    font-size: 1.05rem;
+}
+
+.brand a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.15rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    color: #fff;
+    background: linear-gradient(120deg, var(--brand-start), var(--brand-end));
+}
+
+.app-menu {
+    list-style: none;
+    display: flex;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+}
+
+.app-menu a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.55rem 1.15rem;
+    border-radius: 999px;
+    font-weight: 600;
+    color: var(--ink-600);
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+}
+
+.app-menu a:hover,
+.app-menu a:focus {
+    background: rgba(98, 114, 255, 0.12);
+    color: var(--brand-start);
+}
+
+.app-login {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 220px;
+}
+
+.app-hero {
+    height: 180px;
+    margin-top: -40px;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
+    border-radius: 40px;
+}
+
+.app-main {
+    flex: 1 1 auto;
+    width: 100%;
+    padding: 0 0 3rem;
+}
+
+.app-content {
+    margin-top: -140px;
+    position: relative;
+    z-index: 1;
+}
+
+.app-footer {
+    padding: 1.5rem 0 2rem;
+}
+
+.footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: #f1f5f9;
+}
+
+.app-footer a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.app-footer a:hover {
+    text-decoration: underline;
+}
+
+.auth-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.4rem 0.9rem 0.4rem 1.1rem;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 999px;
+    box-shadow: 0 10px 25px rgba(17, 24, 39, 0.08);
+    border: 1px solid rgba(147, 197, 253, 0.35);
+}
+
+.auth-chip .auth-user {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    min-width: 140px;
+}
+
+.auth-chip .label {
+    font-size: 0.75rem;
+    color: var(--ink-600);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.auth-chip .value {
+    font-weight: 700;
+    color: var(--ink-900);
+    transition: color 0.2s ease;
+}
+
+.auth-chip .auth-user:hover .value,
+.auth-chip .auth-user:focus-visible .value {
+    color: var(--brand-start);
+}
+
+.auth-chip a,
+.auth-chip button {
+    border: none;
+    background: transparent;
+    font-weight: 700;
+    color: var(--brand-start);
+    text-decoration: none;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.auth-chip a:hover,
+.auth-chip button:hover {
+    background: rgba(98, 114, 255, 0.12);
+}
+
+.auth-chip a.ghost {
+    color: var(--ink-600);
+}
+
+.auth-action {
+    display: flex;
+    align-items: center;
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(98, 114, 255, 0.55);
 }
 
 main {
     flex: 1 0 auto;
 }
-/* 中身が少ないページでも main が余白を食う */
+
 footer {
     margin-top: auto;
 }
-/* 最下段へ押し下げ */

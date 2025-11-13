@@ -1,16 +1,20 @@
-﻿@model Event
+@model Event
 @{
-    ViewData["Title"] = "イベント作成";
+    ViewData["Title"] = "新しいイベント";
 }
 <link rel="stylesheet" href="~/css/event-forms.css" asp-append-version="true" />
 
 <div class="page-wrap">
     <div class="card">
         <div class="head">
-            <div class="title">新規イベント</div>
+            <div class="title">新しいイベント</div>
             <div class="actions">
-                <a asp-action="Index" class="btn btn-secondary">戻る</a>
-                <button form="eventCreateForm" type="submit" class="btn btn-primary">保存</button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    キャンセル
+                </a>
+                <button form="eventCreateForm" type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> 保存
+                </button>
             </div>
         </div>
 
@@ -19,13 +23,6 @@
                 <form id="eventCreateForm" asp-action="Create" method="post">
                     @Html.AntiForgeryToken()
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                    <div class="form-group">
-                        <label asp-for="Id" class="control-label"></label>
-                        <input asp-for="Id" class="form-control" disabled />
-                        <input type="hidden" asp-for="Id" />
-                        <span asp-validation-for="Id" class="text-danger"></span>
-                    </div>
 
                     <partial name="_EditPartial.cshtml" model="Model" />
                 </form>
@@ -36,24 +33,24 @@
                     <div class="side-title">プレビュー</div>
                     <div class="ev-chip" id="evPreview">
                         <span class="dot" id="prevDot"></span>
-                        <span class="time" id="prevTime">00:00</span>
-                        <span class="ttl" id="prevTitle">件名</span>
+                        <span class="time" id="prevTime">--:--</span>
+                        <span class="ttl" id="prevTitle">タイトル未設定</span>
                     </div>
-                    <div class="hint">件名/開始/終了の入力にあわせて自動更新します。</div>
+                    <div class="hint">タイトルや日時を入力するとプレビューがリアルタイムで更新されます。</div>
                 </div>
 
                 <div class="side-section">
-                    <div class="side-title">色（フロントのみ）</div>
-                    <input id="evColor" type="color" value="#3b82f6" class="color-picker" />
+                    <div class="side-title">アピアランス (UIのみ)</div>
+                    <input id="evColor" type="color" value="#6d5dfc" class="color-picker" />
                     <div class="swatches">
                         <button type="button" class="sw" data-c="#ef4444" style="--c:#ef4444"></button>
-                        <button type="button" class="sw" data-c="#f59e0b" style="--c:#f59e0b"></button>
+                        <button type="button" class="sw" data-c="#f97316" style="--c:#f97316"></button>
                         <button type="button" class="sw" data-c="#10b981" style="--c:#10b981"></button>
                         <button type="button" class="sw" data-c="#3b82f6" style="--c:#3b82f6"></button>
                         <button type="button" class="sw" data-c="#8b5cf6" style="--c:#8b5cf6"></button>
                         <button type="button" class="sw" data-c="#64748b" style="--c:#64748b"></button>
                     </div>
-                    <div class="hint">サーバーモデルには保存しません。UI確認用です。</div>
+                    <div class="hint">色設定は現在 UI プレビュー専用です。将来的なカテゴリカラーに備えて保持しています。</div>
                 </div>
             </aside>
         </div>
