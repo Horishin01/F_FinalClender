@@ -7,6 +7,7 @@ namespace Pit2Hi022052.ViewModels
     {
         public bool IsAuthenticated { get; set; }
         public IReadOnlyList<CalendarPreviewEvent> Events { get; set; } = Array.Empty<CalendarPreviewEvent>();
+        public IReadOnlyList<Models.BalanceSheetItem> BalanceSheetSeed { get; set; } = Array.Empty<Models.BalanceSheetItem>();
     }
 
     public class CalendarPreviewEvent

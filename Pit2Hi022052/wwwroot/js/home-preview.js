@@ -35,6 +35,7 @@
         if (!calendarEl) return;
 
         const boot = readBootEvents();
+        const bsSeed = readBalanceSeed();
         const elements = {
             calendarPeriod: document.getElementById('calendarPeriod'),
             filterButtons: document.querySelectorAll('#calendarFilters .chip'),
@@ -174,6 +175,15 @@
         if (elements.serverState) {
             elements.serverState.textContent = boot.signedIn ? '最新' : 'サインインすると予定を表示できます';
             elements.serverState.classList.toggle('error', !boot.signedIn);
+        }
+
+        const bsRoot = document.querySelector('[data-balance-sheet]');
+        if (bsRoot && typeof BalanceSheetWidget !== 'undefined') {
+            BalanceSheetWidget.init({
+                root: bsRoot,
+                seed: bsSeed,
+                storageKey: bsRoot.dataset.storageKey || 'home-bs-state'
+            });
         }
 
         function bindFilters(buttons, currentState, cal) {
@@ -444,6 +454,17 @@
             return { events: mapped, signedIn };
         } catch {
             return { events: [], signedIn };
+        }
+    }
+
+    function readBalanceSeed() {
+        const el = document.getElementById('balance-sheet-json');
+        if (!el) return [];
+        try {
+            const parsed = JSON.parse(el.textContent || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
         }
     }
 

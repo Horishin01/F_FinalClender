@@ -1,0 +1,151 @@
+@model Pit2Hi022052.ViewModels.BalanceSheetViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "バランスシート";
+    var seedJson = JsonSerializer.Serialize(Model.Assets.Concat(Model.Liabilities));
+}
+
+<section class="bs-page">
+    <header class="bs-hero glass">
+        <div class="bs-hero-copy">
+            <p class="eyebrow">資産形成ラボ</p>
+            <h1>バランスシートで暮らしと資産を可視化</h1>
+            <p>
+                ホームのミニ BS と同じ仕組みをフル幅で体験できます。ここでの操作はブラウザー内にのみ保存され、
+                DB には書き込まれません。
+            </p>
+            <div class="actions">
+                <a asp-controller="Home" asp-action="Index" class="btn ghost">統合ポータルに戻る</a>
+                <button type="button" class="btn primary" data-role="scenario" data-scenario="aggressive">
+                    <i class="fa-solid fa-bolt"></i>
+                    シナリオ: 攻めの資産配分
+                </button>
+            </div>
+        </div>
+        <div class="bs-hero-summary">
+            <div>
+                <p>資産総額</p>
+                <strong data-role="summary-assets">@Model.TotalAssets.ToString("C0")</strong>
+            </div>
+            <div>
+                <p>負債総額</p>
+                <strong data-role="summary-liabilities">@Model.TotalLiabilities.ToString("C0")</strong>
+            </div>
+            <div>
+                <p>純資産</p>
+                <strong data-role="summary-net">@Model.NetWorth.ToString("C0")</strong>
+            </div>
+            <div>
+                <p>負債比率</p>
+                <strong data-role="summary-ratio">--</strong>
+            </div>
+        </div>
+    </header>
+
+    <div class="glass bs-widget" data-balance-sheet data-storage-key="bs-page-state">
+        <div class="bs-progress">
+            <div>
+                <small>資産配分</small>
+                <div class="bar">
+                    <span class="fill" data-role="progress-assets"></span>
+                </div>
+            </div>
+            <div>
+                <small>負債比率</small>
+                <div class="bar negative">
+                    <span class="fill" data-role="progress-liabilities"></span>
+                </div>
+            </div>
+        </div>
+        <div class="bs-chart">
+            <canvas data-role="bs-chart" width="380" height="240" aria-label="資産構成チャート"></canvas>
+            <button type="button" class="btn ghost small chart-download" data-role="download-chart">
+                <i class="fa-solid fa-download"></i>
+                PNGで保存
+            </button>
+        </div>
+
+        <div class="bs-grid">
+            <section>
+                <header>
+                    <div>
+                        <p class="eyebrow">資産</p>
+                        <h2>Assets</h2>
+                    </div>
+                    <button class="btn ghost small" data-role="scenario" data-scenario="cash">キャッシュを増やす</button>
+                </header>
+                <table class="bs-table">
+                    <thead>
+                        <tr>
+                            <th>科目</th>
+                            <th>区分</th>
+                            <th class="text-end">金額</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-table="assets"></tbody>
+                </table>
+            </section>
+
+            <section>
+                <header>
+                    <div>
+                        <p class="eyebrow">負債</p>
+                        <h2>Liabilities</h2>
+                    </div>
+                    <button class="btn ghost small" data-role="scenario" data-scenario="debt">負債を圧縮</button>
+                </header>
+                <table class="bs-table">
+                    <thead>
+                        <tr>
+                            <th>科目</th>
+                            <th>区分</th>
+                            <th class="text-end">金額</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-table="liabilities"></tbody>
+                </table>
+            </section>
+        </div>
+
+        <form class="bs-form" data-role="add-form">
+            <div>
+                <label>区分</label>
+                <select name="category">
+                    <option value="asset">資産</option>
+                    <option value="liability">負債</option>
+                </select>
+            </div>
+            <div>
+                <label>科目</label>
+                <input type="text" name="name" placeholder="例) 教育資金" required />
+            </div>
+            <div>
+                <label>タグ</label>
+                <input type="text" name="tag" placeholder="流動資産 など" />
+            </div>
+            <div>
+                <label>金額</label>
+                <input type="number" name="amount" step="10000" required />
+            </div>
+            <button type="submit" class="btn primary">
+                <i class="fa-solid fa-plus"></i>
+                追加
+            </button>
+        </form>
+    </div>
+</section>
+
+<script id="balance-sheet-json" type="application/json">
+    @Html.Raw(seedJson)
+</script>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/balance-sheet.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/balance-sheet-widget.js" asp-append-version="true"></script>
+    <script src="~/js/balance-sheet.js" asp-append-version="true"></script>
+}
