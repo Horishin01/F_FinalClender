@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model Pit2Hi022052.Areas.Identity.Pages.Account.Manage.ICCardsModel
 @using Pit2Hi022052.Areas.Identity.Pages.Account.Manage
 @{
@@ -6,42 +6,32 @@
     ViewData["ActivePage"] = ManageNavPages.ICCards;
 }
 
-<h3>ICカード</h3>
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">ICカードを読み取ることで本人確認や開錠処理に利用できます。</p>
 
-<div class="mb-3">
-    <!-- ここからのみ登録/上書き可能（手入力不可） -->
-    <form method="post" asp-page-handler="Read" class="d-inline">
-        <button type="submit" class="btn btn-primary">カードを読み取って登録/上書き</button>
-    </form>
-    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    <partial name="_StatusMessage" for="StatusMessage" />
+
+    <div class="form-actions">
+        <form method="post" asp-page-handler="Read">
+            <button type="submit" class="btn-primary-modern">カードを読み取って登録／更新</button>
+        </form>
+    </div>
+
+    @if (Model.Card is not null)
     {
-        <span class="text-muted ms-2">@Model.StatusMessage</span>
+        <div class="form-field mt-4">
+            <label>登録済み UID</label>
+            <code class="fs-5 text-danger">@Model.Card.Uid</code>
+            <div class="form-actions mt-3">
+                <form method="post" asp-page-handler="Delete">
+                    <button type="submit" class="btn-outline">登録を削除</button>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="hint-text mt-3">登録済みの IC カードはありません。カードをリーダーにタッチして登録してください。</p>
     }
 </div>
-
-@if (!(Model.Card is null))
-{
-    <table class="table align-middle">
-        <thead>
-            <tr>
-                <th>UID</th>
-                <th class="text-end">操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td class="text-danger">@Model.Card.Uid</td>
-                <td class="text-end">
-                    <!-- 削除のみ（UIDの手入力・送信欄は存在しない） -->
-                    <form method="post" asp-page-handler="Delete" class="d-inline">
-                        <button type="submit" class="btn btn-danger">削除</button>
-                    </form>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-}
-else
-{
-    <p class="text-muted">登録されたICカードはありません。</p>
-}

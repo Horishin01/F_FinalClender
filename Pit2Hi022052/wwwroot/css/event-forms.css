@@ -1,31 +1,239 @@
-﻿/* Event forms shared UI */
-.details dt {
+﻿.page-wrap {
+    margin: 0 auto;
+    max-width: 1100px;
+    padding: 2.5rem 0 3rem;
+}
+
+.card,
+.details-sheet {
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+}
+
+.card .head,
+.details-sheet .sheet-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.8rem 2rem 1.25rem;
+    border-bottom: 1px solid #edf1ff;
+}
+
+.card .title,
+.details-sheet .sheet-title {
+    font-weight: 800;
+    font-size: 1.45rem;
+    margin: 0;
+}
+
+.card .actions,
+.details-sheet .sheet-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.card .body {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 2rem;
+}
+
+@media (min-width: 992px) {
+    .card .body {
+        grid-template-columns: minmax(0, 1.6fr) 320px;
+    }
+}
+
+.main form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.35rem;
+}
+
+.form-control,
+textarea.form-control {
+    border-radius: 16px;
+    border: 1.5px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+    background: #f9fbff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+    border-color: #7b68ff;
+    box-shadow: 0 0 0 3px rgba(123, 104, 255, 0.15);
+    background: #fff;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.form-check-input {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.btn-primary {
+    background: linear-gradient(120deg, #7064ff, #5de0e6);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.65rem 1.6rem;
     font-weight: 700;
+    box-shadow: 0 15px 25px rgba(112, 100, 255, 0.4);
 }
 
-.details dd {
-    margin-bottom: .5rem;
+.btn-secondary {
+    border-radius: 999px;
+    border: 2px solid rgba(112, 100, 255, 0.2);
+    background: transparent;
+    color: #1f2a3d;
+    font-weight: 700;
+    padding: 0.65rem 1.4rem;
 }
 
-.evchip {
+.side {
+    background: #f8f9ff;
+    border-radius: 24px;
+    padding: 1.5rem;
+}
+
+.side-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: #475569;
+}
+
+.ev-chip {
     display: inline-flex;
     align-items: center;
-    gap: .5rem;
-    padding: .25rem .6rem;
-    border-radius: 10px;
-    background: #eef3ff;
-    color: #1d4ed8;
-    border-left: 4px solid #3b82f6;
-    font-weight: 700;
+    gap: 0.75rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid #e0e7ff;
 }
 
-    .evchip .t {
-        opacity: .8;
-        margin-right: .25rem;
-    }
+.ev-chip .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6366f1;
+}
 
-.sw {
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 4px;
+.ev-chip .time {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.ev-chip .ttl {
+    color: #475569;
+    font-weight: 600;
+}
+
+.hint {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-top: 0.75rem;
+}
+
+.color-picker {
+    width: 100%;
+    border: none;
+    background: transparent;
+    height: 50px;
+}
+
+.swatches {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.35rem;
+}
+
+.swatches .sw {
+    border: none;
+    border-radius: 8px;
+    aspect-ratio: 1/1;
+    cursor: pointer;
+    background: var(--c);
+}
+
+.details-sheet {
+    padding-bottom: 2rem;
+}
+
+.details-sheet .sheet-sub {
+    color: #64748b;
+    margin: 0.2rem 0 0;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 0.75rem 1rem;
+    padding: 2rem;
+}
+
+.details-grid dt {
+    font-weight: 700;
+    color: #6366f1;
+}
+
+.details-grid dd {
+    margin: 0;
+    color: #0f172a;
+}
+
+.sheet-actions {
+    border-top: 1px solid #edf1ff;
+    padding: 1.5rem 2rem 2rem;
+}
+
+.btn-warning {
+    background: linear-gradient(120deg, #ffb347, #ffcc33);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.65rem 1.5rem;
+    font-weight: 700;
+    border: none;
+}
+
+.btn-danger {
+    background: linear-gradient(120deg, #ff6b6b, #ff4159);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.65rem 1.5rem;
+    font-weight: 700;
+    border: none;
+}
+
+.sheet-actions .btn + .btn {
+    margin-left: 0.5rem;
+}
+
+.details-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 0.85rem;
 }

@@ -1,25 +1,24 @@
-﻿@page
+@page
 @model Disable2faModel
 @{
-    ViewData["Title"] = "Disable two-factor authentication (2FA)";
+    ViewData["Title"] = "2段階認証の無効化";
     ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
 }
 
-<partial name="_StatusMessage" for="StatusMessage" />
-<h3>@ViewData["Title"]</h3>
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">この操作は 2 段階認証のみを停止し、Authenticator アプリのキーは変更しません。</p>
 
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>This action only disables 2FA.</strong>
-    </p>
-    <p>
-        Disabling 2FA does not change the keys used in authenticator apps. If you wish to change the key
-        used in an authenticator app you should <a asp-page="./ResetAuthenticator">reset your authenticator keys.</a>
-    </p>
-</div>
+    <partial name="_StatusMessage" for="StatusMessage" />
 
-<div>
-    <form method="post">
-        <button class="btn btn-danger" type="submit">Disable 2FA</button>
+    <div class="danger-zone mb-3">
+        <p>
+            再度有効化する場合は、Authenticator の設定をやり直す必要があります。キー自体を変更したい場合は
+            <a asp-page="./ResetAuthenticator">Authenticator のリセット</a>を実行してください。
+        </p>
+    </div>
+
+    <form method="post" class="form-actions">
+        <button class="btn-primary-modern" type="submit">2段階認証を無効にする</button>
     </form>
 </div>

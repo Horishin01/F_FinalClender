@@ -1,21 +1,28 @@
-﻿@model Event
-
+@model Event
 @{
-    if (!(Model is not null)) { throw new NullReferenceException(); }
-    ViewData["Title"] = "Delete";
+    if (Model is null) { throw new NullReferenceException(); }
+    ViewData["Title"] = "イベント削除";
 }
+<link rel="stylesheet" href="~/css/event-forms.css" asp-append-version="true" />
 
-<h1>Delete</h1>
+<div class="page-wrap">
+    <div class="details-sheet">
+        <div class="sheet-head">
+            <div>
+                <p class="sheet-sub text-danger fw-bold">削除の確認</p>
+                <div class="sheet-title">このイベントを削除しますか？</div>
+            </div>
+        </div>
 
-<h3>Are you sure you want to delete this?</h3>
-<div>
-    <h4>Event</h4>
-    <hr />
-    <partial name="_DetailsPartial.cshtml" />
+        <partial name="_DetailsPartial.cshtml" model="Model" />
 
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Index">Back to List</a>
-    </form>
+        <form asp-action="Delete" method="post" class="sheet-actions">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <a asp-action="Index" class="btn btn-secondary">キャンセル</a>
+            <button type="submit" class="btn btn-danger">
+                <i class="fa-solid fa-trash me-1"></i> 削除する
+            </button>
+        </form>
+    </div>
 </div>

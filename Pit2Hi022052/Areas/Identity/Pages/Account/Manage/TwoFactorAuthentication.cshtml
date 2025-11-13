@@ -1,70 +1,86 @@
-﻿@page
+@page
 @using Microsoft.AspNetCore.Http.Features
 @model TwoFactorAuthenticationModel
 @{
-    ViewData["Title"] = "Two-factor authentication (2FA)";
+    ViewData["Title"] = "2段階認証";
     ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
 }
 
-<partial name="_StatusMessage" for="StatusMessage" />
-<h3>@ViewData["Title"]</h3>
-@{
-    var consentFeature = HttpContext.Features.Get<ITrackingConsentFeature>();
-    @if (consentFeature?.CanTrack ?? true)
-    {
-        @if (Model.Is2faEnabled)
-        {
-            if (Model.RecoveryCodesLeft == 0)
-            {
-                <div class="alert alert-danger">
-                    <strong>You have no recovery codes left.</strong>
-                    <p>You must <a asp-page="./GenerateRecoveryCodes">generate a new set of recovery codes</a> before you can log in with a recovery code.</p>
-                </div>
-            }
-            else if (Model.RecoveryCodesLeft == 1)
-            {
-                <div class="alert alert-danger">
-                    <strong>You have 1 recovery code left.</strong>
-                    <p>You can <a asp-page="./GenerateRecoveryCodes">generate a new set of recovery codes</a>.</p>
-                </div>
-            }
-            else if (Model.RecoveryCodesLeft <= 3)
-            {
-                <div class="alert alert-warning">
-                    <strong>You have @Model.RecoveryCodesLeft recovery codes left.</strong>
-                    <p>You should <a asp-page="./GenerateRecoveryCodes">generate a new set of recovery codes</a>.</p>
-                </div>
-            }
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">Authenticator アプリやバックアップコードを利用して、アカウントをさらに安全に守ります。</p>
 
-            if (Model.IsMachineRemembered)
-            {
-                <form method="post" style="display: inline-block">
-                    <button type="submit" class="btn btn-primary">Forget this browser</button>
-                </form>
-            }
-            <a asp-page="./Disable2fa" class="btn btn-primary">Disable 2FA</a>
-            <a asp-page="./GenerateRecoveryCodes" class="btn btn-primary">Reset recovery codes</a>
-        }
+    <partial name="_StatusMessage" for="StatusMessage" />
 
-        <h4>Authenticator app</h4>
-        @if (!Model.HasAuthenticator)
+    @{
+        var consentFeature = HttpContext.Features.Get<ITrackingConsentFeature>();
+        if (!(consentFeature?.CanTrack ?? true))
         {
-            <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-primary">Add authenticator app</a>
+            <div class="danger-zone">
+                <strong>プライバシーポリシーに未同意です。</strong>
+                <p>2段階認証を利用する前に、クッキー利用への同意が必要です。</p>
+            </div>
         }
         else
         {
-            <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-primary">Set up authenticator app</a>
-            <a id="reset-authenticator" asp-page="./ResetAuthenticator" class="btn btn-primary">Reset authenticator app</a>
+            if (Model.Is2faEnabled)
+            {
+                if (Model.RecoveryCodesLeft == 0)
+                {
+                    <div class="danger-zone">
+                        <strong>バックアップコードが残っていません。</strong>
+                        <p><a asp-page="./GenerateRecoveryCodes">新しいバックアップコードを生成</a>してからご利用ください。</p>
+                    </div>
+                }
+                else if (Model.RecoveryCodesLeft == 1)
+                {
+                    <div class="danger-zone">
+                        <strong>残り 1 枚です。</strong>
+                        <p>お早めに <a asp-page="./GenerateRecoveryCodes">新しいコードを生成</a>してください。</p>
+                    </div>
+                }
+                else if (Model.RecoveryCodesLeft <= 3)
+                {
+                    <div class="danger-zone">
+                        <strong>残り @Model.RecoveryCodesLeft 枚です。</strong>
+                        <p>安全のため、<a asp-page="./GenerateRecoveryCodes">コードを更新</a>しましょう。</p>
+                    </div>
+                }
+
+                <div class="form-actions">
+                    @if (Model.IsMachineRemembered)
+                    {
+                        <form method="post" class="d-inline">
+                            <button type="submit" class="btn-outline">このブラウザーを忘れる</button>
+                        </form>
+                    }
+                    <a asp-page="./Disable2fa" class="btn-outline">2段階認証を無効にする</a>
+                    <a asp-page="./GenerateRecoveryCodes" class="btn-primary-modern">バックアップコードを再生成</a>
+                </div>
+            }
+
+            <div class="form-field">
+                <label>Authenticator アプリ</label>
+                <div class="form-actions">
+                    @if (!Model.HasAuthenticator)
+                    {
+                        <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn-primary-modern">Authenticator を追加</a>
+                    }
+                    else
+                    {
+                        <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn-primary-modern">Authenticator を再設定</a>
+                        <a id="reset-authenticator" asp-page="./ResetAuthenticator" class="btn-outline">Authenticator をリセット</a>
+                    }
+                </div>
+            </div>
+
+            @if (!Model.Is2faEnabled)
+            {
+                <p class="hint-text">2段階認証はまだ有効化されていません。Authenticator アプリを設定し、有効化してください。</p>
+            }
         }
     }
-    else
-    {
-        <div class="alert alert-danger">
-            <strong>Privacy and cookie policy have not been accepted.</strong>
-            <p>You must accept the policy before you can enable two factor authentication.</p>
-        </div>
-    }
-}
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -1,4 +1,4 @@
-﻿@* Views/Shared/_Layout.cshtml — 全面置換 *@
+@* Views/Shared/_Layout.cshtml *@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 <!DOCTYPE html>
 <html lang="ja">
@@ -7,71 +7,53 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>@ViewData["Title"] - Pit2Hi022052</title>
 
-    <!-- ローカルCSS -->
     <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Views/Shared/_Layout.cshtml.css" asp-append-version="true" />
 
-    @* ページ固有スタイル（FullCalendar 等） *@
     @RenderSection("Styles", required: false)
 </head>
-<body class="d-flex flex-column min-vh-100">
-    <!-- スティッキーフッター用 -->
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Pit2Hi022052</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
-                        aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <div class="collapse navbar-collapse" id="mainNavbar">
-                    <ul class="navbar-nav me-auto mb-2 mb-sm-0">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Roles" asp-action="Index">Roles</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Events" asp-action="Index">Events</a>
-                        </li>
-                    </ul>
-
+<body class="app-body">
+    <header class="app-header">
+        <div class="container-xl">
+            <nav class="app-nav" aria-label="グローバルナビゲーション">
+                <div class="brand">
+                    <a asp-area="" asp-controller="Home" asp-action="Index">Pi12Hi022052</a>
+                    <span class="brand-pill">Calendar</span>
+                </div>
+                <ul class="app-menu">
+                    <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
+                    <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
+                    <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
+                    <li><a asp-area="" asp-controller="Events" asp-action="Index">Events</a></li>
+                </ul>
+                <div class="app-login">
                     <partial name="_LoginPartial" />
                 </div>
-            </div>
-        </nav>
+            </nav>
+        </div>
     </header>
 
-    <div class="container flex-grow-1">
-        <!-- 本文を伸ばしてフッターを押し下げる -->
-        <main role="main" class="pb-3">
+    <div class="app-hero" aria-hidden="true"></div>
+
+    <div class="app-main container-xl">
+        <main role="main" class="app-content">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted mt-auto">
-        <!-- 最下部固定 -->
-        <div class="container">
-            &copy; @DateTime.Now.Year - Pit2Hi022052 -
+    <footer class="app-footer text-muted">
+        <div class="container-xl footer-inner">
+            <div>&copy; @DateTime.Now.Year - Pit2Hi022052</div>
             <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
 
-    <!-- ローカルJS（既存のまま） -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    @* ページ固有スクリプト（FullCalendar 等） *@
     @RenderSection("Scripts", required: false)
 </body>
 </html>
