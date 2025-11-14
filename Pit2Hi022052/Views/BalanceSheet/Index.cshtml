@@ -1,68 +1,103 @@
-@model Pit2Hi022052.ViewModels.BalanceSheetViewModel
+@model Pit2Hi022052.ViewModels.BalanceSheetPageViewModel
+@using Pit2Hi022052.Models
+@using System.Globalization
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
 @using System.Text.Json
 @{
     ViewData["Title"] = "バランスシート";
-    var seedJson = JsonSerializer.Serialize(Model.Assets.Concat(Model.Liabilities));
+    var culture = CultureInfo.GetCultureInfo("ja-JP");
+    var summary = Model.Summary;
+    decimal total = summary.TotalAssets + summary.TotalLiabilities;
+    decimal assetPercent = total == 0 ? 0 : Math.Round((summary.TotalAssets / total) * 100m, 1);
+    decimal liabilityPercent = summary.DebtRatio.HasValue ? Math.Round(summary.DebtRatio.Value * 100m, 1) : 0;
+    string ratioText = summary.DebtRatio?.ToString("P1", culture) ?? "計算不可";
+
+    string GetDisplayName(Enum value)
+    {
+        var member = value.GetType().GetMember(value.ToString()).FirstOrDefault();
+        var display = member?.GetCustomAttribute<DisplayAttribute>();
+        return display?.GetName() ?? value.ToString();
+    }
+
+    var seed = summary.Assets.Concat(summary.Liabilities).Select(e => new
+    {
+        id = e.Id,
+        name = e.Name,
+        amount = e.Amount,
+        category = e.Type == BalanceSheetEntryType.Asset ? 0 : 1,
+        tag = e.Tag.HasValue ? GetDisplayName(e.Tag.Value) : string.Empty
+    });
+    var seedJson = JsonSerializer.Serialize(seed);
 }
 
 <section class="bs-page">
     <header class="bs-hero glass">
         <div class="bs-hero-copy">
-            <p class="eyebrow">資産形成ラボ</p>
-            <h1>バランスシートで暮らしと資産を可視化</h1>
+            <p class="eyebrow">資産形成ダッシュボード</p>
+            <h1>資産 = 負債 + 純資産 をモニタリング</h1>
             <p>
-                ホームのミニ BS と同じ仕組みをフル幅で体験できます。ここでの操作はブラウザー内にのみ保存され、
-                DB には書き込まれません。
+                行ベースの残高を入力すると合計・純資産・負債比率を自動計算します。ここでの操作はサーバーに保存され、次回以降も継続して編集できます。
             </p>
-            <div class="actions">
-                <a asp-controller="Home" asp-action="Index" class="btn ghost">統合ポータルに戻る</a>
-                <button type="button" class="btn primary" data-role="scenario" data-scenario="aggressive">
-                    <i class="fa-solid fa-bolt"></i>
-                    シナリオ: 攻めの資産配分
-                </button>
-            </div>
         </div>
         <div class="bs-hero-summary">
             <div>
-                <p>資産総額</p>
-                <strong data-role="summary-assets">@Model.TotalAssets.ToString("C0")</strong>
+                <p>総資産</p>
+                <strong>@summary.TotalAssets.ToString("C0", culture)</strong>
             </div>
             <div>
-                <p>負債総額</p>
-                <strong data-role="summary-liabilities">@Model.TotalLiabilities.ToString("C0")</strong>
+                <p>総負債</p>
+                <strong>@summary.TotalLiabilities.ToString("C0", culture)</strong>
             </div>
             <div>
                 <p>純資産</p>
-                <strong data-role="summary-net">@Model.NetWorth.ToString("C0")</strong>
+                <strong>@summary.NetWorth.ToString("C0", culture)</strong>
             </div>
             <div>
                 <p>負債比率</p>
-                <strong data-role="summary-ratio">--</strong>
+                <strong>@ratioText</strong>
             </div>
         </div>
     </header>
 
-    <div class="glass bs-widget" data-balance-sheet data-storage-key="bs-page-state">
+    <div class="glass bs-widget" data-balance-sheet-server>
         <div class="bs-progress">
             <div>
                 <small>資産配分</small>
                 <div class="bar">
-                    <span class="fill" data-role="progress-assets"></span>
+                    <span class="fill" style="width:@assetPercent%;"></span>
                 </div>
             </div>
             <div>
                 <small>負債比率</small>
                 <div class="bar negative">
-                    <span class="fill" data-role="progress-liabilities"></span>
+                    <span class="fill" style="width:@liabilityPercent%;"></span>
                 </div>
             </div>
         </div>
+
         <div class="bs-chart">
-            <canvas data-role="bs-chart" width="380" height="240" aria-label="資産構成チャート"></canvas>
-            <button type="button" class="btn ghost small chart-download" data-role="download-chart">
-                <i class="fa-solid fa-download"></i>
-                PNGで保存
-            </button>
+            <div class="bs-chart-canvas">
+                <canvas data-role="bs-chart" width="520" height="320" aria-label="資産構成チャート"></canvas>
+                <button type="button" class="btn ghost small chart-download" data-role="download-chart">
+                    <i class="fa-solid fa-download"></i>
+                    PNGで保存
+                </button>
+            </div>
+            <div class="bs-detail-panel">
+                <div class="bs-detail-tabs" role="tablist">
+                    <button type="button" class="detail-tab active" role="tab" aria-selected="true" data-role="detail-toggle" data-detail="assets">
+                        資産の詳細
+                    </button>
+                    <button type="button" class="detail-tab" role="tab" aria-selected="false" data-role="detail-toggle" data-detail="liabilities">
+                        負債の詳細
+                    </button>
+                </div>
+                <p class="detail-note">カテゴリ別の構成比を切り替えて確認できます。</p>
+                <div class="bs-detail-list" data-role="detail-list">
+                    <p class="detail-empty">まだ内訳がありません</p>
+                </div>
+            </div>
         </div>
 
         <div class="bs-grid">
@@ -72,18 +107,44 @@
                         <p class="eyebrow">資産</p>
                         <h2>Assets</h2>
                     </div>
-                    <button class="btn ghost small" data-role="scenario" data-scenario="cash">キャッシュを増やす</button>
                 </header>
                 <table class="bs-table">
                     <thead>
                         <tr>
                             <th>科目</th>
-                            <th>区分</th>
+                            <th>タグ</th>
                             <th class="text-end">金額</th>
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody data-table="assets"></tbody>
+                    <tbody>
+                        @if (!summary.Assets.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-muted">資産が登録されていません</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var entry in summary.Assets)
+                            {
+                                <tr>
+                                    <td>@entry.Name</td>
+                                    <td>@(entry.Tag.HasValue ? GetDisplayName(entry.Tag.Value) : "-")</td>
+                                    <td class="text-end">@entry.Amount.ToString("C0", culture)</td>
+                                    <td class="text-end">
+                                        <form asp-action="Delete" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@entry.Id" />
+                                            <button type="submit" class="btn-link danger" title="削除">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
                 </table>
             </section>
 
@@ -93,47 +154,83 @@
                         <p class="eyebrow">負債</p>
                         <h2>Liabilities</h2>
                     </div>
-                    <button class="btn ghost small" data-role="scenario" data-scenario="debt">負債を圧縮</button>
                 </header>
                 <table class="bs-table">
                     <thead>
                         <tr>
                             <th>科目</th>
-                            <th>区分</th>
+                            <th>タグ</th>
                             <th class="text-end">金額</th>
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody data-table="liabilities"></tbody>
+                    <tbody>
+                        @if (!summary.Liabilities.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-muted">負債が登録されていません</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var entry in summary.Liabilities)
+                            {
+                                <tr>
+                                    <td>@entry.Name</td>
+                                    <td>@(entry.Tag.HasValue ? GetDisplayName(entry.Tag.Value) : "-")</td>
+                                    <td class="text-end">@entry.Amount.ToString("C0", culture)</td>
+                                    <td class="text-end">
+                                        <form asp-action="Delete" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@entry.Id" />
+                                            <button type="submit" class="btn-link danger" title="削除">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
                 </table>
             </section>
         </div>
 
-        <form class="bs-form" data-role="add-form">
-            <div>
-                <label>区分</label>
-                <select name="category">
-                    <option value="asset">資産</option>
-                    <option value="liability">負債</option>
-                </select>
-            </div>
-            <div>
-                <label>科目</label>
-                <input type="text" name="name" placeholder="例) 教育資金" required />
-            </div>
-            <div>
-                <label>タグ</label>
-                <input type="text" name="tag" placeholder="流動資産 など" />
-            </div>
-            <div>
-                <label>金額</label>
-                <input type="number" name="amount" step="10000" required />
-            </div>
-            <button type="submit" class="btn primary">
-                <i class="fa-solid fa-plus"></i>
-                追加
-            </button>
-        </form>
+        <div class="bs-form-wrapper">
+            <h3>行を追加</h3>
+            @if (TempData["BsMessage"] is string message)
+            {
+                <div class="alert success">@message</div>
+            }
+            <form asp-action="Add" method="post" class="bs-form">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label asp-for="EntryInput.Type"></label>
+                    <select asp-for="EntryInput.Type" asp-items="Html.GetEnumSelectList<BalanceSheetEntryType>()"></select>
+                    <span asp-validation-for="EntryInput.Type" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="EntryInput.Name"></label>
+                    <input asp-for="EntryInput.Name" placeholder="例) 投資信託" />
+                    <span asp-validation-for="EntryInput.Name" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="EntryInput.Tag"></label>
+                    <select asp-for="EntryInput.Tag" asp-items="Html.GetEnumSelectList<BalanceSheetTag>()"></select>
+                    <span asp-validation-for="EntryInput.Tag" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="EntryInput.Amount"></label>
+                    <input asp-for="EntryInput.Amount" min="0" step="10000" />
+                    <span asp-validation-for="EntryInput.Amount" class="text-danger"></span>
+                </div>
+                <button type="submit" class="btn primary">
+                    <i class="fa-solid fa-plus"></i>
+                    追加
+                </button>
+            </form>
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        </div>
     </div>
 </section>
 
@@ -146,6 +243,6 @@
 }
 
 @section Scripts {
-    <script src="~/js/balance-sheet-widget.js" asp-append-version="true"></script>
-    <script src="~/js/balance-sheet.js" asp-append-version="true"></script>
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/balance-sheet-server.js" asp-append-version="true"></script>
 }

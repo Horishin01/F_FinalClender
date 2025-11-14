@@ -9,9 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const root = document.querySelector('[data-balance-sheet]');
+    if (!root) return;
     BalanceSheetWidget.init({
         root,
         seed,
-        storageKey: root?.dataset.storageKey || 'balance-sheet-state'
+        storageKey: root.dataset.storageKey || 'balance-sheet-state'
     });
 });

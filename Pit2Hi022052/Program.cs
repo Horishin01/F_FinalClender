@@ -35,6 +35,7 @@ builder.Services.AddScoped<ICloudCalDavService, CloudCalDavService>();
 
 //================ ICSパーサー登録 ===============
 builder.Services.AddScoped<IcalParserService>();
+builder.Services.AddScoped<IBalanceSheetService, BalanceSheetService>();
 
 
 //================XXXXXX ===============
