@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統合カレンダー管理システム - Pi12Hi022052</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --card-bg: white;
+            --text-primary: #2c3e50;
+            --text-secondary: #666;
+            --border-color: #e8ecf0;
+            --hover-bg: rgba(102, 126, 234, 0.05);
+        }
+
+        body.dark-mode {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --card-bg: #0f3460;
+            --text-primary: #eaeaea;
+            --text-secondary: #b0b0b0;
+            --border-color: #1e3a5f;
+            --hover-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            background: var(--card-bg);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .sync-btn {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .sync-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
+        }
+
+        .theme-toggle {
+            background: var(--hover-bg);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            gap: 1.5rem;
+        }
+
+        .sidebar-left, .sidebar-right {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .main-content {
+            min-width: 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.8rem 0.8rem 0.8rem 2.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .calendar-sources {
+            padding: 1rem;
+        }
+
+        .source-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--hover-bg);
+        }
+
+        .source-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .source-item.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            border-left: 4px solid #667eea;
+        }
+
+        .source-left {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .source-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .source-icon.google {
+            background: linear-gradient(135deg, #4285f4, #34a853);
+        }
+
+        .source-icon.icloud {
+            background: linear-gradient(135deg, #147efb, #53a0fd);
+        }
+
+        .source-icon.outlook {
+            background: linear-gradient(135deg, #0078d4, #00bcf2);
+        }
+
+        .source-icon.personal {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .source-icon.work {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .source-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .source-info p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .source-count {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .category-filters {
+            padding: 1rem;
+        }
+
+        .filter-chip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.7rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background: var(--card-bg);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        .filter-chip:hover {
+            transform: translateX(5px);
+        }
+
+        .filter-chip.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+        }
+
+        .filter-chip-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.8rem;
+            padding: 1rem;
+        }
+
+        .stat-card {
+            padding: 1rem;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .upcoming-events {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .upcoming-event {
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-radius: 12px;
+            border-left: 4px solid;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upcoming-event:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .upcoming-event.type-meeting {
+            background: linear-gradient(135deg, #fff5f5, #ffe5e5);
+            border-left-color: #e53e3e;
+        }
+
+        .upcoming-event.type-deadline {
+            background: linear-gradient(135deg, #fffbeb, #fff5d6);
+            border-left-color: #f6ad55;
+        }
+
+        .upcoming-event.type-personal {
+            background: linear-gradient(135deg, #f0fff4, #d4f4dd);
+            border-left-color: #48bb78;
+        }
+
+        .upcoming-event.type-work {
+            background: linear-gradient(135deg, #f0f8ff, #dceefb);
+            border-left-color: #4299e1;
+        }
+
+        .upcoming-event.type-study {
+            background: linear-gradient(135deg, #fef5ff, #f3e5f5);
+            border-left-color: #9c27b0;
+        }
+
+        body.dark-mode .upcoming-event.type-meeting {
+            background: linear-gradient(135deg, #3d1f1f, #4a2626);
+        }
+
+        body.dark-mode .upcoming-event.type-deadline {
+            background: linear-gradient(135deg, #3d3520, #4a4128);
+        }
+
+        body.dark-mode .upcoming-event.type-personal {
+            background: linear-gradient(135deg, #1f3d27, #264a2f);
+        }
+
+        body.dark-mode .upcoming-event.type-work {
+            background: linear-gradient(135deg, #1f2f3d, #26394a);
+        }
+
+        body.dark-mode .upcoming-event.type-study {
+            background: linear-gradient(135deg, #2d1f3d, #3a264a);
+        }
+
+        .event-source-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .event-source-badge.google {
+            background: #4285f4;
+        }
+
+        .event-source-badge.icloud {
+            background: #147efb;
+        }
+
+        .event-source-badge.outlook {
+            background: #0078d4;
+        }
+
+        .event-source-badge.personal {
+            background: #667eea;
+        }
+
+        .event-source-badge.work {
+            background: #f5576c;
+        }
+
+        .event-date-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .calendar-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: var(--card-bg);
+        }
+
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        .current-period {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: var(--hover-bg);
+            border-radius: 12px;
+            padding: 0.3rem;
+            gap: 0.3rem;
+        }
+
+        .view-btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .view-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+        }
+
+        .weekday {
+            padding: 1rem;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: #fafafa;
+        }
+
+        body.dark-mode .days-grid {
+            background: #1a1a2e;
+        }
+
+        .day-cell {
+            min-height: 130px;
+            border: 1px solid var(--border-color);
+            padding: 0.8rem;
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .day-cell:hover {
+            background: var(--hover-bg);
+            box-shadow: inset 0 0 0 2px #667eea;
+        }
+
+        .day-cell.other-month {
+            opacity: 0.3;
+        }
+
+        .day-cell.today {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+            border: 2px solid #667eea;
+        }
+
+        .day-number {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .day-cell.today .day-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .event {
+            padding: 0.4rem 0.6rem;
+            margin-bottom: 0.4rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-left: 3px solid;
+            transition: all 0.2s ease;
+            position: relative;
+            padding-right: 1.5rem;
+        }
+
+        .event:hover {
+            transform: translateX(3px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .event.type-meeting {
+            background: linear-gradient(135deg, #fff5f5, #ffe5e5);
+            color: #c53030;
+            border-left-color: #e53e3e;
+        }
+
+        .event.type-deadline {
+            background: linear-gradient(135deg, #fffbeb, #fff5d6);
+            color: #d69e2e;
+            border-left-color: #f6ad55;
+        }
+
+        .event.type-personal {
+            background: linear-gradient(135deg, #f0fff4, #d4f4dd);
+            color: #2d7d32;
+            border-left-color: #48bb78;
+        }
+
+        .event.type-work {
+            background: linear-gradient(135deg, #f0f8ff, #dceefb);
+            color: #2c5282;
+            border-left-color: #4299e1;
+        }
+
+        .event.type-study {
+            background: linear-gradient(135deg, #fef5ff, #f3e5f5);
+            color: #7b1fa2;
+            border-left-color: #9c27b0;
+        }
+
+        body.dark-mode .event.type-meeting {
+            background: linear-gradient(135deg, #3d1f1f, #4a2626);
+            color: #ff9999;
+        }
+
+        body.dark-mode .event.type-deadline {
+            background: linear-gradient(135deg, #3d3520, #4a4128);
+            color: #ffcc66;
+        }
+
+        body.dark-mode .event.type-personal {
+            background: linear-gradient(135deg, #1f3d27, #264a2f);
+            color: #90ee90;
+        }
+
+        body.dark-mode .event.type-work {
+            background: linear-gradient(135deg, #1f2f3d, #26394a);
+            color: #87ceeb;
+        }
+
+        body.dark-mode .event.type-study {
+            background: linear-gradient(135deg, #2d1f3d, #3a264a);
+            color: #da70d6;
+        }
+
+        .event-time {
+            display: block;
+            opacity: 0.8;
+            font-size: 0.65rem;
+        }
+
+        .event-source-dot {
+            position: absolute;
+            top: 0.4rem;
+            right: 0.4rem;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .event-source-dot.google {
+            background: #4285f4;
+        }
+
+        .event-source-dot.icloud {
+            background: #147efb;
+        }
+
+        .event-source-dot.outlook {
+            background: #0078d4;
+        }
+
+        .event-source-dot.personal {
+            background: #667eea;
+        }
+
+        .event-source-dot.work {
+            background: #f5576c;
+        }
+
+        .floating-add-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(17, 153, 142, 0.4);
+            z-index: 999;
+            transition: all 0.3s ease;
+        }
+
+        .floating-add-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 650px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: flex-end;
+        }
+
+        .alert {
+            position: fixed;
+            top: 100px;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: 600;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+            color: #0c5460;
+        }
+
+        .quick-actions {
+            position: fixed;
+            bottom: 5.5rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .quick-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .quick-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .quick-btn.export {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .conflict-warning {
+            background: linear-gradient(135deg, #fff3cd, #ffe5a1);
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            color: #856404;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1400px) {
+            .container {
+                grid-template-columns: 280px 1fr 280px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar-left, .sidebar-right {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .day-cell {
+                min-height: 80px;
+                padding: 0.5rem;
+            }
+            
+            .calendar-controls {
+                flex-direction: column;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">📅 統合カレンダー管理</div>
+        <div class="header-controls">
+            <button class="sync-btn" onclick="syncAllCalendars()">
+                <span>🔄</span>
+                <span>すべて同期</span>
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()" title="テーマ切替">🌙</button>
+            <span style="color: var(--text-secondary); font-size: 0.9rem;">hi022053@thcu.ac.jp</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 左サイドバー: カレンダーソース -->
+        <div class="sidebar-left">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📱 カレンダーソース</div>
+                </div>
+                <div class="calendar-sources">
+                    <div class="source-item active" data-source="all" onclick="toggleSource(event)">
+                        <div class="source-left">
+                            <div class="source-icon personal">📅</div>
+                            <div class="source-info">
+                                <h4>すべて表示</h4>
+                                <p>全カレンダー統合</p>
+                            </div>
+                        </div>
+                        <div class="source-count" id="countAll">0</div>
+                    </div>
+                    
+                    <div class="source-item active" data-source="google" onclick="toggleSource(event)">
+                        <div class="source-left">
+                            <div class="source-icon google">G</div>
+                            <div class="source-info">
+                                <h4>Google Calendar</h4>
+                                <p>メイン・プライベート</p>
+                            </div>
+                        </div>
+                        <div class="source-count" id="countGoogle">0</div>
+                    </div>
+                    
+                    <div class="source-item active" data-source="icloud" onclick="toggleSource(event)">
+                        <div class="source-left">
+                            <div class="source-icon icloud">🍎</div>
+                            <div class="source-info">
+                                <h4>iCloud Calendar</h4>
+                                <p>Apple ID連携</p>
+                            </div>
+                        </div>
+                        <div class="source-count" id="countIcloud">0</div>
+                    </div>
+                    
+                    <div class="source-item active" data-source="outlook" onclick="toggleSource(event)">
+                        <div class="source-left">
+                            <div class="source-icon outlook">📧</div>
+                            <div class="source-info">
+                                <h4>Outlook Calendar</h4>
+                                <p>仕事・業務用</p>
+                            </div>
+                        </div>
+                        <div class="source-count" id="countOutlook">0</div>
+                    </div>
+                    
+                    <div class="source-item active" data-source="work" onclick="toggleSource(event)">
+                        <div class="source-left">
+                            <div class="source-icon work">💼</div>
+                            <div class="source-info">
+                                <h4>会社カレンダー</h4>
+                                <p>社内スケジュール</p>
+                            </div>
+                        </div>
+                        <div class="source-count" id="countWork">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🏷️ カテゴリフィルター</div>
+                </div>
+                <div class="category-filters">
+                    <div class="filter-chip active" data-category="all" onclick="toggleCategory(event)">
+                        <div class="filter-chip-left">
+                            <span>📋</span>
+                            <span>すべて</span>
+                        </div>
+                        <span id="catAll">0</span>
+                    </div>
+                    
+                    <div class="filter-chip active" data-category="work" onclick="toggleCategory(event)">
+                        <div class="filter-chip-left">
+                            <span>💼</span>
+                            <span>仕事・業務</span>
+                        </div>
+                        <span id="catWork">0</span>
+                    </div>
+                    
+                    <div class="filter-chip active" data-category="meeting" onclick="toggleCategory(event)">
+                        <div class="filter-chip-left">
+                            <span>👥</span>
+                            <span>会議・打ち合わせ</span>
+                        </div>
+                        <span id="catMeeting">0</span>
+                    </div>
+                    
+                    <div class="filter-chip active" data-category="personal" onclick="toggleCategory(event)">
+                        <div class="filter-chip-left">
+                            <span>🏠</span>
+                            <span>プライベート</span>
+                        </div>
+                        <span id="catPersonal">0</span>
+                    </div>
+                    
+                    <div class="filter-chip active" data-category="deadline" onclick="toggleCategory(event)">
+                        <div class="filter-chip-left">
+                            <span>⏰</span>
+                            <span>締切・期限</span>
+                        </div>
+                        <span id="catDeadline">0</span>
+                    </div>
+                    
+                    <div class="filter-chip active" data-category="study" onclick="toggleCategory(event)">
+                        <div class="filter-chip-left">
+                            <span>📚</span>
+                            <span>学習・勉強</span>
+                        </div>
+                        <span id="catStudy">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メインコンテンツ: カレンダー -->
+        <div class="main-content">
+            <div class="card">
+                <div class="calendar-controls">
+                    <div class="month-nav">
+                        <button class="btn btn-primary nav-btn" onclick="navigateMonth(-1)">‹</button>
+                        <div class="current-period" id="currentPeriod">2025年11月</div>
+                        <button class="btn btn-primary nav-btn" onclick="navigateMonth(1)">›</button>
+                    </div>
+                    
+                    <div class="view-toggle">
+                        <button class="view-btn active" onclick="switchView('month')">月</button>
+                        <button class="view-btn" onclick="switchView('week')">週</button>
+                        <button class="view-btn" onclick="switchView('day')">日</button>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="goToToday()">📆 今日</button>
+                </div>
+                
+                <div class="weekdays">
+                    <div class="weekday">日</div>
+                    <div class="weekday">月</div>
+                    <div class="weekday">火</div>
+                    <div class="weekday">水</div>
+                    <div class="weekday">木</div>
+                    <div class="weekday">金</div>
+                    <div class="weekday">土</div>
+                </div>
+                <div class="days-grid" id="daysGrid"></div>
+            </div>
+        </div>
+
+        <!-- 右サイドバー: 統計と直近イベント -->
+        <div class="sidebar-right">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🔍 検索</div>
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="searchInput" placeholder="イベントを検索..." oninput="filterEvents()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📊 統計情報</div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-value" id="totalEvents">0</div>
+                            <div class="stat-label">総イベント数</div>
+                        </div>
+                        <span style="font-size: 2rem;">📅</span>
+                    </div>
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-value" id="todayEvents">0</div>
+                            <div class="stat-label">今日の予定</div>
+                        </div>
+                        <span style="font-size: 2rem;">📆</span>
+                    </div>
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-value" id="weekEvents">0</div>
+                            <div class="stat-label">今週の予定</div>
+                        </div>
+                        <span style="font-size: 2rem;">📋</span>
+                    </div>
+                    <div class="stat-card">
+                        <div>
+                            <div class="stat-value" id="conflictEvents">0</div>
+                            <div class="stat-label">予定の重複</div>
+                        </div>
+                        <span style="font-size: 2rem;">⚠️</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📅 直近の予定</div>
+                </div>
+                <div class="upcoming-events" id="upcomingEvents"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <button class="quick-btn export" onclick="exportEvents()" title="CSVエクスポート">📥</button>
+    </div>
+
+    <button class="floating-add-btn" onclick="openAddModal()">+</button>
+
+    <div class="modal" id="eventModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">新しいイベント</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            
+            <div id="conflictWarning"></div>
+            
+            <form id="eventForm" onsubmit="saveEvent(event)">
+                <input type="hidden" id="eventId">
+                <input type="hidden" id="eventDateKey">
+                
+                <div class="form-group">
+                    <label class="form-label">タイトル *</label>
+                    <input type="text" class="form-control" id="eventTitle" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">開始日時 *</label>
+                        <input type="datetime-local" class="form-control" id="eventStart" required onchange="checkConflicts()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">終了日時</label>
+                        <input type="datetime-local" class="form-control" id="eventEnd" onchange="checkConflicts()">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">カレンダーソース *</label>
+                        <select class="form-control" id="eventSource" required>
+                            <option value="google">Google Calendar</option>
+                            <option value="icloud">iCloud Calendar</option>
+                            <option value="outlook">Outlook Calendar</option>
+                            <option value="work">会社カレンダー</option>
+                            <option value="personal">個人カレンダー</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">カテゴリ *</label>
+                        <select class="form-control" id="eventType" required>
+                            <option value="work">仕事・業務</option>
+                            <option value="meeting">会議・打ち合わせ</option>
+                            <option value="personal">プライベート</option>
+                            <option value="deadline">締切・期限</option>
+                            <option value="study">学習・勉強</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">場所</label>
+                        <input type="text" class="form-control" id="eventLocation" placeholder="場所・URL">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">リマインダー</label>
+                        <select class="form-control" id="eventReminder">
+                            <option value="">なし</option>
+                            <option value="15">15分前</option>
+                            <option value="30">30分前</option>
+                            <option value="60">1時間前</option>
+                            <option value="1440">1日前</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">参加者</label>
+                    <input type="text" class="form-control" id="eventAttendees" placeholder="メールアドレス（カンマ区切り）">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">繰り返し</label>
+                    <select class="form-control" id="eventRecurrence">
+                        <option value="">なし</option>
+                        <option value="daily">毎日</option>
+                        <option value="weekly">毎週</option>
+                        <option value="biweekly">隔週</option>
+                        <option value="monthly">毎月</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">優先度</label>
+                    <select class="form-control" id="eventPriority">
+                        <option value="normal">通常</option>
+                        <option value="high">高</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">メモ</label>
+                    <textarea class="form-control" id="eventDescription" rows="3" placeholder="詳細やメモを入力..."></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+                    <button type="button" class="btn btn-delete" id="deleteBtn" onclick="deleteEvent()" style="display: none;">削除</button>
+                    <button type="submit" class="btn btn-primary">💾 保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const today = new Date(2025, 10, 17);
+        let currentDate = new Date(today);
+        let activeSources = ['all', 'google', 'icloud', 'outlook', 'work'];
+        let activeCategories = ['all', 'work', 'meeting', 'personal', 'deadline', 'study'];
+        let searchQuery = '';
+        let currentView = 'month';
+        
+        // テストデータ（複数カレンダーからの統合データ）
+        let events = {
+            '2025-11-17': [
+                { id: 1, time: '09:00', title: 'チーム定例ミーティング', type: 'meeting', source: 'outlook', location: 'Zoom会議室', description: '週次進捗報告', reminder: '15', attendees: 'team@company.com', priority: 'high' },
+                { id: 2, time: '11:00', title: 'プロジェクト資料作成', type: 'work', source: 'google', location: 'オフィス', description: '来週のプレゼン準備', reminder: '30' },
+                { id: 3, time: '14:00', title: 'クライアント商談', type: 'meeting', source: 'work', location: 'クライアント本社', description: '新規案件について', priority: 'high' },
+                { id: 4, time: '18:00', title: 'ジム', type: 'personal', source: 'icloud', location: 'フィットネスクラブ', description: '週2回の運動', recurrence: 'weekly' }
+            ],
+            '2025-11-18': [
+                { id: 5, time: '10:00', title: '部門会議', type: 'meeting', source: 'outlook', location: '大会議室', description: '月次報告会', attendees: 'dept@company.com' },
+                { id: 6, time: '13:00', title: 'ランチミーティング', type: 'meeting', source: 'google', location: 'イタリアンレストラン', description: 'パートナー企業と' },
+                { id: 7, time: '15:30', title: 'コードレビュー', type: 'work', source: 'work', location: 'オンライン', description: 'プルリクエスト確認' },
+                { id: 8, time: '17:00', title: '月次レポート提出', type: 'deadline', source: 'outlook', location: 'オンライン', description: '経費精算含む', reminder: '1440', priority: 'high' }
+            ],
+            '2025-11-19': [
+                { id: 9, time: '09:30', title: 'オンライン研修', type: 'study', source: 'work', location: 'eラーニング', description: 'セキュリティ研修', reminder: '60' },
+                { id: 10, time: '14:00', title: '歯医者', type: 'personal', source: 'icloud', location: 'デンタルクリニック', description: '定期検診', reminder: '60' }
+            ],
+            '2025-11-20': [
+                { id: 11, time: '10:00', title: '資格試験勉強', type: 'study', source: 'google', location: '図書館', description: 'TOEIC対策', recurrence: 'weekly' },
+                { id: 12, time: '16:00', title: 'ヘアカット', type: 'personal', source: 'icloud', location: '美容室', description: '予約済み' }
+            ],
+            '2025-11-21': [
+                { id: 13, time: '13:00', title: '友人とランチ', type: 'personal', source: 'google', location: 'カフェ', description: '久しぶりに集まる' },
+                { id: 14, time: '19:00', title: 'ヨガ教室', type: 'personal', source: 'icloud', location: 'スタジオ', description: '体験レッスン' }
+            ],
+            '2025-11-22': [
+                { id: 15, time: '11:00', title: '営業報告会', type: 'meeting', source: 'outlook', location: '本社', description: 'Q4進捗報告', attendees: 'sales@company.com', priority: 'high' },
+                { id: 16, time: '15:00', title: '新製品デモ', type: 'work', source: 'work', location: 'デモルーム', description: '顧客向けデモンストレーション' }
+            ],
+            '2025-11-24': [
+                { id: 17, time: '09:00', title: 'システム勉強会', type: 'study', source: 'work', location: 'オンライン', description: '新技術の学習' },
+                { id: 18, time: '18:30', title: '英会話レッスン', type: 'study', source: 'google', location: 'オンライン', description: 'ビジネス英語', recurrence: 'weekly' }
+            ],
+            '2025-11-25': [
+                { id: 19, time: '10:00', title: 'スプリント計画', type: 'meeting', source: 'work', location: '会議室B', description: '次週のタスク計画', attendees: 'dev-team@company.com' },
+                { id: 20, time: '14:00', title: 'ユーザーインタビュー', type: 'work', source: 'google', location: 'Zoom', description: 'フィードバック収集' }
+            ],
+            '2025-11-27': [
+                { id: 21, time: '15:00', title: '書類提出期限', type: 'deadline', source: 'outlook', location: 'オンライン', description: '年末調整書類', reminder: '1440', priority: 'high' }
+            ],
+            '2025-11-28': [
+                { id: 22, time: '10:00', title: 'プレゼンテーション', type: 'work', source: 'work', location: '大会議室', description: 'プロジェクト最終報告', priority: 'high' },
+                { id: 23, time: '19:00', title: '忘年会', type: 'personal', source: 'icloud', location: '居酒屋', description: '部署懇親会' }
+            ],
+            '2025-11-29': [
+                { id: 24, time: '13:00', title: '家族との食事', type: 'personal', source: 'icloud', location: 'レストラン', description: '両親と' }
+            ],
+            '2025-12-01': [
+                { id: 25, time: '09:00', title: '月初ミーティング', type: 'meeting', source: 'outlook', location: 'オンライン', description: '12月の目標設定', attendees: 'all@company.com', priority: 'high' }
+            ]
+        };
+
+        let eventIdCounter = 100;
+
+        function getDateKey(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const btn = document.querySelector('.theme-toggle');
+            btn.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+            showAlert('テーマを変更しました', 'success');
+        }
+
+        function toggleSource(e) {
+            const item = e.currentTarget;
+            const source = item.dataset.source;
+            
+            if (source === 'all') {
+                const isActive = item.classList.contains('active');
+                document.querySelectorAll('.source-item').forEach(s => {
+                    if (isActive) {
+                        s.classList.remove('active');
+                    } else {
+                        s.classList.add('active');
+                    }
+                });
+                activeSources = isActive ? [] : ['all', 'google', 'icloud', 'outlook', 'work'];
+            } else {
+                item.classList.toggle('active');
+                document.querySelector('[data-source="all"]').classList.remove('active');
+                
+                activeSources = Array.from(document.querySelectorAll('.source-item.active'))
+                    .map(s => s.dataset.source)
+                    .filter(s => s !== 'all');
+                
+                if (activeSources.length === 0 || activeSources.length === 4) {
+                    document.querySelector('[data-source="all"]').classList.add('active');
+                    activeSources = ['all', 'google', 'icloud', 'outlook', 'work'];
+                }
+            }
+            
+            generateCalendar();
+            updateUpcomingEvents();
+            updateStats();
+        }
+
+        function toggleCategory(e) {
+            const chip = e.currentTarget;
+            const category = chip.dataset.category;
+            
+            if (category === 'all') {
+                const isActive = chip.classList.contains('active');
+                document.querySelectorAll('.filter-chip').forEach(c => {
+                    if (isActive) {
+                        c.classList.remove('active');
+                    } else {
+                        c.classList.add('active');
+                    }
+                });
+                activeCategories = isActive ? [] : ['all', 'work', 'meeting', 'personal', 'deadline', 'study'];
+            } else {
+                chip.classList.toggle('active');
+                document.querySelector('[data-category="all"]').classList.remove('active');
+                
+                activeCategories = Array.from(document.querySelectorAll('.filter-chip.active'))
+                    .map(c => c.dataset.category)
+                    .filter(c => c !== 'all');
+                
+                if (activeCategories.length === 0 || activeCategories.length === 5) {
+                    document.querySelector('[data-category="all"]').classList.add('active');
+                    activeCategories = ['all', 'work', 'meeting', 'personal', 'deadline', 'study'];
+                }
+            }
+            
+            generateCalendar();
+            updateUpcomingEvents();
+            updateStats();
+        }
+
+        function filterEvents() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            generateCalendar();
+            updateUpcomingEvents();
+        }
+
+        function matchesFilter(event) {
+            if (!activeSources.includes('all') && !activeSources.includes(event.source)) {
+                return false;
+            }
+            
+            if (!activeCategories.includes('all') && !activeCategories.includes(event.type)) {
+                return false;
+            }
+            
+            if (searchQuery) {
+                const searchText = `${event.title} ${event.location || ''} ${event.description || ''}`.toLowerCase();
+                if (!searchText.includes(searchQuery)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        function generateCalendar() {
+            const grid = document.getElementById('daysGrid');
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            grid.innerHTML = '';
+            
+            const firstDay = new Date(year, month, 1);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            for (let i = 0; i < 42; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                
+                const cell = document.createElement('div');
+                cell.className = 'day-cell';
+                
+                if (date.getMonth() !== month) cell.classList.add('other-month');
+                if (date.toDateString() === today.toDateString()) cell.classList.add('today');
+                
+                const num = document.createElement('div');
+                num.className = 'day-number';
+                num.textContent = date.getDate();
+                cell.appendChild(num);
+                
+                const dateKey = getDateKey(date);
+                if (events[dateKey]) {
+                    const filteredEvents = events[dateKey].filter(matchesFilter);
+                    filteredEvents.slice(0, 3).forEach(evt => {
+                        const el = document.createElement('div');
+                        el.className = `event type-${evt.type}`;
+                        el.innerHTML = `
+                            <span class="event-time">${evt.time}</span>${evt.title}
+                            <span class="event-source-dot ${evt.source}"></span>
+                        `;
+                        el.onclick = (e) => {
+                            e.stopPropagation();
+                            editEventModal(evt, dateKey);
+                        };
+                        cell.appendChild(el);
+                    });
+                    
+                    if (filteredEvents.length > 3) {
+                        const more = document.createElement('div');
+                        more.style.cssText = 'font-size: 0.7rem; color: #667eea; font-weight: 600; margin-top: 0.3rem; cursor: pointer;';
+                        more.textContent = `+${filteredEvents.length - 3} more`;
+                        more.onclick = (e) => {
+                            e.stopPropagation();
+                            showDayEvents(dateKey, filteredEvents);
+                        };
+                        cell.appendChild(more);
+                    }
+                }
+                
+                cell.onclick = () => openAddModalForDate(dateKey);
+                grid.appendChild(cell);
+            }
+            
+            updatePeriod();
+        }
+
+        function showDayEvents(dateKey, evts) {
+            alert(`${dateKey}の予定:\n\n` + evts.map(e => `${e.time} - ${e.title}`).join('\n'));
+        }
+
+        function updatePeriod() {
+            const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            document.getElementById('currentPeriod').textContent = 
+                `${currentDate.getFullYear()}年${monthNames[currentDate.getMonth()]}`;
+        }
+
+        function navigateMonth(dir) {
+            currentDate.setMonth(currentDate.getMonth() + dir);
+            generateCalendar();
+            updateUpcomingEvents();
+            updateStats();
+        }
+
+        function goToToday() {
+            currentDate = new Date(today);
+            generateCalendar();
+            updateUpcomingEvents();
+            updateStats();
+            showAlert('今日に移動しました', 'success');
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            showAlert(`${view === 'month' ? '月' : view === 'week' ? '週' : '日'}表示に切り替えました`, 'info');
+        }
+
+        function updateStats() {
+            const now = new Date(today);
+            const todayKey = getDateKey(now);
+            
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - now.getDay());
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 7);
+            
+            let totalCount = 0;
+            let todayCount = 0;
+            let weekCount = 0;
+            let conflictCount = 0;
+            
+            const sourceCounts = { google: 0, icloud: 0, outlook: 0, work: 0 };
+            const categoryCounts = { work: 0, meeting: 0, personal: 0, deadline: 0, study: 0 };
+            
+            Object.entries(events).forEach(([dateKey, evts]) => {
+                const eventDate = new Date(dateKey);
+                
+                // 重複チェック
+                for (let i = 0; i < evts.length; i++) {
+                    for (let j = i + 1; j < evts.length; j++) {
+                        if (eventsOverlap(evts[i], evts[j], dateKey)) {
+                            conflictCount++;
+                        }
+                    }
+                }
+                
+                evts.forEach(evt => {
+                    if (matchesFilter(evt)) {
+                        totalCount++;
+                        
+                        if (dateKey === todayKey) todayCount++;
+                        
+                        if (eventDate >= weekStart && eventDate < weekEnd) weekCount++;
+                        
+                        if (sourceCounts[evt.source] !== undefined) {
+                            sourceCounts[evt.source]++;
+                        }
+                        
+                        if (categoryCounts[evt.type] !== undefined) {
+                            categoryCounts[evt.type]++;
+                        }
+                    }
+                });
+            });
+            
+            document.getElementById('totalEvents').textContent = totalCount;
+            document.getElementById('todayEvents').textContent = todayCount;
+            document.getElementById('weekEvents').textContent = weekCount;
+            document.getElementById('conflictEvents').textContent = conflictCount;
+            
+            document.getElementById('countAll').textContent = totalCount;
+            document.getElementById('countGoogle').textContent = sourceCounts.google;
+            document.getElementById('countIcloud').textContent = sourceCounts.icloud;
+            document.getElementById('countOutlook').textContent = sourceCounts.outlook;
+            document.getElementById('countWork').textContent = sourceCounts.work;
+            
+            document.getElementById('catAll').textContent = totalCount;
+            document.getElementById('catWork').textContent = categoryCounts.work;
+            document.getElementById('catMeeting').textContent = categoryCounts.meeting;
+            document.getElementById('catPersonal').textContent = categoryCounts.personal;
+            document.getElementById('catDeadline').textContent = categoryCounts.deadline;
+            document.getElementById('catStudy').textContent = categoryCounts.study;
+        }
+
+        function eventsOverlap(evt1, evt2, dateKey) {
+            const start1 = new Date(`${dateKey}T${evt1.time}`);
+            const start2 = new Date(`${dateKey}T${evt2.time}`);
+            
+            const end1 = evt1.endTime ? new Date(evt1.endTime) : new Date(start1.getTime() + 60 * 60 * 1000);
+            const end2 = evt2.endTime ? new Date(evt2.endTime) : new Date(start2.getTime() + 60 * 60 * 1000);
+            
+            return (start1 < end2 && end1 > start2);
+        }
+
+        function updateUpcomingEvents() {
+            const container = document.getElementById('upcomingEvents');
+            container.innerHTML = '';
+            
+            const upcomingList = [];
+            const now = new Date(today);
+            
+            Object.entries(events).forEach(([dateKey, evts]) => {
+                const eventDate = new Date(dateKey);
+                if (eventDate >= now) {
+                    evts.forEach(evt => {
+                        if (matchesFilter(evt)) {
+                            upcomingList.push({ ...evt, dateKey, date: eventDate });
+                        }
+                    });
+                }
+            });
+            
+            upcomingList.sort((a, b) => {
+                if (a.date.getTime() !== b.date.getTime()) {
+                    return a.date - b.date;
+                }
+                return a.time.localeCompare(b.time);
+            });
+            
+            upcomingList.slice(0, 15).forEach(evt => {
+                const el = document.createElement('div');
+                el.className = `upcoming-event type-${evt.type}`;
+                
+                const dateStr = `${evt.date.getMonth() + 1}/${evt.date.getDate()}`;
+                const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+                const dayStr = dayNames[evt.date.getDay()];
+                
+                const sourceLabels = {
+                    google: 'Google',
+                    icloud: 'iCloud',
+                    outlook: 'Outlook',
+                    work: '会社',
+                    personal: '個人'
+                };
+                
+                el.innerHTML = `
+                    <div class="event-source-badge ${evt.source}">${sourceLabels[evt.source]}</div>
+                    <div class="event-date-badge">${dateStr} (${dayStr}) ${evt.time}</div>
+                    <div style="font-weight: 600; margin-bottom: 0.2rem;">${evt.title}</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8;">${evt.location || ''}</div>
+                    ${evt.priority === 'high' ? '<div style="font-size: 0.7rem; color: #e53e3e; margin-top: 0.2rem;">★ 優先度: 高</div>' : ''}
+                `;
+                
+                el.onclick = () => editEventModal(evt, evt.dateKey);
+                container.appendChild(el);
+            });
+            
+            if (upcomingList.length === 0) {
+                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">直近の予定はありません</div>';
+            }
+        }
+
+        function openAddModal() {
+            const now = new Date(today);
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:00`;
+            
+            document.getElementById('modalTitle').textContent = '新しいイベント';
+            document.getElementById('eventId').value = '';
+            document.getElementById('eventDateKey').value = '';
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventStart').value = dateStr;
+            document.getElementById('eventEnd').value = '';
+            document.getElementById('eventSource').value = 'google';
+            document.getElementById('eventType').value = 'work';
+            document.getElementById('eventLocation').value = '';
+            document.getElementById('eventDescription').value = '';
+            document.getElementById('eventReminder').value = '';
+            document.getElementById('eventRecurrence').value = '';
+            document.getElementById('eventAttendees').value = '';
+            document.getElementById('eventPriority').value = 'normal';
+            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('conflictWarning').innerHTML = '';
+            
+            document.getElementById('eventModal').classList.add('show');
+        }
+
+        function openAddModalForDate(dateKey) {
+            const dateStr = `${dateKey}T10:00`;
+            
+            document.getElementById('modalTitle').textContent = '新しいイベント';
+            document.getElementById('eventId').value = '';
+            document.getElementById('eventDateKey').value = dateKey;
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventStart').value = dateStr;
+            document.getElementById('eventEnd').value = '';
+            document.getElementById('eventSource').value = 'google';
+            document.getElementById('eventType').value = 'work';
+            document.getElementById('eventLocation').value = '';
+            document.getElementById('eventDescription').value = '';
+            document.getElementById('eventReminder').value = '';
+            document.getElementById('eventRecurrence').value = '';
+            document.getElementById('eventAttendees').value = '';
+            document.getElementById('eventPriority').value = 'normal';
+            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('conflictWarning').innerHTML = '';
+            
+            document.getElementById('eventModal').classList.add('show');
+        }
+
+        function editEventModal(event, dateKey) {
+            document.getElementById('modalTitle').textContent = 'イベントを編集';
+            document.getElementById('eventId').value = event.id;
+            document.getElementById('eventDateKey').value = dateKey;
+            document.getElementById('eventTitle').value = event.title;
+            document.getElementById('eventStart').value = event.startTime || `${dateKey}T${event.time}`;
+            document.getElementById('eventEnd').value = event.endTime || '';
+            document.getElementById('eventSource').value = event.source;
+            document.getElementById('eventType').value = event.type;
+            document.getElementById('eventLocation').value = event.location || '';
+            document.getElementById('eventDescription').value = event.description || '';
+            document.getElementById('eventReminder').value = event.reminder || '';
+            document.getElementById('eventRecurrence').value = event.recurrence || '';
+            document.getElementById('eventAttendees').value = event.attendees || '';
+            document.getElementById('eventPriority').value = event.priority || 'normal';
+            document.getElementById('deleteBtn').style.display = 'inline-flex';
+            document.getElementById('conflictWarning').innerHTML = '';
+            
+            document.getElementById('eventModal').classList.add('show');
+            checkConflicts();
+        }
+
+        function checkConflicts() {
+            const startStr = document.getElementById('eventStart').value;
+            const endStr = document.getElementById('eventEnd').value;
+            const currentId = document.getElementById('eventId').value;
+            
+            if (!startStr) return;
+            
+            const startDate = new Date(startStr);
+            const endDate = endStr ? new Date(endStr) : new Date(startDate.getTime() + 60 * 60 * 1000);
+            const dateKey = getDateKey(startDate);
+            
+            const conflicts = [];
+            
+            if (events[dateKey]) {
+                events[dateKey].forEach(evt => {
+                    if (currentId && evt.id === parseInt(currentId)) return;
+                    
+                    const evtStart = new Date(evt.startTime || `${dateKey}T${evt.time}`);
+                    const evtEnd = evt.endTime ? new Date(evt.endTime) : new Date(evtStart.getTime() + 60 * 60 * 1000);
+                    
+                    if (startDate < evtEnd && endDate > evtStart) {
+                        conflicts.push(evt);
+                    }
+                });
+            }
+            
+            const warningDiv = document.getElementById('conflictWarning');
+            if (conflicts.length > 0) {
+                warningDiv.innerHTML = `
+                    <div class="conflict-warning">
+                        ⚠️ 予定が重複しています: ${conflicts.map(c => `${c.time} ${c.title}`).join(', ')}
+                    </div>
+                `;
+            } else {
+                warningDiv.innerHTML = '';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('eventModal').classList.remove('show');
+        }
+
+        function saveEvent(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('eventId').value || ++eventIdCounter;
+            const title = document.getElementById('eventTitle').value;
+            const start = document.getElementById('eventStart').value;
+            const end = document.getElementById('eventEnd').value;
+            const source = document.getElementById('eventSource').value;
+            const type = document.getElementById('eventType').value;
+            const location = document.getElementById('eventLocation').value;
+            const description = document.getElementById('eventDescription').value;
+            const reminder = document.getElementById('eventReminder').value;
+            const recurrence = document.getElementById('eventRecurrence').value;
+            const attendees = document.getElementById('eventAttendees').value;
+            const priority = document.getElementById('eventPriority').value;
+            
+            const date = new Date(start);
+            const key = getDateKey(date);
+            const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            
+            const newEvent = {
+                id: parseInt(id),
+                time,
+                title,
+                type,
+                source,
+                location,
+                description,
+                reminder,
+                recurrence,
+                attendees,
+                priority,
+                startTime: start,
+                endTime: end
+            };
+            
+            if (!events[key]) events[key] = [];
+            
+            const oldDateKey = document.getElementById('eventDateKey').value;
+            
+            if (oldDateKey && document.getElementById('eventId').value) {
+                if (oldDateKey !== key) {
+                    events[oldDateKey] = events[oldDateKey].filter(ev => ev.id !== parseInt(id));
+                    if (events[oldDateKey].length === 0) delete events[oldDateKey];
+                    events[key].push(newEvent);
+                } else {
+                    const idx = events[key].findIndex(ev => ev.id === parseInt(id));
+                    if (idx !== -1) events[key][idx] = newEvent;
+                }
+                showAlert('イベントを更新しました', 'success');
+            } else {
+                events[key].push(newEvent);
+                showAlert('イベントを追加しました', 'success');
+            }
+            
+            events[key].sort((a, b) => a.time.localeCompare(b.time));
+            
+            closeModal();
+            generateCalendar();
+            updateUpcomingEvents();
+            updateStats();
+        }
+
+        function deleteEvent() {
+            if (!confirm('このイベントを削除してもよろしいですか？')) return;
+            
+            const id = parseInt(document.getElementById('eventId').value);
+            const dateKey = document.getElementById('eventDateKey').value;
+            
+            if (events[dateKey]) {
+                events[dateKey] = events[dateKey].filter(ev => ev.id !== id);
+                if (events[dateKey].length === 0) delete events[dateKey];
+            }
+            
+            closeModal();
+            generateCalendar();
+            updateUpcomingEvents();
+            updateStats();
+            showAlert('イベントを削除しました', 'success');
+        }
+
+        function syncAllCalendars() {
+            showAlert('すべてのカレンダーを同期中...', 'info');
+            setTimeout(() => {
+                generateCalendar();
+                updateUpcomingEvents();
+                updateStats();
+                showAlert('同期が完了しました！', 'success');
+            }, 1500);
+        }
+
+        function exportEvents() {
+            let csv = '\uFEFFタイトル,日付,時刻,カテゴリ,カレンダーソース,場所,参加者,優先度,メモ\n';
+            
+            const sortedEvents = [];
+            Object.entries(events).forEach(([dateKey, evts]) => {
+                evts.forEach(evt => {
+                    sortedEvents.push({ dateKey, ...evt });
+                });
+            });
+            
+            sortedEvents.sort((a, b) => {
+                const dateCompare = a.dateKey.localeCompare(b.dateKey);
+                if (dateCompare !== 0) return dateCompare;
+                return a.time.localeCompare(b.time);
+            });
+            
+            const typeLabels = {
+                'work': '仕事・業務',
+                'meeting': '会議・打ち合わせ',
+                'personal': 'プライベート',
+                'deadline': '締切・期限',
+                'study': '学習・勉強'
+            };
+            
+            const sourceLabels = {
+                'google': 'Google Calendar',
+                'icloud': 'iCloud Calendar',
+                'outlook': 'Outlook Calendar',
+                'work': '会社カレンダー',
+                'personal': '個人カレンダー'
+            };
+            
+            const priorityLabels = {
+                'high': '高',
+                'normal': '通常',
+                'low': '低'
+            };
+            
+            sortedEvents.forEach(evt => {
+                csv += `"${evt.title}","${evt.dateKey}","${evt.time}","${typeLabels[evt.type] || evt.type}","${sourceLabels[evt.source] || evt.source}","${evt.location || ''}","${evt.attendees || ''}","${priorityLabels[evt.priority] || '通常'}","${evt.description || ''}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `integrated_calendar_${getDateKey(new Date())}.csv`;
+            link.click();
+            
+            showAlert('統合カレンダーをエクスポートしました', 'success');
+        }
+
+        function showAlert(message, type = 'info') {
+            const existing = document.querySelectorAll('.alert');
+            existing.forEach(alert => alert.remove());
+            
+            const icon = type === 'success' ? '✓' : 'ℹ️';
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `<span>${icon}</span>${message}`;
+            
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateX(100%)';
+                setTimeout(() => alert.remove(), 300);
+            }, 3000);
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'eventModal') {
+                closeModal();
+            }
+        });
+
+        // 初期化
+        generateCalendar();
+        updateUpcomingEvents();
+        updateStats();
+        
+        console.log('✨ 統合カレンダー管理システム起動！');
+        console.log('機能: Google/iCloud/Outlook/会社カレンダー統合, 重複検出, 優先度管理, 参加者管理');
+    </script>
+</body>
+</html>

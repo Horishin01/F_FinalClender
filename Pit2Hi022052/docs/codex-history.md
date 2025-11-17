@@ -9,3 +9,5 @@
 
 ## 履歴
 - 2025-11-13 Codex: `Personal` モデルを削除。`docs/db-3nf.txt` を更新し、ER図をユーザー基点に整理。セキュリティ前提メモとセキュリティ用ER図を追加。`docs/specification.md` に「現行プログラム構成（公開前の想定）」を追記。目的: 不要モデルの除去と公開前の設計メモ整備。
+- 2025-11-14 Codex: 統合カレンダー機能の骨組みを追加。`Event` にソース/カテゴリ/優先度/繰り返し等を拡張しマイグレーション `20251114113000_AddIntegratedCalendarFields` を手動作成。API (`CalendarApiController`)、ビュー (`Views/Calendar/Integrated`)、JS/CSS を追加し、仕様書 `docs/IntegratedCalendar_仕様.md` を作成。同期は既存 iCloud のみ呼び出しで、Google/Outlook/Work は将来拡張前提。
+- 2025-11-14 Codex: 要望により統合カレンダー用の新規コントローラー/ビュー/JS/CSS/仕様書を削除（`CalendarController`、`CalendarApiController`、`Views/Calendar/Integrated.cshtml`、`wwwroot/js|css/calendar-integrated.*`、`docs/IntegratedCalendar_仕様.md`）。Eventモデル拡張とマイグレーションは残存。

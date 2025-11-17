@@ -1,71 +1,108 @@
 @{
-    ViewData["Title"] = "イベントカレンダー";
+    ViewData["Title"] = "統合カレンダー管理";
 }
 
-<section class="calendar-stage">
-    <div class="cal-card glass">
-        <div class="cal-head">
-            <div class="cal-title">
-                <span class="cal-icon">
-                    <i class="fa-solid fa-calendar-days"></i>
-                </span>
-                <div>
-                    <p class="eyebrow">スケジュール</p>
-                    <h1>イベントカレンダー</h1>
+<div class="ic-root">
+    <div class="ic-header">
+        <div class="ic-brand">
+            <span class="ic-logo">📅</span>
+            <div>
+                <div class="ic-eyebrow">統合カレンダー管理</div>
+                <div class="ic-title">イベントカレンダー</div>
+            </div>
+        </div>
+        <div class="ic-head-actions"></div>
+    </div>
+
+    <div class="ic-layout">
+        <div class="ic-sidebar-left">
+            <div class="ic-card">
+                <div class="ic-card-head">カレンダーソース</div>
+                <div class="ic-card-body ic-list" id="icSourceList">
+                    <button class="ic-list-item active" data-source="all">すべて表示 <span class="count" id="srcAll">0</span></button>
+                    <button class="ic-list-item" data-source="Google">Google Calendar <span class="count" id="srcGoogle">0</span></button>
+                    <button class="ic-list-item" data-source="ICloud">iCloud Calendar <span class="count" id="srcICloud">0</span></button>
+                    <button class="ic-list-item" data-source="Outlook">Outlook Calendar <span class="count" id="srcOutlook">0</span></button>
+                    <button class="ic-list-item" data-source="Work">会社カレンダー <span class="count" id="srcWork">0</span></button>
+                    <button class="ic-list-item" data-source="Local">ローカル <span class="count" id="srcLocal">0</span></button>
                 </div>
             </div>
 
-            <div class="controls">
-                <div class="month-nav">
-                    <button class="btn nav-btn" id="calPrev" aria-label="前の期間">
-                        <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <div class="period" id="calPeriod">----</div>
-                    <button class="btn nav-btn" id="calNext" aria-label="次の期間">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                </div>
-
-                <div class="view-toggle" role="group" aria-label="ビュー切替">
-                    <button class="view-btn active" id="viewMonth">月</button>
-                    <button class="view-btn" id="viewWeek">週</button>
-                    <button class="view-btn" id="viewDay">日</button>
-                </div>
-
-                <div class="cmd-group">
-                    <button class="btn ghost" id="calToday">
-                        <i class="fa-solid fa-calendar-day"></i>
-                        今日
-                    </button>
-
-                    <form id="syncForm" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <button id="syncBtn" type="button" class="btn success">
-                            <i id="syncIcon" class="fa-solid fa-arrows-rotate"></i>
-                            同期
-                        </button>
-                    </form>
+            <div class="ic-card">
+                <div class="ic-card-head">カテゴリフィルター</div>
+                <div class="ic-card-body ic-list" id="icCategoryList">
+                    <button class="ic-list-item active" data-category="all">すべて <span class="count" id="catAll">0</span></button>
+                    <button class="ic-list-item" data-category="Work">仕事・業務 <span class="count" id="catWork">0</span></button>
+                    <button class="ic-list-item" data-category="Meeting">会議・打ち合わせ <span class="count" id="catMeeting">0</span></button>
+                    <button class="ic-list-item" data-category="Personal">プライベート <span class="count" id="catPersonal">0</span></button>
+                    <button class="ic-list-item" data-category="Deadline">締切・期限 <span class="count" id="catDeadline">0</span></button>
+                    <button class="ic-list-item" data-category="Study">学習・勉強 <span class="count" id="catStudy">0</span></button>
                 </div>
             </div>
         </div>
 
-        <div class="fc-wrap">
-            <div id="calendar" aria-label="イベントカレンダー本体"></div>
+        <div class="ic-main">
+            <div class="ic-main-head">
+                <div class="ic-month-nav">
+                    <button id="calPrev" class="ic-nav-btn">◀</button>
+                    <div id="calPeriod" class="ic-month-label">----</div>
+                    <button id="calNext" class="ic-nav-btn">▶</button>
+                </div>
+                <div class="ic-views">
+                    <button id="viewMonth" class="view-btn active">月</button>
+                    <button id="viewWeek" class="view-btn">週</button>
+                    <button id="viewDay" class="view-btn">日</button>
+                </div>
+                <div class="ic-main-actions">
+                    <button id="calToday" class="ic-btn ghost"><i class="fa-solid fa-calendar-day"></i> 今日</button>
+                    <form id="syncForm" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="button" class="ic-btn sync" id="syncBtn"><i class="fa-solid fa-arrows-rotate"></i> すべて同期</button>
+                    </form>
+                    <a class="ic-btn primary" asp-action="Create"><i class="fa-solid fa-plus"></i> 新規追加</a>
+                </div>
+            </div>
+            <div class="ic-calendar-wrap">
+                <div id="calendar"></div>
+            </div>
+        </div>
+
+        <div class="ic-sidebar-right">
+            <div class="ic-card">
+                <div class="ic-card-head">検索</div>
+                <div class="ic-card-body">
+                    <input id="icSearch" type="search" class="ic-input" placeholder="イベントを検索..." />
+                </div>
+            </div>
+
+            <div class="ic-card">
+                <div class="ic-card-head">統計情報</div>
+                <div class="ic-card-body ic-stats">
+                    <div class="ic-stat"><div class="label">総イベント数</div><div class="value" id="statTotal">0</div></div>
+                    <div class="ic-stat"><div class="label">今日</div><div class="value" id="statToday">0</div></div>
+                    <div class="ic-stat"><div class="label">今週</div><div class="value" id="statWeek">0</div></div>
+                    <div class="ic-stat"><div class="label">重複推定</div><div class="value" id="statDup">0</div></div>
+                </div>
+            </div>
+
+            <div class="ic-card">
+                <div class="ic-card-head">直近の予定</div>
+                <div class="ic-card-body">
+                    <ul class="ic-upcoming" id="icUpcoming"></ul>
+                </div>
+            </div>
         </div>
     </div>
-</section>
-
-<a class="fab" id="fab" href="#" aria-label="新規作成">
-    <i class="fa-solid fa-plus"></i>
-</a>
+</div>
 
 @section Styles {
     <link rel="stylesheet" href="~/lib/fullcalendar/main.min.css" />
     <link rel="stylesheet" href="~/css/calendar-ui.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/events-integrated.css" asp-append-version="true" />
 }
 
 @section Scripts {
     <script src="~/lib/fullcalendar/index.global.min.js"></script>
     <script src="~/js/locales-all.min.js"></script>
-    <script src="~/js/calendar-ui-backend.js" asp-append-version="true"></script>
+    <script src="~/js/events-integrated.js" asp-append-version="true"></script>
 }

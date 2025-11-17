@@ -35,10 +35,30 @@
 
             events: '/Events/GetEvents',   // 既存のバックエンド
             eventClassNames: function (arg) {
-                // 種別（Descriptionや拡張プロパティにあれば拾う / 無ければ空）
-                const t = (arg.event.extendedProps?.type || '').toString().toLowerCase();
-                if (t === 'meeting' || t === 'work' || t === 'personal') return [t];
-                return [];
+                // 種別/ソース/優先度に応じてクラス付与（色分けに使用）
+                const props = arg.event.extendedProps || {};
+                const classes = [];
+                const cat = (props.type || '').toString().toLowerCase();
+                const src = (props.source || '').toString().toLowerCase();
+                const prio = (props.priority || '').toString().toLowerCase();
+                if (cat) classes.push('cat-' + cat);
+                if (src) classes.push('src-' + src);
+                if (prio) classes.push('prio-' + prio);
+                if (arg.event.allDay) classes.push('all-day');
+                return classes;
+            },
+            eventContent: function (arg) {
+                const props = arg.event.extendedProps || {};
+                const time = arg.timeText ? `<span class="ev-time">${arg.timeText}</span>` : '';
+                const source = props.source ? `<span class="ev-badge ev-source">${props.source}</span>` : '';
+                const prio = props.priority ? `<span class="ev-badge ev-prio">${props.priority}</span>` : '';
+                return {
+                    html: `
+                        <div class="ev-row wrap">
+                            ${time}<span class="ev-title">${arg.event.title}</span>${source}${prio}
+                        </div>
+                    `
+                };
             },
 
             // UI 同期

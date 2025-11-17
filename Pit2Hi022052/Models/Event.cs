@@ -5,6 +5,41 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Pit2Hi022052.Models
 {
+    // 統合カレンダー管理機能追加 (2025-11) 用の拡張フィールドを含むイベントモデル
+    public enum EventSource
+    {
+        Local,
+        Google,
+        ICloud,
+        Outlook,
+        Work
+    }
+
+    public enum EventCategory
+    {
+        Work,
+        Meeting,
+        Personal,
+        Deadline,
+        Study
+    }
+
+    public enum EventPriority
+    {
+        Low,
+        Normal,
+        High
+    }
+
+    public enum EventRecurrence
+    {
+        None,
+        Daily,
+        Weekly,
+        Biweekly,
+        Monthly
+    }
+
     public class Event
     {
         [Key]
@@ -32,8 +67,36 @@ namespace Pit2Hi022052.Models
         [Display(Name = "詳細")]
         public virtual string Description { get; set; } = string.Empty;// イベントの説明
 
+        // 統合カレンダー: 拡張メタ
+        [Display(Name = "ソース")]
+        public EventSource Source { get; set; } = EventSource.Local;
 
+        [Display(Name = "カテゴリ")]
+        public EventCategory Category { get; set; } = EventCategory.Personal;
+
+        [Display(Name = "優先度")]
+        public EventPriority Priority { get; set; } = EventPriority.Normal;
+
+        [Display(Name = "場所")]
+        public string? Location { get; set; } = string.Empty;
+
+        [Display(Name = "参加者")]
+        public string? AttendeesCsv { get; set; } = string.Empty; // カンマ区切り
+
+        [Display(Name = "繰り返し")]
+        public EventRecurrence Recurrence { get; set; } = EventRecurrence.None;
+
+        [Display(Name = "リマインダー(分前)")]
+        public int? ReminderMinutesBefore { get; set; }
+
+        // 既存のAllDayをIsAllDayとしても扱えるようにする（API整合用）
         public virtual bool AllDay { get; set; } = false;
+        [NotMapped]
+        public bool IsAllDay
+        {
+            get => AllDay;
+            set => AllDay = value;
+        }
 
         [ForeignKey(nameof(UserId))] 
         public virtual ApplicationUser? User { get; set; }
