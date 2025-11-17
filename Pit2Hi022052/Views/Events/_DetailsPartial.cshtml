@@ -20,6 +20,27 @@
     <dt>詳細</dt>
     <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "（未入力）" : Model.Description)</dd>
 
+    <dt>ソース</dt>
+    <dd>@Model.Source</dd>
+
+    <dt>カテゴリ</dt>
+    <dd>@Model.Category</dd>
+
+    <dt>優先度</dt>
+    <dd>@Model.Priority</dd>
+
+    <dt>場所</dt>
+    <dd>@(string.IsNullOrWhiteSpace(Model.Location) ? "（未入力）" : Model.Location)</dd>
+
+    <dt>参加者</dt>
+    <dd>@(string.IsNullOrWhiteSpace(Model.AttendeesCsv) ? "（未入力）" : Model.AttendeesCsv)</dd>
+
+    <dt>繰り返し</dt>
+    <dd>@Model.Recurrence</dd>
+
+    <dt>リマインダー（分前）</dt>
+    <dd>@(Model.ReminderMinutesBefore?.ToString() ?? "なし")</dd>
+
     <dt>ユーザーID</dt>
     <dd><span class="details-chip">@Model.UserId</span></dd>
 

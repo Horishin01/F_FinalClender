@@ -1,8 +1,563 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model Pit2Hi022052.ViewModels.HomeIndexViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "ハイブリッドカレンダー・プレビュー";
+
+    var previewPayload = (Model?.Events ?? Array.Empty<Pit2Hi022052.ViewModels.CalendarPreviewEvent>())
+        .Select(e => new
+        {
+            id = e.Id,
+            title = e.Title,
+            start = e.Start?.ToString("o"),
+            end = e.End?.ToString("o"),
+            description = e.Description,
+            allDay = e.AllDay
+        });
+    var previewJson = JsonSerializer.Serialize(previewPayload);
+    var bsJson = JsonSerializer.Serialize(Model?.BalanceSheetSeed ?? Array.Empty<Pit2Hi022052.Models.BalanceSheetItem>());
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="preview-hero glass">
+    <div class="hero-copy">
+        <p class="eyebrow">開発プレビュー</p>
+        <h1>仕事と暮らしを同じ地図で捉える新しいカレンダー</h1>
+        <p class="lede">
+            iCloud 同期だけでなく、基本的なイベント管理・余白の可視化・フォーカス支援までをフロントで検証できるプレイグラウンドです。
+            ここでの操作はブラウザー内にのみ保存され、バックエンド処理や DB への書き込みは行いません。
+        </p>
+        <div class="hero-tags">
+            <span class="chip">CalDAV preview</span>
+            <span class="chip">FullCalendar</span>
+            <span class="chip">Focus assist</span>
+            <span class="chip">価値提案</span>
+        </div>
+        <div class="hero-actions">
+            <button type="button" class="btn ghost" data-template="routine-morning">朝のルーティンを呼び出す</button>
+            <button type="button" class="btn primary" data-action="focus-jump">
+                <i class="fa-solid fa-bolt"></i>
+                次のフォーカス枠へジャンプ
+            </button>
+            <button type="button" class="btn ghost" data-action="toggle-layout" aria-pressed="false">
+                <i class="fa-solid fa-up-down-left-right"></i>
+                <span class="btn-text" data-label-off="パネル配置モード" data-label-on="配置モード解除">パネル配置モード</span>
+            </button>
+        </div>
+        <p class="annotation layout-hint">配置モードをオンにすると、下のカード群をドラッグして自分用に順序を保存できます。</p>
+        <p class="annotation">※デモ用 UI のため、再読み込みで初期状態に戻すことができます。</p>
+    </div>
+    <div class="hero-metrics" role="status" aria-live="polite">
+        <div class="metric-card">
+            <p>登録イベント</p>
+            <strong id="metricTotalEvents">0</strong>
+            <span>件</span>
+        </div>
+        <div class="metric-card">
+            <p>フォーカス枠</p>
+            <strong id="metricFocusHours">0h</strong>
+            <span>今週</span>
+        </div>
+        <div class="metric-card">
+            <p>余白</p>
+            <strong id="metricFreeHours">0h</strong>
+            <span>残り時間</span>
+        </div>
+        <div class="metric-card">
+            <p>移動時間</p>
+            <strong id="metricCommute">--</strong>
+            <span>推定</span>
+        </div>
+    </div>
+</section>
+
+<section class="preview-grid">
+    <article class="panel calendar-panel glass" aria-labelledby="calendar-panel-title" data-panel-id="calendar" data-panel-span="2">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">基本カレンダー機能</p>
+                <h2 id="calendar-panel-title">マルチビュー &amp; フィルター</h2>
+                <p class="sub">ホームのプレビューは DB の Events を即時読み込みし、ページ遷移なしで俯瞰できます。</p>
+            </div>
+        </header>
+
+        <div class="panel-status">
+            <span class="status-pill" id="serverSyncState">
+                @(Model?.IsAuthenticated == true ? "最新" : "サインインすると予定を表示できます")
+            </span>
+            <p>
+                詳細編集・共有は <a asp-area="" asp-controller="Events" asp-action="Index">Events ページ</a> で行ってください。
+                ここでは実データを元にした俯瞰と簡易プレビューのみ提供します。
+            </p>
+            <div class="status-links">
+                <a class="btn ghost small" asp-area="" asp-controller="Events" asp-action="Index">
+                    <i class="fa-solid fa-up-right-from-square"></i>
+                    Events を開く
+                </a>
+            </div>
+        </div>
+        <div class="calendar-actions">
+            <div class="pill-group" role="group" aria-label="表示切替">
+                <button type="button" class="pill active" data-view="dayGridMonth">月</button>
+                <button type="button" class="pill" data-view="timeGridWeek">週</button>
+                <button type="button" class="pill" data-view="timeGridDay">日</button>
+            </div>
+            <div class="nav-group" aria-label="移動">
+                <button type="button" class="nav-btn" data-cal="prev" aria-label="前の期間">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span id="calendarPeriod">---- ----</span>
+                <button type="button" class="nav-btn" data-cal="next" aria-label="次の期間">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+            <button type="button" class="btn ghost" data-cal="today">
+                <i class="fa-solid fa-calendar-day"></i>
+                今日
+            </button>
+        </div>
+        <div class="calendar-toolbar">
+            <div class="chip-group" id="calendarFilters" role="group" aria-label="カテゴリフィルター">
+                <button type="button" class="chip active" data-filter="all">すべて</button>
+                <button type="button" class="chip" data-filter="work">仕事</button>
+                <button type="button" class="chip" data-filter="personal">プライベート</button>
+                <button type="button" class="chip" data-filter="habit">ルーティン</button>
+                <button type="button" class="chip" data-filter="learning">学習</button>
+                <button type="button" class="chip" data-filter="focus">フォーカス</button>
+            </div>
+            <div class="toggle-group">
+                <label class="toggle">
+                    <input type="checkbox" id="toggleFocusBlocks" checked>
+                    <span>フォーカス枠を重ねて表示</span>
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" id="toggleCommuteBlocks" checked>
+                    <span>移動時間を重ねて表示</span>
+                </label>
+            </div>
+        </div>
+
+        <div id="calendarPreview" class="calendar-shell" aria-label="カレンダープレビュー"></div>
+
+        <p class="annotation preview-note-live">※ 表示されている予定は DB 上の実データです。イベントをクリックすると Events ページの詳細画面に移動します。</p>
+    </article>
+
+    <article class="panel bs-panel glass" data-panel-id="balance" data-panel-span="2">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">資産形成プレビュー</p>
+                <h2>バランスシート</h2>
+                <p class="sub">個人資産 / 負債をブラウザー内でシミュレーション。DBには保存されません。</p>
+            </div>
+            <div class="status-links">
+                <button class="btn ghost small" data-role="scenario" data-scenario="cash">現金 +5%</button>
+                <button class="btn ghost small" data-role="scenario" data-scenario="debt">負債 -5%</button>
+            </div>
+        </header>
+        <div class="bs-widget" data-balance-sheet data-storage-key="home-bs-state">
+            <div class="bs-summary">
+                <div>
+                    <p>資産総額</p>
+                    <strong data-role="summary-assets">--</strong>
+                </div>
+                <div>
+                    <p>負債総額</p>
+                    <strong data-role="summary-liabilities">--</strong>
+                </div>
+                <div>
+                    <p>純資産</p>
+                    <strong data-role="summary-net">--</strong>
+                </div>
+                <div>
+                    <p>負債比率</p>
+                    <strong data-role="summary-ratio">--</strong>
+                </div>
+            </div>
+            <div class="bs-progress">
+                <div>
+                    <small>資産配分</small>
+                    <div class="bar">
+                        <span class="fill" data-role="progress-assets"></span>
+                    </div>
+                </div>
+                <div>
+                    <small>負債比率</small>
+                    <div class="bar negative">
+                        <span class="fill" data-role="progress-liabilities"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="bs-chart">
+                <canvas data-role="bs-chart" width="320" height="220" aria-label="資産構成チャート"></canvas>
+                <button type="button" class="btn ghost small chart-download" data-role="download-chart">
+                    <i class="fa-solid fa-download"></i>
+                    PNGで保存
+                </button>
+            </div>
+            <div class="bs-grid">
+                <section>
+                    <header>
+                        <div>
+                            <p class="eyebrow">資産</p>
+                            <h3>Assets</h3>
+                        </div>
+                    </header>
+                    <table class="bs-table">
+                        <thead>
+                            <tr>
+                                <th>科目</th>
+                                <th>区分</th>
+                                <th class="text-end">金額</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody data-table="assets"></tbody>
+                    </table>
+                </section>
+                <section>
+                    <header>
+                        <div>
+                            <p class="eyebrow">負債</p>
+                            <h3>Liabilities</h3>
+                        </div>
+                    </header>
+                    <table class="bs-table">
+                        <thead>
+                            <tr>
+                                <th>科目</th>
+                                <th>区分</th>
+                                <th class="text-end">金額</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody data-table="liabilities"></tbody>
+                    </table>
+                </section>
+            </div>
+        </div>
+    </article>
+
+    <aside class="panel composer-panel glass" aria-labelledby="panel-compose-title" data-panel-id="composer" data-panel-span="1">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">クイック登録</p>
+                <h2 id="panel-compose-title">予定作成フォーム</h2>
+                <p class="sub">最小限の入力で予定化し、すぐにプレビューに反映します。</p>
+            </div>
+            <span class="badge">プレビュー保存</span>
+        </header>
+        <form id="quickEventForm" class="composer-form">
+            <label>
+                タイトル
+                <input type="text" id="quickTitle" maxlength="60" placeholder="例) スプリントレビュー" required>
+            </label>
+            <div class="field-grid">
+                <label>
+                    開始
+                    <input type="datetime-local" id="quickStart" required>
+                </label>
+                <label>
+                    終了
+                    <input type="datetime-local" id="quickEnd" required>
+                </label>
+            </div>
+            <label>
+                場所 / オンラインリンク
+                <input type="text" id="quickLocation" placeholder="例) Teams / A会議室">
+            </label>
+            <div class="field-grid">
+                <label>
+                    カテゴリ
+                    <select id="quickCategory">
+                        <option value="work">仕事</option>
+                        <option value="personal">プライベート</option>
+                        <option value="learning">学習</option>
+                        <option value="habit">ルーティン</option>
+                        <option value="focus">フォーカス</option>
+                    </select>
+                </label>
+                <label>
+                    体力レベル
+                    <select id="quickEnergy">
+                        <option value="high">高負荷</option>
+                        <option value="medium">通常</option>
+                        <option value="low">軽め</option>
+                    </select>
+                </label>
+            </div>
+            <label>
+                タグ (カンマ区切り)
+                <input type="text" id="quickTags" placeholder="顧客,資料,社内">
+            </label>
+            <label>
+                メモ
+                <textarea id="quickNote" rows="2" placeholder="議題、持ち物など"></textarea>
+            </label>
+            <div class="color-field">
+                <div>
+                    色
+                    <input type="color" id="quickColor" value="#6366f1">
+                </div>
+                <div class="swatches" aria-label="おすすめカラー">
+                    <button type="button" data-color="#6366f1" style="--sw:#6366f1;"></button>
+                    <button type="button" data-color="#0ea5e9" style="--sw:#0ea5e9;"></button>
+                    <button type="button" data-color="#14b8a6" style="--sw:#14b8a6;"></button>
+                    <button type="button" data-color="#f97316" style="--sw:#f97316;"></button>
+                    <button type="button" data-color="#ec4899" style="--sw:#ec4899;"></button>
+                </div>
+            </div>
+            <div class="composer-flags">
+                <label class="toggle">
+                    <input type="checkbox" id="quickAllDay">
+                    <span>終日イベント</span>
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" id="quickFocus">
+                    <span>フォーカス予約</span>
+                </label>
+            </div>
+            <button type="submit" class="btn primary">
+                <i class="fa-solid fa-plus"></i>
+                プレビューに追加
+            </button>
+        </form>
+
+        <div class="templates" aria-live="polite">
+            <p class="eyebrow">ルーティンテンプレ</p>
+            <div class="template-grid">
+                <button type="button" class="template-chip" data-template="routine-morning">モーニングリセット</button>
+                <button type="button" class="template-chip" data-template="routine-deep">ディープワーク90</button>
+                <button type="button" class="template-chip" data-template="routine-checkin">PMチェックイン</button>
+                <button type="button" class="template-chip" data-template="routine-personal">セルフケア</button>
+            </div>
+        </div>
+    </aside>
+
+    <article class="panel card-panel glass" aria-labelledby="panel-card-title" data-panel-id="card" data-panel-span="2">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">ICカード連携</p>
+                <h2 id="panel-card-title">タッチで予定をホールド</h2>
+                <p class="sub">フロントエンド上で IC カード登録とテンプレート実行をシミュレーションできます。</p>
+            </div>
+            <span class="badge ghost">モックのみ</span>
+        </header>
+
+        <div class="card-status">
+            <p id="cardStatusText">ICカードは未登録です。モック UID を入力するか自動発行で連携できます。</p>
+            <div class="card-meta">
+                <span class="card-state" id="cardStateBadge" data-state="disconnected">未登録</span>
+                <span class="card-uid">UID: <strong id="cardUidLabel">--</strong></span>
+            </div>
+        </div>
+
+        <div class="card-actions">
+            <label>
+                フロント用 UID
+                <input type="text" id="icCardUid" placeholder="例) F0-22-IC-8841" maxlength="32" />
+            </label>
+            <div class="card-action-buttons">
+                <button type="button" class="btn primary" id="btnCardRegister">
+                    <i class="fa-solid fa-id-card"></i> 登録 / 更新
+                </button>
+                <button type="button" class="btn ghost" id="btnCardRemove">
+                    <i class="fa-solid fa-ban"></i> 解除
+                </button>
+            </div>
+        </div>
+
+        <div class="card-chip-grid" aria-label="ICカードテンプレート">
+            <button type="button" class="card-chip" data-card-template="work-start">
+                <i class="fa-solid fa-building-user"></i>
+                <div>
+                    <strong>出社チェックイン</strong>
+                    <small>ゲート通過で開始 60 分をブロック</small>
+                </div>
+            </button>
+            <button type="button" class="card-chip" data-card-template="client-visit">
+                <i class="fa-regular fa-handshake"></i>
+                <div>
+                    <strong>訪問・外出ログ</strong>
+                    <small>移動 + 滞在 90 分を確保</small>
+                </div>
+            </button>
+            <button type="button" class="card-chip" data-card-template="focus-home">
+                <i class="fa-solid fa-mug-hot"></i>
+                <div>
+                    <strong>帰宅後フォーカス</strong>
+                    <small>帰宅タッチで 45 分集中</small>
+                </div>
+            </button>
+            <button type="button" class="card-chip" data-card-template="wellness-shift">
+                <i class="fa-solid fa-person-running"></i>
+                <div>
+                    <strong>ウェルネスシフト</strong>
+                    <small>ジム入退館でセルフケア追加</small>
+                </div>
+            </button>
+        </div>
+
+        <div class="tap-history-wrap">
+            <div class="tap-history-head">
+                <h3>最近のタッチ履歴</h3>
+                <span class="annotation">※ フロント側 localStorage にのみ保存</span>
+            </div>
+            <ul class="tap-history" id="tapHistory">
+                <li class="empty">まだ履歴がありません。</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="panel timeline-panel glass" aria-labelledby="panel-timeline-title" data-panel-id="timeline" data-panel-span="1">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">次の一手</p>
+                <h2 id="panel-timeline-title">タイムライン &amp; 共有</h2>
+                <p class="sub">直近の予定・移動時間・エネルギータグを一目で確認できます。</p>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn ghost small" id="btnExport">ICS 風エクスポート</button>
+                <button type="button" class="btn ghost small" id="btnMockShare">共有リンク (モック)</button>
+            </div>
+        </header>
+        <ol class="timeline" id="upcomingList" aria-live="polite"></ol>
+        <div class="timeline-foot">
+            <div class="legend">
+                <span><i class="dot work"></i>仕事</span>
+                <span><i class="dot personal"></i>プライベート</span>
+                <span><i class="dot focus"></i>集中</span>
+            </div>
+            <p class="annotation">※ 今後はここからワンクリック配信や iCloud への逆同期を予定</p>
+        </div>
+    </article>
+
+    <article class="panel digest-panel glass" aria-labelledby="panel-digest-title" data-panel-id="digest" data-panel-span="2">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">付加価値</p>
+                <h2 id="panel-digest-title">ワークロード可視化</h2>
+                <p class="sub">カテゴリ別の滞在時間や余白推定をその場で算出します。</p>
+            </div>
+        </header>
+
+        <div class="stat-grid">
+            <div class="stat">
+                <p>総アクティブ時間</p>
+                <strong id="metricActiveHours">0h</strong>
+                <small>今週分</small>
+            </div>
+            <div class="stat">
+                <p>集中率</p>
+                <strong id="metricFocusRatio">0%</strong>
+                <small>目標 30%</small>
+            </div>
+            <div class="stat">
+                <p>ルーティン継続</p>
+                <strong id="metricHabitCount">0</strong>
+                <small>週間ヒット</small>
+            </div>
+            <div class="stat">
+                <p>予備バッファ</p>
+                <strong id="metricBuffer">0h</strong>
+                <small>自動確保</small>
+            </div>
+        </div>
+
+        <div class="load-bars" id="loadBars" aria-hidden="false"></div>
+
+        <ul class="insight-list" id="insightList"></ul>
+    </article>
+
+    <article class="panel addon-panel glass" data-panel-id="addon" data-panel-span="1">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <div class="addon focus-card" aria-live="polite">
+            <div class="panel-head compact">
+                <div>
+                    <p class="eyebrow">集中支援</p>
+                    <h3>フォーカスモード</h3>
+                </div>
+            </div>
+            <div class="focus-timer" id="focusTimerDisplay">25:00</div>
+            <div class="pill-group tiny" id="focusDurations">
+                <button type="button" class="pill active" data-min="25">25分</button>
+                <button type="button" class="pill" data-min="45">45分</button>
+                <button type="button" class="pill" data-min="60">60分</button>
+            </div>
+            <button type="button" class="btn primary full" id="focusToggleBtn">スタート</button>
+            <p id="focusStateLabel">次の集中枠まで 0 分 · ノートを準備しましょう。</p>
+        </div>
+
+        <div class="addon travel-card">
+            <div class="panel-head compact">
+                <div>
+                    <p class="eyebrow">移動アシスト</p>
+                    <h3>Smart Commute</h3>
+                </div>
+                <span class="badge ghost">モック</span>
+            </div>
+            <div class="travel-body">
+                <h4 id="travelTitle">移動予定は未計測</h4>
+                <p class="eta"><i class="fa-solid fa-route"></i> 推定移動: <span id="travelEta">--</span></p>
+                <ul id="travelHints" class="hint-list"></ul>
+                <button type="button" class="btn ghost full" id="btnBlockCommute">移動時間をカレンダーに反映</button>
+            </div>
+        </div>
+
+        <div class="addon wellness-card">
+            <div class="panel-head compact">
+                <div>
+                    <p class="eyebrow">余白インサイト</p>
+                    <h3>Wellbeing バランス</h3>
+                </div>
+            </div>
+            <ul class="wellness-list" id="wellnessList">
+                <li data-type="rest">休息のチャンス: --</li>
+                <li data-type="social">つながりポイント: --</li>
+                <li data-type="learning">学びリマインダー: --</li>
+            </ul>
+            <button type="button" class="btn ghost full" id="btnSuggestHabit">習慣を提案</button>
+        </div>
+    </article>
+</section>
+
+<p class="preview-note">
+    このページは UI/UX 検証用のプレビューです。フォームから作成したデータは localStorage のみに保存され、
+    本番 API や DB へは送信されません。必要に応じてブラウザーを更新して状態をリセットできます。
+</p>
+
+@section Styles {
+    <link rel="stylesheet" href="~/lib/fullcalendar/main.min.css" />
+    <link rel="stylesheet" href="~/css/home-preview.css" asp-append-version="true" />
+}
+
+<script id="home-events-json" type="application/json" data-signed-in="@(Model?.IsAuthenticated == true ? "true" : "false")">
+    @Html.Raw(previewJson)
+</script>
+<script id="balance-sheet-json" type="application/json">
+    @Html.Raw(bsJson)
+</script>
+
+@section Scripts {
+    <script src="~/lib/fullcalendar/index.global.min.js"></script>
+    <script src="~/js/locales-all.min.js"></script>
+    <script src="~/js/balance-sheet-widget.js" asp-append-version="true"></script>
+    <script src="~/js/home-preview.js" asp-append-version="true"></script>
+}

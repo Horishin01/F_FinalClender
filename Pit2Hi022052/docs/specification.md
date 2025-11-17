@@ -39,7 +39,6 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 | `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description`, `AllDay` | カレンダー予定。`UID` で iCloud イベントと紐付け。開始/終了は null 許容。 |
 | `ICloudSetting` (`Models/ICloudSetting.cs`) | `Id`(GUID文字列), `UserId`, `Username`, `Password` | iCloud 認証情報。現在は平文保存のため暗号化対応が今後の課題。 |
 | `ICCard` (`Models/ICCard.cs`) | `Id`, `UserId`, `Uid` | IC カード UID とユーザーの紐付け用。現状 UI からは未使用。 |
-| `Personal` (`Models/Personal.cs`) | `Id`, `UserId`, `Weekday`, `Name`, `User` | 週間テンプレート想定のシンプルなエンティティ。コントローラー未実装。 |
 | Identity テーブル | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles` など | マイグレーション (`Migrations/*`) で生成。 |
 
 ## 7. サービスと外部連携
@@ -91,7 +90,7 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 - `/Users/Index` → `Create/Edit/Delete`。`/Roles/Index` でロール管理。`/UserRoles/Index` でユーザーとロールの組み合わせを調整。
 
 ## 11. バリデーションとエラーハンドリング
-- Null 許容警告 (例: `Personal.cs`, `EventsController` の一部) が残存。順次 `required` 化または null 許容化する。
+- Null 許容警告（例: `EventsController` の一部）が残存。順次 `required` 化または null 許容化する。
 - `/Events/Sync` 失敗時はログ出力後 HTTP 500 + `{ "message": "同期に失敗しました。" }` を返却。60 秒以内なら HTTP 429 を返す。
 - Identity で `User` が取得できない場合は `Unauthorized` を返し、ログへ警告を残す。
 
@@ -102,3 +101,10 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
   - モデル構造やマイグレーションを変更したら §6 の表を更新。
   - 新しい外部サービスや設定値を追加したら §2/§4/§7 を更新。
 - 図表や詳細設計を追加する場合は `docs/` 配下にテキストまたは画像として配置し、ここから参照する。
+
+## 13. 現行プログラム構成（公開前の想定）
+- 基点は Identity の `AspNetUsers`。`Events` と `BalanceSheetEntries` は 1 対多、`ICloudSettings` と `ICCards` は 1 対 1 想定（ICCards は Unique 未設定のため要検討）。
+- モデルは `Event` / `ICloudSetting` / `ICCard` / `BalanceSheetEntry` を ApplicationDbContext に登録済み。`Personal` は削除済み。
+- 予定同期 UI は `EventsController` + `wwwroot/js/calendar-ui-backend.js`（FullCalendar 使用）。家計簿 UI は `BalanceSheetController` + `wwwroot/js/balance-sheet-widget.js`。IC カードは現状 UI 未連携。
+- セキュリティ想定: `ICloudSettings` は暗号化ストア前提（平文保存しない）。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。本番前に管理系 `[Authorize]` を有効化。
+- 運用: スキーマ変更時は `docs/db-3nf.txt` と本仕様書を同じコミットで更新する。公開前は現行 RDB を軸に内容を維持・更新する。

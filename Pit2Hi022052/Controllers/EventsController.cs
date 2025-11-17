@@ -80,7 +80,15 @@ namespace Pit2Hi022052.Controllers
                 start = e.StartDate?.ToString("o", CultureInfo.InvariantCulture),
                 end = e.EndDate?.ToString("o", CultureInfo.InvariantCulture),
                 description = e.Description,
-                allDay = e.AllDay
+                allDay = e.AllDay,
+                // 拡張メタをFullCalendarのextendedPropsに渡してUIで利用する
+                source = e.Source.ToString(),
+                type = e.Category.ToString(),
+                priority = e.Priority.ToString(),
+                location = e.Location,
+                attendees = e.AttendeesCsv,
+                recurrence = e.Recurrence.ToString(),
+                reminder = e.ReminderMinutesBefore
             });
 
             return new JsonResult(json);
@@ -133,7 +141,7 @@ namespace Pit2Hi022052.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Create(string startDate = null, string endDate = null)
+        public async Task<IActionResult> Create(string? startDate = null, string? endDate = null)
         {
             var model = new Event { Id = Guid.NewGuid().ToString("N") };
             var currentUser = await _userManager.GetUserAsync(User);
