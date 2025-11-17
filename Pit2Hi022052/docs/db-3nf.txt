@@ -9,8 +9,8 @@ Table: AspNetUsers (ApplicationUser)
 
 Table: Events
 - PK: Id (string)
-- Columns: UserId (FK -> AspNetUsers.Id), UID, Title, StartDate (null可), EndDate (null可), LastModified (null可), Description, AllDay (bool)
-- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。
+- Columns: UserId (FK -> AspNetUsers.Id), UID, Title, StartDate (null可), EndDate (null可), LastModified (null可), Description, AllDay (bool), Source (enum), Category (enum), Priority (enum), Location (nullable), AttendeesCsv (nullable), Recurrence (enum), ReminderMinutesBefore (nullable int)
+- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。`IsAllDay` は NotMapped（DB非格納）。
 
 Table: ICCards
 - PK: Id (string)
@@ -49,6 +49,10 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
                                  │LastModified       │ │Amount               │
                                  │Description        │ │IsDeleted            │
                                  │AllDay             │ └────────────────────┘
+                                 │Source/Category    │
+                                 │Priority/Location  │
+                                 │Attendees/Recurr.  │
+                                 │ReminderMinutes    │
                                  └───────────────────┘
 
 セキュリティ前提メモ（公開時想定）
@@ -75,4 +79,8 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
                                          │ LastModified        ││ Amount                │
                                          │ Description         ││ IsDeleted             │
                                          │ AllDay              │└───────────────────────┘
+                                         │ Source/Category     │
+                                         │ Priority/Location   │
+                                         │ Attendees/Recurr.   │
+                                         │ ReminderMinutes     │
                                          └─────────────────────┘

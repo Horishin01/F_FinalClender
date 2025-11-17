@@ -1,6 +1,6 @@
 ﻿# Pit2Hi022052 システム仕様書
 
-_最終更新: 2025-11-13。仕様書とコードコメントは日本語を基本言語とする。挙動・ルート・データモデル・フローを変更した場合は、本書も同じコミットで更新すること。_
+_最終更新: 2025-11-17。仕様書とコードコメントは日本語を基本言語とする。挙動・ルート・データモデル・フローを変更した場合は、本書も同じコミットで更新すること。_
 
 ## 1. 目的と適用範囲
 - iCloud (CalDAV) の予定をユーザー単位で取得し、FullCalendar 上で可視化しながら PostgreSQL に保存・編集できる Web アプリを提供する。
@@ -11,7 +11,7 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 - **プラットフォーム:** ASP.NET Core 8 (MVC + Razor Pages、Identity 領域付き)。
 - **言語 / ターゲット:** C# 12、.NET 8.0 (`Pit2Hi022052.csproj`)。
 - **主要ライブラリ:** ASP.NET Core Identity、Entity Framework Core (Npgsql)、Ical.Net、PCSC/PCSC.Iso7816、Microsoft.VisualStudio.Web.CodeGeneration.Design など。
-- **フロントエンド:** `wwwroot/js/calendar-ui-backend.js` で FullCalendar を初期化し、素の JavaScript で UI 操作を実装。
+- **フロントエンド:** FullCalendar を `wwwroot/js/events-integrated.js` で初期化し、素の JavaScript で UI 操作を実装。
 - **ホスティング:** Kestrel。デバッグ時は `https://localhost:7052;http://localhost:5016` を使用。
 
 ## 3. 実行時構成 (Program.cs)
@@ -36,7 +36,7 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 ## 6. ドメインモデル概要
 | エンティティ | 主なフィールド | 目的 / メモ |
 | --- | --- | --- |
-| `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description`, `AllDay` | カレンダー予定。`UID` で iCloud イベントと紐付け。開始/終了は null 許容。 |
+| `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description`, `AllDay` (+ UI 用 `IsAllDay`)、`Source`,`Category`,`Priority`,`Location`,`AttendeesCsv`,`Recurrence`,`ReminderMinutesBefore` | カレンダー予定。`UID` で iCloud イベントと紐付け。開始/終了は null 許容。ソース/カテゴリ/優先度/参加者/繰り返し/リマインダーは現状保存のみ（処理は未実装）。 |
 | `ICloudSetting` (`Models/ICloudSetting.cs`) | `Id`(GUID文字列), `UserId`, `Username`, `Password` | iCloud 認証情報。現在は平文保存のため暗号化対応が今後の課題。 |
 | `ICCard` (`Models/ICCard.cs`) | `Id`, `UserId`, `Uid` | IC カード UID とユーザーの紐付け用。現状 UI からは未使用。 |
 | Identity テーブル | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles` など | マイグレーション (`Migrations/*`) で生成。 |
@@ -44,15 +44,16 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 ## 7. サービスと外部連携
 - **CloudCalDavService (`Services/CloudCalDavService.cs`):**
   - `/.well-known/caldav` → `calendar-home-set` → `REPORT` の順で CalDAV から予定を取得し、IcalParserService で ICS を解析後 `Events` に保存。
-  - `SyncAsync` は処理件数 (scanned/saved) を返却。60 秒に 1 回のレート制限は `IMemoryCache` で実装。
+  - 新規 UID のみ保存（既存レコードの更新/削除は未反映）。処理件数 (scanned/saved) を返却。60 秒に 1 回のレート制限は `IMemoryCache` で実装。
   - `/Events/Sync` 呼び出し時は CSRF 対策ヘッダー `RequestVerificationToken` を必須化。
 - **IcalParserService (`Services/IcalParserService.cs`):**
-  - Ical.Net を用いて ICS 文字列を `Event` リストへ変換。UID 重複排除、終日判定、最終更新日時などを付与。
+  - Ical.Net を用いて ICS 文字列を `Event` リストへ変換。UID 重複排除、終日判定、最終更新日時を付与。取り込み時の `Source`/`Category`/`Priority`/`Location` などの拡張メタは設定していない（UI ではデフォルト値で表示）。
 - **PCSC ライブラリ:** `PCSC` / `PCSC.Iso7816` を参照済み。IC カード機能を実装する際は要件とセキュリティを別途整理する。
 
 ## 8. コントローラーと機能
 ### 8.1 `EventsController`
-- `Index`: ログインユーザーの予定を `StartDate` 昇順で表示。FullCalendar 用 JSON (`GetEvents`) や CalDAV 同期 (`Sync`: 60 秒クールダウン、結果 JSON) を提供。
+- `Index`: ログインユーザーの予定一覧。FullCalendar 用 JSON (`GetEvents`) と CalDAV 同期 (`Sync`: 60 秒クールダウン、結果 JSON) を提供。JSON は拡張メタ（ソース/カテゴリ/優先度など）を extendedProps として返す。
+- `Sync`: CalDAV から新規 UID だけを追加（更新/削除は未対応）。戻り値は { saved, scanned, durationMs }。
 - `Create` / `Edit` / `Delete` / `Details`: GUID ID による CRUD。`Create` は `startDate`/`endDate` をクエリで受け取り初期値をセット。`Edit` は同時更新例外をハンドリング。
 ### 8.2 `ICloudSettingController`
 - ユーザーにつき 1 件の認証情報を `Index`/`Create`/`Edit`/`Delete` で管理。重複登録は `ModelState` エラーに。
@@ -67,12 +68,13 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 - **レイアウト (`Views/Shared/_Layout.cshtml` + `wwwroot/css/site.css`):**
   - 画面全体にグラデーション背景を敷き、ガラス調ナビゲーション (ブランドピル + 丸型メニュー) を配置。
   - `.app-hero` と `.app-content` でカードが背景から浮き上がる構成。
-- **カレンダー (`Views/Events/Index.cshtml` + `wwwroot/css/calendar-ui.css`):**
-  - タイトル／期間ナビ／ビュー切替／[今日][同期] ボタンを 1 枚のカードにまとめ、ナビボタンは丸型、ビュー切替はトグルピルで表現。
-  - FullCalendar のヘッダー/セル/イベントカラーをカスタムし、日・週切替での視認性を維持。Fab ボタンは常に右下で新規作成を案内。`今日`・`同期` ボタンのアイコンは既存実装を維持。
+- **カレンダー (`Views/Events/Index.cshtml` + `wwwroot/css/calendar-ui.css` + `wwwroot/css/events-integrated.css` + `wwwroot/js/events-integrated.js`):**
+  - 左サイドでソース/カテゴリのフィルター、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。
+  - FullCalendar に拡張メタを渡し、フィルター/統計用に利用する。同期ボタンは `/Events/Sync` を AJAX 呼び出し。
 - **フォーム/詳細 (`Views/Events/Create|Edit|Details|Delete` + `wwwroot/css/event-forms.css` + `wwwroot/js/event-forms.js`):**
   - 円弧の大きいカード、丸みのある入力欄、グラデーションボタンを採用。
   - プレビューカードとカラースウォッチで UI の雰囲気を即時確認可能 (`event-forms.js` がタイトル/開始時刻/色をリアルタイム反映)。
+  - ソース/カテゴリ/優先度/場所/参加者/繰り返し/リマインダーの入力欄を追加済みだが、繰り返し展開や通知計算は未実装（保存のみ）。
   - 詳細/削除画面はモーダル風シート (`details-sheet`, `details-grid`) で表示し、閉じる/編集/削除ボタンを横並びに配置。
 - **アカウント設定 (`Areas/Identity/Pages/Account/Manage/*` + `wwwroot/css/account-manage.css`):**
   - `_Layout.cshtml` でガラス調ヘッダー＋サイドナビを備えたカード UI に統一し、ナビ文言や各ページ内文書を日本語化。
@@ -105,6 +107,7 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 ## 13. 現行プログラム構成（公開前の想定）
 - 基点は Identity の `AspNetUsers`。`Events` と `BalanceSheetEntries` は 1 対多、`ICloudSettings` と `ICCards` は 1 対 1 想定（ICCards は Unique 未設定のため要検討）。
 - モデルは `Event` / `ICloudSetting` / `ICCard` / `BalanceSheetEntry` を ApplicationDbContext に登録済み。`Personal` は削除済み。
-- 予定同期 UI は `EventsController` + `wwwroot/js/calendar-ui-backend.js`（FullCalendar 使用）。家計簿 UI は `BalanceSheetController` + `wwwroot/js/balance-sheet-widget.js`。IC カードは現状 UI 未連携。
+- 予定同期 UI は `EventsController` + `Views/Events/Index.cshtml` + `wwwroot/js/events-integrated.js`（FullCalendar 使用）。ソース/カテゴリ/検索/統計/直近予定を備える。家計簿 UI は `BalanceSheetController` + `wwwroot/js/balance-sheet-widget.js`。IC カードは現状 UI 未連携。
+- CalDAV 同期は iCloud の新規 UID 挿入のみ。UID が既存でも更新/削除は反映されない。取り込み時の拡張メタはデフォルト値のまま。
 - セキュリティ想定: `ICloudSettings` は暗号化ストア前提（平文保存しない）。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。本番前に管理系 `[Authorize]` を有効化。
 - 運用: スキーマ変更時は `docs/db-3nf.txt` と本仕様書を同じコミットで更新する。公開前は現行 RDB を軸に内容を維持・更新する。
