@@ -101,3 +101,10 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
   - モデル構造やマイグレーションを変更したら §6 の表を更新。
   - 新しい外部サービスや設定値を追加したら §2/§4/§7 を更新。
 - 図表や詳細設計を追加する場合は `docs/` 配下にテキストまたは画像として配置し、ここから参照する。
+
+## 13. 現行プログラム構成（公開前の想定）
+- 基点は Identity の `AspNetUsers`。`Events` と `BalanceSheetEntries` は 1 対多、`ICloudSettings` と `ICCards` は 1 対 1 想定（ICCards は Unique 未設定のため要検討）。
+- モデルは `Event` / `ICloudSetting` / `ICCard` / `BalanceSheetEntry` を ApplicationDbContext に登録済み。`Personal` は削除済み。
+- 予定同期 UI は `EventsController` + `wwwroot/js/calendar-ui-backend.js`（FullCalendar 使用）。家計簿 UI は `BalanceSheetController` + `wwwroot/js/balance-sheet-widget.js`。IC カードは現状 UI 未連携。
+- セキュリティ想定: `ICloudSettings` は暗号化ストア前提（平文保存しない）。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。本番前に管理系 `[Authorize]` を有効化。
+- 運用: スキーマ変更時は `docs/db-3nf.txt` と本仕様書を同じコミットで更新する。公開前は現行 RDB を軸に内容を維持・更新する。

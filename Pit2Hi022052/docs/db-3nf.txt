@@ -50,3 +50,29 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
                                  │Description        │ │IsDeleted            │
                                  │AllDay             │ └────────────────────┘
                                  └───────────────────┘
+
+セキュリティ前提メモ（公開時想定）
+- ICloudSettings: 認証情報は平文保存しない。暗号化ストア/Key Vault等を前提に設計し、可能なら保存自体を最小化（トークンのみ保存）する。
+- ICCards: 1対1を仕様にするならUserIdへUnique制約を付け、マイグレーションを適用する。
+- 監査・削除: 機微情報にはアクセス監査ログと論理削除ポリシーを導入すること。
+- 文書運用: DBスキーマ更新時は本ファイルも必ず同期更新する（公開前は現行RDBを軸に記載）。
+
+セキュリティ想定時のER図（テキスト例）
+┌──────────────────┐
+│   AspNetUsers    │
+│   ● Id (PK)      │ 1
+│   ...Identity... │
+└──────┬───────────┬───────────┬────────────┐
+       │0..1(Unique)│0..1(Unique)│0..*        │0..*
+       │            │            │            │
+┌──────▼──────────┐┌──────────▼────────┐┌───────────▼─────────┐ ┌────────────▼──────────┐
+│ICloudSettings   ││     ICCards        ││       Events        ││   BalanceSheetEntries │
+│○ UserId (UQ)    ││ ○ UserId (UQ)      ││ ○ UserId            ││ ○ UserId              │
+│Username (secure)││ Uid (IC UID)       ││ UID (external sync) ││ AsOfDate (idx)        │
+│Password (secure)│└────────────────────┘│ Title               ││ Type                  │
+└─────────────────┘                      │ StartDate           ││ Name                  │
+                                         │ EndDate             ││ Tag                   │
+                                         │ LastModified        ││ Amount                │
+                                         │ Description         ││ IsDeleted             │
+                                         │ AllDay              │└───────────────────────┘
+                                         └─────────────────────┘
