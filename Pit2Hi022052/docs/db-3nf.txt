@@ -1,0 +1,52 @@
+# 現行DB（第3正規形の整理）※EF Coreモデル準拠
+
+ApplicationDbContextがマップしているテーブル（Identity標準を含む）を、第3正規形で整理。キーは行を一意にし、非キー属性は主キーのみに関数従属する。
+
+Table: AspNetUsers (ApplicationUser)
+- PK: Id (string)
+- Columns（Identity標準一式）: UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount
+- 備考: Identityの関連（AspNetUserRoles, AspNetRoles, 各種claims/logins/tokens）は標準。全ての属性はユーザーを表し、Idに従属。
+
+Table: Events
+- PK: Id (string)
+- Columns: UserId (FK -> AspNetUsers.Id), UID, Title, StartDate (null可), EndDate (null可), LastModified (null可), Description, AllDay (bool)
+- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。
+
+Table: ICCards
+- PK: Id (string)
+- Columns: UserId (FK -> AspNetUsers.Id), Uid (ICカードUID)
+- 従属関係: Id -> 全カラム。Uidはカード固有値で他属性から決まらない。
+
+Table: BalanceSheetEntries
+- PK: Id (int, identity)
+- Columns: UserId (FK -> AspNetUsers.Id), AsOfDate (date), Type (enum), Name, Tag (nullable enum), Amount (decimal), IsDeleted (bool)
+- Index: (UserId, AsOfDate)
+- 従属関係: Id -> 全カラム。業務上の一意制（例: ユーザー×日付）はモデル上未強制だが必要なら追加可。
+
+Table: ICloudSettings
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Username (Apple IDメール), Password (アプリアクセス用パスワード)
+- 従属関係: Id -> 全カラム。資格情報はこの行のみに帰属。
+
+Note: Personalモデルは削除された（DbContext未登録）
+
+ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユーザーを上に配置）
+
+┌─────────────────┐
+│   AspNetUsers   │
+│   ● Id (PK)     │
+│   ...Identity...│
+└──────┬──────────┬──────────┬──────────┐
+       │0..1       │0..1       │0..*       │0..*
+       │           │           │           │
+┌──────▼─────┐ ┌──▼────────┐ ┌──────────▼─────────┐ ┌─────────▼──────┐
+│ICloudSettings│ │ ICCards   │   │ Events             │ │ BalanceSheetEntries│
+│○ UserId      │ │○ UserId   │   │○ UserId            │ │○ UserId            │
+│Username      │ │Uid        │   │UID                 │ │AsOfDate            │
+│Password      │ └───────────┘   │Title               │ │Type                │
+└──────────────┘ ※ICCardsは1対1  │StartDate          │ │Name                │
+（モデルにUnique未設定）           │EndDate            │ │Tag                 │
+                                 │LastModified       │ │Amount               │
+                                 │Description        │ │IsDeleted            │
+                                 │AllDay             │ └────────────────────┘
+                                 └───────────────────┘

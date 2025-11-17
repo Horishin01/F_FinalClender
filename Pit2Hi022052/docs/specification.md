@@ -39,7 +39,6 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 | `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description`, `AllDay` | カレンダー予定。`UID` で iCloud イベントと紐付け。開始/終了は null 許容。 |
 | `ICloudSetting` (`Models/ICloudSetting.cs`) | `Id`(GUID文字列), `UserId`, `Username`, `Password` | iCloud 認証情報。現在は平文保存のため暗号化対応が今後の課題。 |
 | `ICCard` (`Models/ICCard.cs`) | `Id`, `UserId`, `Uid` | IC カード UID とユーザーの紐付け用。現状 UI からは未使用。 |
-| `Personal` (`Models/Personal.cs`) | `Id`, `UserId`, `Weekday`, `Name`, `User` | 週間テンプレート想定のシンプルなエンティティ。コントローラー未実装。 |
 | Identity テーブル | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles` など | マイグレーション (`Migrations/*`) で生成。 |
 
 ## 7. サービスと外部連携
@@ -91,7 +90,7 @@ _最終更新: 2025-11-13。仕様書とコードコメントは日本語を基�
 - `/Users/Index` → `Create/Edit/Delete`。`/Roles/Index` でロール管理。`/UserRoles/Index` でユーザーとロールの組み合わせを調整。
 
 ## 11. バリデーションとエラーハンドリング
-- Null 許容警告 (例: `Personal.cs`, `EventsController` の一部) が残存。順次 `required` 化または null 許容化する。
+- Null 許容警告（例: `EventsController` の一部）が残存。順次 `required` 化または null 許容化する。
 - `/Events/Sync` 失敗時はログ出力後 HTTP 500 + `{ "message": "同期に失敗しました。" }` を返却。60 秒以内なら HTTP 429 を返す。
 - Identity で `User` が取得できない場合は `Unauthorized` を返し、ログへ警告を残す。
 
