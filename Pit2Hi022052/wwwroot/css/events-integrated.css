@@ -1,23 +1,31 @@
-/* 統合カレンダー風UI (既存Events/Index用) */
+/* 統合カレンダー風UI (既存 Events/Index 用) */
 
+/* 全体コンテナ */
 .ic-root {
-    /* 背景は現行のグラデーションを優先 */
     background: linear-gradient(135deg, #667eea, #764ba2);
     padding: 1.5rem 1.75rem;
     border-radius: 18px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-    width: 160%;
-    max-width: 1700px;
+
+    /* 全体幅をやや拡大しつつ中央カレンダーを強調 */
+    width: 100%;
+    max-width: 1760px;
     margin: 0 auto;
     min-height: 80vh;
     box-sizing: border-box;
 }
 
+/* ヘッダー行（タイトル＋アクション） */
 .ic-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+
+    /* レイアウト本体と同じ幅でセンタリング */
+    max-width: 1760px;
+    margin: 0 auto 1rem;
+    padding: 0 4px;
+
     color: #fff;
 }
 
@@ -37,27 +45,36 @@
     align-items: center;
 }
 
+/* 3カラムレイアウト
+ * 左右サイドバー: min 240px
+ * 中央: 4fr、サイド: 1fr ずつ  →  おおよそ 1 : 4.5 : 1 の感覚
+ */
 .ic-layout {
-    /* 3カラム：左サイド 320px / 中央可変 / 右サイド 320px */
     display: grid;
-    grid-template-columns: 320px minmax(880px, 1fr) 320px;
+    grid-template-columns: minmax(240px, 1fr) minmax(0, 4fr) minmax(240px, 1fr);
     gap: 20px;
     width: 100%;
-    max-width: 1600px;
+    max-width: 1760px;
     margin: 0 auto;
     align-items: start;
 }
 
-.calendar-sidebar-left {
-    width: 100%;
+/* 大画面時のみ“光学センタリング”を少しだけ補正 */
+@media (min-width: 1400px) {
+    .ic-layout {
+        position: relative;
+        left: -2px;   /* 必要なら -1〜-4px 程度で再調整 */
+    }
 }
-.calendar-main {
-    width: 100%;
-}
+
+/* 3カラムそれぞれの箱 */
+.calendar-sidebar-left,
+.calendar-main,
 .calendar-sidebar-right {
     width: 100%;
 }
 
+/* 共通カードスタイル */
 .ic-card {
     background: #fff;
     border-radius: 18px;
@@ -78,6 +95,7 @@
     padding: 0.9rem 1.1rem 1.2rem;
 }
 
+/* 左カラムのリスト（カレンダーソース／カテゴリ） */
 .ic-list {
     display: grid;
     gap: 0.5rem;
@@ -110,13 +128,18 @@
     background: linear-gradient(135deg, rgba(102,126,234,0.15), rgba(118,75,162,0.15));
 }
 
+/* 中央：カレンダー本体カード */
 .ic-main {
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 10px 35px rgba(0,0,0,0.1);
-    padding: 1rem;
+
+    /* カレンダー領域を最大化するため横パディングを抑えめに */
+    padding: 1rem 0.35rem 1rem;
+    box-sizing: border-box;
 }
 
+/* カレンダー上部のヘッダー（ナビ／表示切替／ボタン） */
 .ic-main-head {
     display: grid;
     grid-template-columns: 1fr auto auto;
@@ -167,19 +190,25 @@
     color: #fff;
 }
 
+/* 右端の「今日・同期・新規追加」エリア */
 .ic-main-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.6rem;
     justify-content: flex-end;
     align-items: center;
+
+    flex-wrap: nowrap;   /* デスクトップでは折り返さない */
+    min-width: 0;
 }
 
+/* ボタン類 */
 .ic-btn {
     border: none;
     border-radius: 12px;
-    padding: 0.55rem 0.9rem;
+    padding: 0.55rem 0.95rem;
     font-weight: 700;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .ic-btn.primary {
@@ -193,7 +222,7 @@
     box-shadow: 0 10px 25px rgba(17,153,142,0.25);
     border: none;
     border-radius: 12px;
-    padding: 0.55rem 1rem;
+    padding: 0.55rem 1.05rem;
     font-weight: 800;
 }
 
@@ -206,12 +235,14 @@
     margin-right: 0.25rem;
 }
 
+/* FullCalendar 埋め込み用ラッパー */
 .ic-calendar-wrap {
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     overflow: hidden;
     background: #fff;
     min-height: 680px;
+    box-sizing: border-box;
 }
 
 .calendar-main-card {
@@ -219,6 +250,7 @@
     background: #fff;
 }
 
+/* 右サイドバー（検索／統計／直近予定） */
 .ic-sidebar-right {
     display: grid;
     gap: 0.8rem;
@@ -265,9 +297,19 @@
 .ic-upcoming .date { font-size: 0.85rem; color: #6b7280; }
 .ic-upcoming .ttl { font-weight: 800; color: #111827; }
 
-/* 幅が狭い場合は縦並びに切り替え */
+/* 幅が狭い場合は縦並びに切り替え（モバイル用） */
 @media (max-width: 1200px) {
-    .ic-layout { grid-template-columns: 1fr; }
-    .ic-main-head { grid-template-columns: 1fr; }
-    .ic-main-actions { justify-content: flex-start; }
+    .ic-layout {
+        grid-template-columns: 1fr;
+        position: static;
+        left: 0;
+    }
+    .ic-main-head {
+        grid-template-columns: 1fr;
+        row-gap: 0.5rem;
+    }
+    .ic-main-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
 }
