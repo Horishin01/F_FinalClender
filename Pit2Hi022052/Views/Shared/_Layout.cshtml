@@ -14,7 +14,11 @@
 
     @RenderSection("Styles", required: false)
 </head>
-<body class="app-body">
+@{
+    var bodyClass = (ViewData["BodyClass"] as string)?.Trim();
+    var bodyClasses = string.IsNullOrWhiteSpace(bodyClass) ? "app-body" : $"app-body {bodyClass}";
+}
+<body class="@bodyClasses">
     <header class="app-header">
         <div class="container-xl">
             <nav class="app-nav" aria-label="グローバルナビゲーション">

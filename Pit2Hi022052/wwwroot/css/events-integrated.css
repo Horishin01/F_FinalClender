@@ -3,16 +3,41 @@
 /* 全体コンテナ */
 .ic-root {
     background: linear-gradient(135deg, #667eea, #764ba2);
-    padding: 1.5rem 1.75rem;
-    border-radius: 18px;
+    padding: 0.75rem 0.5rem 1.15rem;
+    border-radius: 20px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.12);
 
     /* 全体幅をやや拡大しつつ中央カレンダーを強調 */
     width: 100%;
-    max-width: 1760px;
+    max-width: 2140px;
     margin: 0 auto;
     min-height: 80vh;
     box-sizing: border-box;
+}
+
+/* Full-bleed body adjustments when events page requests it */
+body.app-body.events-page .app-main.container-xl {
+    max-width: 100%;
+    width: 100%;
+    padding-left: clamp(0.5rem, 3vw, 1.5rem);
+    padding-right: clamp(0.5rem, 3vw, 1.5rem);
+}
+
+body.app-body.events-page .app-content {
+    padding: 0;
+}
+
+body.app-body.events-page .ic-root {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+body.app-body.events-page .app-header .container-xl,
+body.app-body.events-page .app-footer .container-xl {
+    max-width: 100%;
+    width: 100%;
+    padding-left: clamp(0.5rem, 3vw, 1.5rem);
+    padding-right: clamp(0.5rem, 3vw, 1.5rem);
 }
 
 /* ヘッダー行（タイトル＋アクション） */
@@ -22,7 +47,7 @@
     align-items: center;
 
     /* レイアウト本体と同じ幅でセンタリング */
-    max-width: 1760px;
+    max-width: 2040px;
     margin: 0 auto 1rem;
     padding: 0 4px;
 
@@ -51,12 +76,29 @@
  */
 .ic-layout {
     display: grid;
-    grid-template-columns: minmax(240px, 1fr) minmax(0, 4fr) minmax(240px, 1fr);
-    gap: 20px;
+    grid-template-columns: minmax(240px, 0.95fr) minmax(0, 6.6fr) minmax(240px, 0.95fr);
+    gap: clamp(16px, 1.6vw, 28px);
     width: 100%;
-    max-width: 1760px;
+    max-width: 2050px;
     margin: 0 auto;
     align-items: start;
+}
+
+.ic-sidebar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.7rem;
+    border-radius: 22px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.ic-sidebar-right-wrapper {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.7rem;
+    border-radius: 22px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 /* 大画面時のみ“光学センタリング”を少しだけ補正 */
@@ -91,6 +133,35 @@
     border-bottom: 1px solid #e8ecf5;
 }
 
+.ic-card-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.ic-card-title-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.ic-card-title-icon.icon-search {
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+}
+
+.ic-card-title-icon.icon-stats {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.ic-card-title-icon.icon-upcoming {
+    background: linear-gradient(135deg, #f97316, #ef4444);
+}
+
 .ic-card-body {
     padding: 0.9rem 1.1rem 1.2rem;
 }
@@ -114,6 +185,77 @@
     font-weight: 700;
     cursor: pointer;
     transition: all 0.15s ease;
+}
+
+.ic-list-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.95rem;
+}
+
+.ic-list-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background: #e5e7eb;
+    color: #111827;
+    flex-shrink: 0;
+}
+
+.ic-list-icon.icon-all {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+}
+
+.ic-list-icon.icon-google {
+    background: linear-gradient(135deg, #4285f4, #34a853);
+    color: #fff;
+    font-weight: 700;
+}
+
+.ic-list-icon.icon-icloud {
+    background: linear-gradient(135deg, #53a0fd, #147efb);
+    color: #fff;
+}
+
+.ic-list-icon.icon-outlook {
+    background: linear-gradient(135deg, #0078d4, #00bcf2);
+    color: #fff;
+}
+
+.ic-list-icon.icon-work {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: #fff;
+}
+
+.ic-list-icon.icon-local {
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+    color: #fff;
+}
+
+.ic-list-icon.icon-meeting {
+    background: linear-gradient(135deg, #facc15, #f97316);
+    color: #111827;
+}
+
+.ic-list-icon.icon-personal {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: #fff;
+}
+
+.ic-list-icon.icon-deadline {
+    background: linear-gradient(135deg, #f6ad55, #ed8936);
+    color: #fff;
+}
+
+.ic-list-icon.icon-study {
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    color: #fff;
 }
 
 .ic-list-item .count {
@@ -254,6 +396,10 @@
 .ic-sidebar-right {
     display: grid;
     gap: 0.8rem;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.7rem;
+    border-radius: 22px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .ic-input {
@@ -274,10 +420,47 @@
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 0.6rem 0.7rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.ic-stat-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
 }
 
 .ic-stat .label { font-size: 0.9rem; color: #6b7280; }
 .ic-stat .value { font-weight: 900; font-size: 1.2rem; color: #111827; }
+
+.ic-stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    color: #fff;
+}
+
+.ic-stat-icon.icon-total {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.ic-stat-icon.icon-today {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.ic-stat-icon.icon-week {
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+}
+
+.ic-stat-icon.icon-conflict {
+    background: linear-gradient(135deg, #f97316, #ef4444);
+}
 
 .ic-upcoming {
     list-style: none;
@@ -311,5 +494,129 @@
     .ic-main-actions {
         justify-content: flex-start;
         flex-wrap: wrap;
+    }
+    .ic-sidebar-left {
+        flex-direction: column;
+    }
+    .ic-sidebar-right {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .ic-root {
+        padding: 0.7rem 0.55rem 0.95rem;
+    }
+    .ic-sidebar-left {
+        padding: 0.5rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .ic-sidebar-right {
+        padding: 0.5rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .ic-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.7rem;
+    }
+    .ic-brand {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    .ic-head-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+    .ic-card {
+        border-radius: 16px;
+    }
+    .ic-card-body {
+        padding: 0.85rem 1rem;
+    }
+    .ic-main {
+        padding: 0.85rem 0.4rem 0.95rem;
+    }
+    .ic-month-nav {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .ic-main-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .ic-views {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .ic-layout {
+        gap: 0.85rem;
+    }
+    .ic-sidebar-left,
+    .ic-sidebar-right {
+        gap: 0.75rem;
+    }
+    .ic-card {
+        width: 100%;
+    }
+    .ic-main {
+        padding: 0.8rem 0.35rem 0.9rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .ic-header {
+        flex-direction: column;
+        gap: 0.8rem;
+        text-align: center;
+    }
+    .ic-main-head {
+        grid-template-columns: 1fr;
+    }
+    .ic-month-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.35rem;
+    }
+    .ic-main-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .ic-views {
+        flex-wrap: wrap;
+    }
+    .ic-list-item {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+    .ic-card-body {
+        padding: 0.75rem 0.85rem;
+    }
+    .ic-card-title {
+        width: 100%;
+        justify-content: center;
+    }
+    .ic-sidebar-right {
+        grid-template-columns: 1fr;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    .ic-sidebar-left {
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    .ic-head-actions {
+        justify-content: center;
     }
 }

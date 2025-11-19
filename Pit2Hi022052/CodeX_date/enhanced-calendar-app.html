@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>統合カレンダー管理システム - Pi12Hi022052</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -37,6 +40,28 @@
             min-height: 100vh;
             color: var(--text-primary);
             transition: all 0.3s ease;
+        }
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            line-height: 1;
+            vertical-align: middle;
+        }
+
+        .label-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: var(--hover-bg);
+            color: var(--text-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
         .header {
@@ -416,6 +441,44 @@
             margin-bottom: 0.3rem;
         }
 
+        .event-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.55rem;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        body.dark-mode .meta-chip {
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--text-secondary);
+        }
+
+        .meta-chip.priority {
+            background: rgba(229, 62, 62, 0.18);
+            color: #c53030;
+        }
+
+        body.dark-mode .meta-chip.priority {
+            background: rgba(229, 62, 62, 0.35);
+            color: #feb2b2;
+        }
+
+        .meta-chip .material-symbols-rounded {
+            font-size: 0.95rem;
+        }
+
         .calendar-controls {
             display: flex;
             justify-content: space-between;
@@ -752,7 +815,9 @@
         }
 
         .form-label {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
             margin-bottom: 0.5rem;
             font-weight: 600;
             color: var(--text-primary);
@@ -1152,24 +1217,24 @@
                 <input type="hidden" id="eventDateKey">
                 
                 <div class="form-group">
-                    <label class="form-label">タイトル *</label>
+                    <label class="form-label"><span class="label-icon material-symbols-rounded">edit</span>タイトル *</label>
                     <input type="text" class="form-control" id="eventTitle" required>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">開始日時 *</label>
+                        <label class="form-label"><span class="label-icon material-symbols-rounded">schedule</span>開始日時 *</label>
                         <input type="datetime-local" class="form-control" id="eventStart" required onchange="checkConflicts()">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">終了日時</label>
+                        <label class="form-label"><span class="label-icon material-symbols-rounded">hourglass_bottom</span>終了日時</label>
                         <input type="datetime-local" class="form-control" id="eventEnd" onchange="checkConflicts()">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">カレンダーソース *</label>
+                        <label class="form-label"><span class="label-icon material-symbols-rounded">calendar_month</span>カレンダーソース *</label>
                         <select class="form-control" id="eventSource" required>
                             <option value="google">Google Calendar</option>
                             <option value="icloud">iCloud Calendar</option>
@@ -1179,7 +1244,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">カテゴリ *</label>
+                        <label class="form-label"><span class="label-icon material-symbols-rounded">style</span>カテゴリ *</label>
                         <select class="form-control" id="eventType" required>
                             <option value="work">仕事・業務</option>
                             <option value="meeting">会議・打ち合わせ</option>
@@ -1192,11 +1257,11 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">場所</label>
+                        <label class="form-label"><span class="label-icon material-symbols-rounded">pin_drop</span>場所</label>
                         <input type="text" class="form-control" id="eventLocation" placeholder="場所・URL">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">リマインダー</label>
+                        <label class="form-label"><span class="label-icon material-symbols-rounded">notifications_active</span>リマインダー</label>
                         <select class="form-control" id="eventReminder">
                             <option value="">なし</option>
                             <option value="15">15分前</option>
@@ -1208,12 +1273,12 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">参加者</label>
+                    <label class="form-label"><span class="label-icon material-symbols-rounded">group</span>参加者</label>
                     <input type="text" class="form-control" id="eventAttendees" placeholder="メールアドレス（カンマ区切り）">
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">繰り返し</label>
+                    <label class="form-label"><span class="label-icon material-symbols-rounded">autorenew</span>繰り返し</label>
                     <select class="form-control" id="eventRecurrence">
                         <option value="">なし</option>
                         <option value="daily">毎日</option>
@@ -1224,7 +1289,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">優先度</label>
+                    <label class="form-label"><span class="label-icon material-symbols-rounded">flag</span>優先度</label>
                     <select class="form-control" id="eventPriority">
                         <option value="normal">通常</option>
                         <option value="high">高</option>
@@ -1233,7 +1298,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">メモ</label>
+                    <label class="form-label"><span class="label-icon material-symbols-rounded">notes</span>メモ</label>
                     <textarea class="form-control" id="eventDescription" rows="3" placeholder="詳細やメモを入力..."></textarea>
                 </div>
                 
@@ -1253,6 +1318,18 @@
         let activeCategories = ['all', 'work', 'meeting', 'personal', 'deadline', 'study'];
         let searchQuery = '';
         let currentView = 'month';
+        const reminderLabelMap = {
+            '15': '15分前',
+            '30': '30分前',
+            '60': '1時間前',
+            '1440': '1日前'
+        };
+        const recurrenceLabelMap = {
+            'daily': '毎日',
+            'weekly': '毎週',
+            'biweekly': '隔週',
+            'monthly': '毎月'
+        };
         
         // テストデータ（複数カレンダーからの統合データ）
         let events = {
@@ -1582,6 +1659,43 @@
             return (start1 < end2 && end1 > start2);
         }
 
+        function createMetaChip(icon, text, extraClass = '') {
+            if (!text) return '';
+            return `<span class="meta-chip ${extraClass}"><span class="material-symbols-rounded">${icon}</span>${text}</span>`;
+        }
+
+        function buildMetaChips(evt) {
+            const chips = [];
+            if (evt.location) {
+                chips.push(createMetaChip('pin_drop', evt.location));
+            }
+
+            if (evt.attendees) {
+                const attendees = evt.attendees.split(',').map(a => a.trim()).filter(Boolean);
+                if (attendees.length) {
+                    chips.push(createMetaChip('group', `${attendees.length}名参加`));
+                }
+            }
+
+            if (evt.reminder) {
+                const reminderLabel = reminderLabelMap[evt.reminder] || `${evt.reminder}分前`;
+                chips.push(createMetaChip('notifications_active', reminderLabel));
+            }
+
+            if (evt.recurrence) {
+                const recurrenceLabel = recurrenceLabelMap[evt.recurrence] || evt.recurrence;
+                chips.push(createMetaChip('autorenew', recurrenceLabel));
+            }
+
+            if (evt.priority && evt.priority !== 'normal') {
+                const prioLabel = evt.priority === 'high' ? '優先: 高' : '優先: 低';
+                const prioIcon = evt.priority === 'high' ? 'priority_high' : 'flag_circle';
+                chips.push(createMetaChip(prioIcon, prioLabel, 'priority'));
+            }
+
+            return chips.filter(Boolean);
+        }
+
         function updateUpcomingEvents() {
             const container = document.getElementById('upcomingEvents');
             container.innerHTML = '';
@@ -1623,12 +1737,14 @@
                     personal: '個人'
                 };
                 
+                const metaChips = buildMetaChips(evt);
+                const metaMarkup = metaChips.length ? `<div class="event-meta">${metaChips.join('')}</div>` : '';
                 el.innerHTML = `
                     <div class="event-source-badge ${evt.source}">${sourceLabels[evt.source]}</div>
                     <div class="event-date-badge">${dateStr} (${dayStr}) ${evt.time}</div>
                     <div style="font-weight: 600; margin-bottom: 0.2rem;">${evt.title}</div>
                     <div style="font-size: 0.75rem; opacity: 0.8;">${evt.location || ''}</div>
-                    ${evt.priority === 'high' ? '<div style="font-size: 0.7rem; color: #e53e3e; margin-top: 0.2rem;">★ 優先度: 高</div>' : ''}
+                    ${metaMarkup}
                 `;
                 
                 el.onclick = () => editEventModal(evt, evt.dateKey);

@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "統合カレンダー管理";
+    ViewData["BodyClass"] = "events-page";
 }
 
 <div class="ic-root">
@@ -19,24 +20,96 @@
             <div class="ic-card">
                 <div class="ic-card-head">カレンダーソース</div>
                 <div class="ic-card-body ic-list" id="icSourceList">
-                    <button class="ic-list-item active" data-source="all">すべて表示 <span class="count" id="srcAll">0</span></button>
-                    <button class="ic-list-item" data-source="Google">Google Calendar <span class="count" id="srcGoogle">0</span></button>
-                    <button class="ic-list-item" data-source="ICloud">iCloud Calendar <span class="count" id="srcICloud">0</span></button>
-                    <button class="ic-list-item" data-source="Outlook">Outlook Calendar <span class="count" id="srcOutlook">0</span></button>
-                    <button class="ic-list-item" data-source="Work">会社カレンダー <span class="count" id="srcWork">0</span></button>
-                    <button class="ic-list-item" data-source="Local">ローカル <span class="count" id="srcLocal">0</span></button>
+                    <button class="ic-list-item active" data-source="all">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-all">📅</span>
+                            <span>すべて表示</span>
+                        </span>
+                        <span class="count" id="srcAll">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="Google">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-google">G</span>
+                            <span>Google Calendar</span>
+                        </span>
+                        <span class="count" id="srcGoogle">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="ICloud">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-icloud">☁️</span>
+                            <span>iCloud Calendar</span>
+                        </span>
+                        <span class="count" id="srcICloud">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="Outlook">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-outlook">📧</span>
+                            <span>Outlook Calendar</span>
+                        </span>
+                        <span class="count" id="srcOutlook">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="Work">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-work">💼</span>
+                            <span>会社カレンダー</span>
+                        </span>
+                        <span class="count" id="srcWork">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="Local">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-local">💾</span>
+                            <span>ローカル</span>
+                        </span>
+                        <span class="count" id="srcLocal">0</span>
+                    </button>
                 </div>
             </div>
 
             <div class="ic-card">
                 <div class="ic-card-head">カテゴリフィルター</div>
                 <div class="ic-card-body ic-list" id="icCategoryList">
-                    <button class="ic-list-item active" data-category="all">すべて <span class="count" id="catAll">0</span></button>
-                    <button class="ic-list-item" data-category="Work">仕事・業務 <span class="count" id="catWork">0</span></button>
-                    <button class="ic-list-item" data-category="Meeting">会議・打ち合わせ <span class="count" id="catMeeting">0</span></button>
-                    <button class="ic-list-item" data-category="Personal">プライベート <span class="count" id="catPersonal">0</span></button>
-                    <button class="ic-list-item" data-category="Deadline">締切・期限 <span class="count" id="catDeadline">0</span></button>
-                    <button class="ic-list-item" data-category="Study">学習・勉強 <span class="count" id="catStudy">0</span></button>
+                    <button class="ic-list-item active" data-category="all">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-all">📋</span>
+                            <span>すべて</span>
+                        </span>
+                        <span class="count" id="catAll">0</span>
+                    </button>
+                    <button class="ic-list-item" data-category="Work">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-work">💼</span>
+                            <span>仕事・業務</span>
+                        </span>
+                        <span class="count" id="catWork">0</span>
+                    </button>
+                    <button class="ic-list-item" data-category="Meeting">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-meeting">👥</span>
+                            <span>会議・打ち合わせ</span>
+                        </span>
+                        <span class="count" id="catMeeting">0</span>
+                    </button>
+                    <button class="ic-list-item" data-category="Personal">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-personal">🏠</span>
+                            <span>プライベート</span>
+                        </span>
+                        <span class="count" id="catPersonal">0</span>
+                    </button>
+                    <button class="ic-list-item" data-category="Deadline">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-deadline">⏰</span>
+                            <span>締切・期限</span>
+                        </span>
+                        <span class="count" id="catDeadline">0</span>
+                    </button>
+                    <button class="ic-list-item" data-category="Study">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-study">📚</span>
+                            <span>学習・勉強</span>
+                        </span>
+                        <span class="count" id="catStudy">0</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -69,24 +142,63 @@
 
         <div class="ic-sidebar-right">
             <div class="ic-card">
-                <div class="ic-card-head">検索</div>
+                <div class="ic-card-head">
+                    <span class="ic-card-title">
+                        <span class="ic-card-title-icon icon-search">🔍</span>
+                        <span>検索</span>
+                    </span>
+                </div>
                 <div class="ic-card-body">
                     <input id="icSearch" type="search" class="ic-input" placeholder="イベントを検索..." />
                 </div>
             </div>
 
             <div class="ic-card">
-                <div class="ic-card-head">統計情報</div>
+                <div class="ic-card-head">
+                    <span class="ic-card-title">
+                        <span class="ic-card-title-icon icon-stats">📊</span>
+                        <span>統計情報</span>
+                    </span>
+                </div>
                 <div class="ic-card-body ic-stats">
-                    <div class="ic-stat"><div class="label">総イベント数</div><div class="value" id="statTotal">0</div></div>
-                    <div class="ic-stat"><div class="label">今日</div><div class="value" id="statToday">0</div></div>
-                    <div class="ic-stat"><div class="label">今週</div><div class="value" id="statWeek">0</div></div>
-                    <div class="ic-stat"><div class="label">重複推定</div><div class="value" id="statDup">0</div></div>
+                    <div class="ic-stat">
+                        <div class="ic-stat-text">
+                            <div class="label">総イベント数</div>
+                            <div class="value" id="statTotal">0</div>
+                        </div>
+                        <span class="ic-stat-icon icon-total">📅</span>
+                    </div>
+                    <div class="ic-stat">
+                        <div class="ic-stat-text">
+                            <div class="label">今日</div>
+                            <div class="value" id="statToday">0</div>
+                        </div>
+                        <span class="ic-stat-icon icon-today">📆</span>
+                    </div>
+                    <div class="ic-stat">
+                        <div class="ic-stat-text">
+                            <div class="label">今週</div>
+                            <div class="value" id="statWeek">0</div>
+                        </div>
+                        <span class="ic-stat-icon icon-week">🗓️</span>
+                    </div>
+                    <div class="ic-stat">
+                        <div class="ic-stat-text">
+                            <div class="label">重複推定</div>
+                            <div class="value" id="statDup">0</div>
+                        </div>
+                        <span class="ic-stat-icon icon-conflict">⚠️</span>
+                    </div>
                 </div>
             </div>
 
             <div class="ic-card">
-                <div class="ic-card-head">直近の予定</div>
+                <div class="ic-card-head">
+                    <span class="ic-card-title">
+                        <span class="ic-card-title-icon icon-upcoming">🗓️</span>
+                        <span>直近の予定</span>
+                    </span>
+                </div>
                 <div class="ic-card-body">
                     <ul class="ic-upcoming" id="icUpcoming"></ul>
                 </div>
