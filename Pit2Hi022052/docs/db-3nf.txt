@@ -17,12 +17,6 @@ Table: ICCards
 - Columns: UserId (FK -> AspNetUsers.Id), Uid (ICカードUID)
 - 従属関係: Id -> 全カラム。Uidはカード固有値で他属性から決まらない。
 
-Table: BalanceSheetEntries
-- PK: Id (int, identity)
-- Columns: UserId (FK -> AspNetUsers.Id), AsOfDate (date), Type (enum), Name, Tag (nullable enum), Amount (decimal), IsDeleted (bool)
-- Index: (UserId, AsOfDate)
-- 従属関係: Id -> 全カラム。業務上の一意制（例: ユーザー×日付）はモデル上未強制だが必要なら追加可。
-
 Table: ICloudSettings
 - PK: Id (string, Guid文字列)
 - Columns: UserId (FK -> AspNetUsers.Id), Username (Apple IDメール), Password (アプリアクセス用パスワード)
@@ -37,18 +31,18 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
 │   ● Id (PK)     │
 │   ...Identity...│
 └──────┬──────────┬──────────┬──────────┐
-       │0..1       │0..1       │0..*       │0..*
+       │0..1       │0..1       │0..*       │
        │           │           │           │
-┌──────▼─────┐ ┌──▼────────┐ ┌──────────▼─────────┐ ┌─────────▼──────┐
-│ICloudSettings│ │ ICCards   │   │ Events             │ │ BalanceSheetEntries│
-│○ UserId      │ │○ UserId   │   │○ UserId            │ │○ UserId            │
-│Username      │ │Uid        │   │UID                 │ │AsOfDate            │
-│Password      │ └───────────┘   │Title               │ │Type                │
-└──────────────┘ ※ICCardsは1対1  │StartDate          │ │Name                │
-（モデルにUnique未設定）           │EndDate            │ │Tag                 │
-                                 │LastModified       │ │Amount               │
-                                 │Description        │ │IsDeleted            │
-                                 │AllDay             │ └────────────────────┘
+┌──────▼─────┐ ┌──▼────────┐ ┌──────────▼─────────┐
+│ICloudSettings│ │ ICCards   │   │ Events             │
+│○ UserId      │ │○ UserId   │   │○ UserId            │
+│Username      │ │Uid        │   │UID                 │
+│Password      │ └───────────┘   │Title               │
+└──────────────┘ ※ICCardsは1対1  │StartDate          │
+（モデルにUnique未設定）           │EndDate            │
+                                 │LastModified       │
+                                 │Description        │
+                                 │AllDay             │
                                  │Source/Category    │
                                  │Priority/Location  │
                                  │Attendees/Recurr.  │
@@ -67,18 +61,18 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
 │   ● Id (PK)      │ 1
 │   ...Identity... │
 └──────┬───────────┬───────────┬────────────┐
-       │0..1(Unique)│0..1(Unique)│0..*        │0..*
+       │0..1(Unique)│0..1(Unique)│0..*        │
        │            │            │            │
-┌──────▼──────────┐┌──────────▼────────┐┌───────────▼─────────┐ ┌────────────▼──────────┐
-│ICloudSettings   ││     ICCards        ││       Events        ││   BalanceSheetEntries │
-│○ UserId (UQ)    ││ ○ UserId (UQ)      ││ ○ UserId            ││ ○ UserId              │
-│Username (secure)││ Uid (IC UID)       ││ UID (external sync) ││ AsOfDate (idx)        │
-│Password (secure)│└────────────────────┘│ Title               ││ Type                  │
-└─────────────────┘                      │ StartDate           ││ Name                  │
-                                         │ EndDate             ││ Tag                   │
-                                         │ LastModified        ││ Amount                │
-                                         │ Description         ││ IsDeleted             │
-                                         │ AllDay              │└───────────────────────┘
+┌──────▼──────────┐┌──────────▼────────┐┌───────────▼─────────┐
+│ICloudSettings   ││     ICCards        ││       Events        │
+│○ UserId (UQ)    ││ ○ UserId (UQ)      ││ ○ UserId            │
+│Username (secure)││ Uid (IC UID)       ││ UID (external sync) │
+│Password (secure)│└────────────────────┘│ Title               │
+└─────────────────┘                      │ StartDate           │
+                                         │ EndDate             │
+                                         │ LastModified        │
+                                         │ Description         │
+                                         │ AllDay              │
                                          │ Source/Category     │
                                          │ Priority/Location   │
                                          │ Attendees/Recurr.   │

@@ -379,6 +379,14 @@ body.app-body.events-page .ic-root {
     box-sizing: border-box;
 }
 
+.fc .fc-timegrid-now-indicator-line {
+    border-color: #ff5d73;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+    border-top-color: #ff5d73;
+}
+
 .calendar-main-card {
     min-height: 680px;
     background: #fff;

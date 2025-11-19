@@ -263,6 +263,7 @@
             locale: 'ja',
             timeZone: 'local',
             buttonText: { month: '月', week: '週', day: '日' },
+            nowIndicator: true,
             height: 'auto',
             contentHeight: 'auto',
             expandRows: true,
