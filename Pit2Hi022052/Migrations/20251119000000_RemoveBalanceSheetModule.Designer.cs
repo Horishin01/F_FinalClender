@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pit2Hi022052.Data;
@@ -11,9 +12,11 @@ using Pit2Hi022052.Data;
 namespace Pit2Hi022052.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251119000000_RemoveBalanceSheetModule")]
+    partial class RemoveBalanceSheetModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -101,12 +104,10 @@ namespace Pit2Hi022052.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
                     b.Property<string>("LoginProvider")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("text");
 
                     b.Property<string>("ProviderKey")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("text");
 
                     b.Property<string>("ProviderDisplayName")
                         .HasColumnType("text");
@@ -143,12 +144,10 @@ namespace Pit2Hi022052.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("LoginProvider")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Value")
                         .HasColumnType("text");
@@ -243,23 +242,15 @@ namespace Pit2Hi022052.Migrations
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateTime?>("LastModified")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<string>("Location")
                         .HasColumnType("text");
 
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Recurrence")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("ReminderMinutesBefore")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Source")
-                        .HasColumnType("integer");
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp without time zone");
@@ -269,7 +260,6 @@ namespace Pit2Hi022052.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("UID")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("UserId")
@@ -288,10 +278,19 @@ namespace Pit2Hi022052.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("Uid")
+                    b.Property<string>("CardName")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
+
+                    b.Property<string>("CardNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -299,86 +298,38 @@ namespace Pit2Hi022052.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("ICCards");
                 });
 
             modelBuilder.Entity("Pit2Hi022052.Models.ICloudSetting", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
                     b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AppSpecificPassword")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Username")
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastSyncedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ServerUrl")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
-                    b.HasKey("Id");
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.HasIndex("UserId");
+                    b.HasKey("UserId");
 
                     b.ToTable("ICloudSettings");
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
-                {
-                    b.HasOne("Pit2Hi022052.Models.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
-                {
-                    b.HasOne("Pit2Hi022052.Models.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Pit2Hi022052.Models.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
-                {
-                    b.HasOne("Pit2Hi022052.Models.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Pit2Hi022052.Models.Event", b =>
@@ -395,8 +346,8 @@ namespace Pit2Hi022052.Migrations
             modelBuilder.Entity("Pit2Hi022052.Models.ICCard", b =>
                 {
                     b.HasOne("Pit2Hi022052.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                        .WithOne()
+                        .HasForeignKey("Pit2Hi022052.Models.ICCard", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -406,8 +357,8 @@ namespace Pit2Hi022052.Migrations
             modelBuilder.Entity("Pit2Hi022052.Models.ICloudSetting", b =>
                 {
                     b.HasOne("Pit2Hi022052.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                        .WithOne()
+                        .HasForeignKey("Pit2Hi022052.Models.ICloudSetting", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

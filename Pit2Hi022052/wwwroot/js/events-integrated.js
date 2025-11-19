@@ -70,21 +70,40 @@
         const list = qs('#icUpcoming');
         if (!list) return;
         list.innerHTML = '';
+
+        const pool = state.filtered.length ? state.filtered : state.allEvents;
+        const todayAnchor = startOfDay(new Date());
         const now = new Date();
-        const upcoming = state.filtered
-            .map(e => ({ e, d: parseDate(e.start) }))
-            .filter(x => x.d >= now)
-            .sort((a, b) => a.d - b.d)
-            .slice(0, 5);
-        for (const item of upcoming) {
+
+        const upcoming = pool
+            .map(evt => normalizeEventRange(evt))
+            .filter(Boolean)
+            .filter(item => item.start >= todayAnchor || item.end >= now)
+            .sort((a, b) => a.start - b.start)
+            .slice(0, 8);
+
+        if (upcoming.length === 0) {
+            const empty = document.createElement('li');
+            empty.className = 'ic-upcoming-empty';
+            empty.textContent = '直近の予定はありません';
+            list.appendChild(empty);
+            return;
+        }
+
+        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        upcoming.forEach(item => {
             const li = document.createElement('li');
+            const start = item.start;
+            const end = item.end;
+            const dayLabel = `${start.getMonth() + 1}/${start.getDate()} (${dayNames[start.getDay()]})`;
+            const timeLabel = item.allDay ? '終日' : `${formatTime(start)} - ${end ? formatTime(end) : ''}`.trim();
             li.innerHTML = `
-                <div class="date">${item.d.toLocaleString()}</div>
-                <div class="ttl">${item.e.title}</div>
-                <div class="meta">${item.e.source || ''} / ${item.e.type || ''}</div>
+                <div class="date">${dayLabel} ${timeLabel}</div>
+                <div class="ttl">${item.event.title}</div>
+                <div class="meta">${item.event.source || ''} / ${item.event.type || ''}</div>
             `;
             list.appendChild(li);
-        }
+        });
     }
 
     function setText(selector, value) {
@@ -96,6 +115,34 @@
         if (!val) return new Date();
         const d = new Date(val);
         return isNaN(d) ? new Date() : d;
+    }
+
+    function parseDateStrict(val) {
+        if (!val) return null;
+        const d = new Date(val);
+        return isNaN(d) ? null : d;
+    }
+
+    function startOfDay(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+
+    function formatTime(date) {
+        return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function normalizeEventRange(evt) {
+        const start = parseDateStrict(evt.start) ?? parseDateStrict(evt.end);
+        if (!start) return null;
+        const end = parseDateStrict(evt.end) ?? start;
+        return {
+            event: evt,
+            start,
+            end,
+            allDay: !!evt.allDay
+        };
     }
 
     function isSameDay(a, b) {

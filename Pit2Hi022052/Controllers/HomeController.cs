@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 using Pit2Hi022052.ViewModels;
-using Pit2Hi022052.Services;
 using System.Diagnostics;
 using System.Linq;
 
@@ -52,8 +50,7 @@ namespace Pit2Hi022052.Controllers
                     End = e.EndDate,
                     Description = e.Description,
                     AllDay = e.AllDay
-                }).ToList(),
-                BalanceSheetSeed = BalanceSheetSampleProvider.GetSeed()
+                }).ToList()
             };
 
             return View(model);
@@ -61,11 +58,7 @@ namespace Pit2Hi022052.Controllers
 
         public IActionResult Privacy()
         {
-            return View(new HomeIndexViewModel
-            {
-                IsAuthenticated = false,
-                BalanceSheetSeed = BalanceSheetSampleProvider.GetSeed()
-            });
+            return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

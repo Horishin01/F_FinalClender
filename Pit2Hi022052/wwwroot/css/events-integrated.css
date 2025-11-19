@@ -3,13 +3,13 @@
 /* 全体コンテナ */
 .ic-root {
     background: linear-gradient(135deg, #667eea, #764ba2);
-    padding: 0.75rem 0.5rem 1.15rem;
+    padding: 0.8rem 0.6rem 1.2rem;
     border-radius: 20px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.12);
 
     /* 全体幅をやや拡大しつつ中央カレンダーを強調 */
     width: 100%;
-    max-width: 2140px;
+    max-width: 2050px;
     margin: 0 auto;
     min-height: 80vh;
     box-sizing: border-box;
@@ -30,14 +30,6 @@ body.app-body.events-page .app-content {
 body.app-body.events-page .ic-root {
     margin-left: auto;
     margin-right: auto;
-}
-
-body.app-body.events-page .app-header .container-xl,
-body.app-body.events-page .app-footer .container-xl {
-    max-width: 100%;
-    width: 100%;
-    padding-left: clamp(0.5rem, 3vw, 1.5rem);
-    padding-right: clamp(0.5rem, 3vw, 1.5rem);
 }
 
 /* ヘッダー行（タイトル＋アクション） */
@@ -76,10 +68,10 @@ body.app-body.events-page .app-footer .container-xl {
  */
 .ic-layout {
     display: grid;
-    grid-template-columns: minmax(240px, 0.95fr) minmax(0, 6.6fr) minmax(240px, 0.95fr);
-    gap: clamp(16px, 1.6vw, 28px);
+    grid-template-columns: minmax(240px, 1.15fr) minmax(0, 5.2fr) minmax(240px, 1.15fr);
+    gap: clamp(22px, 2vw, 32px);
     width: 100%;
-    max-width: 2050px;
+    max-width: 1900px;
     margin: 0 auto;
     align-items: start;
 }
@@ -178,7 +170,7 @@ body.app-body.events-page .app-footer .container-xl {
     background: #f8fafc;
     color: #111827;
     border-radius: 12px;
-    padding: 0.65rem 0.75rem;
+    padding: 0.55rem 0.65rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -190,18 +182,18 @@ body.app-body.events-page .app-footer .container-xl {
 .ic-list-label {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
-    font-size: 0.95rem;
+    gap: 0.45rem;
+    font-size: 0.9rem;
 }
 
 .ic-list-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1rem;
     background: #e5e7eb;
     color: #111827;
     flex-shrink: 0;
@@ -475,6 +467,12 @@ body.app-body.events-page .app-footer .container-xl {
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 0.6rem 0.7rem;
+}
+
+.ic-upcoming-empty {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
 }
 
 .ic-upcoming .date { font-size: 0.85rem; color: #6b7280; }
