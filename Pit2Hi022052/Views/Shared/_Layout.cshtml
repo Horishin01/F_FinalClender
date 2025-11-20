@@ -22,33 +22,22 @@
     <header class="app-header">
         <div class="container-xl">
             <nav class="app-nav" aria-label="グローバルナビゲーション">
-                <div class="nav-top">
-                    <div class="brand">
-                        <a asp-area="" asp-controller="Home" asp-action="Index">Pi12Hi022052</a>
-                        <span class="brand-pill">Calendar</span>
-                    </div>
-                    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="globalNavBody" data-nav-toggle>
-                        <span class="sr-only">メニューの切り替え</span>
-                        <span class="nav-toggle-line"></span>
-                        <span class="nav-toggle-line"></span>
-                        <span class="nav-toggle-line"></span>
-                    </button>
+                <div class="brand">
+                    <a asp-area="" asp-controller="Home" asp-action="Index">Pi12Hi022052</a>
+                    <span class="brand-pill">Calendar</span>
                 </div>
-                <div class="nav-body" id="globalNavBody" aria-hidden="true">
-                    <ul class="app-menu">
-                        <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
-                        <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
-                        <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
-                        <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
-                        <li><a asp-area="" asp-controller="Events" asp-action="Index">Events</a></li>
-                    </ul>
-                    <div class="app-login">
-                        <partial name="_LoginPartial" />
-                    </div>
+                <ul class="app-menu">
+                    <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
+                    <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
+                    <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
+                    <li><a asp-area="" asp-controller="Events" asp-action="Index">Events</a></li>
+                </ul>
+                <div class="app-login">
+                    <partial name="_LoginPartial" />
                 </div>
             </nav>
         </div>
-        <div class="nav-overlay" data-nav-overlay></div>
     </header>
 
     <div class="app-hero" aria-hidden="true"></div>

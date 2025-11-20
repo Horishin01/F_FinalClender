@@ -199,6 +199,293 @@ body.app-body.events-page .ic-root {
     flex-shrink: 0;
 }
 
+/* -- Extensions area (ICカード / Life assistant) -- */
+.ic-extensions {
+    max-width: 1900px;
+    margin: 2rem auto 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: clamp(20px, 2vw, 32px);
+}
+
+.ic-extension-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 26px;
+    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.12);
+    padding: clamp(1.3rem, 2vw, 1.8rem);
+    color: #0f172a;
+}
+
+.ic-card-iccard {
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.9), rgba(191, 219, 254, 0.9));
+}
+
+.ic-card-life {
+    background: linear-gradient(135deg, rgba(247, 233, 255, 0.92), rgba(255, 247, 237, 0.92));
+}
+
+.extension-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.2rem;
+}
+
+.extension-head h3 {
+    margin: 0.1rem 0;
+    font-size: 1.4rem;
+}
+
+.extension-head .sub {
+    margin: 0.2rem 0 0;
+    color: #475569;
+    max-width: 420px;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.15);
+    color: #0f766e;
+    font-weight: 700;
+}
+
+.iccard-linker label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.iccard-linker .field {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.iccard-linker input {
+    flex: 1 1 auto;
+    border-radius: 16px;
+    border: 1.5px solid rgba(15, 23, 42, 0.1);
+    padding: 0.65rem 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+}
+
+.ic-btn.primary.ghost {
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.15);
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f172a;
+    padding: 0.55rem 1.1rem;
+    font-weight: 700;
+}
+
+.iccard-preview {
+    margin-top: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    padding: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.preview-chip {
+    display: inline-flex;
+    flex-direction: column;
+    margin-bottom: 0.8rem;
+}
+
+.preview-chip .label {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.preview-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.preview-list li {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.preview-list .time {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.preview-list .map {
+    color: #0d9488;
+    font-weight: 600;
+}
+
+.iccard-meta {
+    margin-top: 1.1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.8rem;
+}
+
+.iccard-meta .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+}
+
+.iccard-meta .value {
+    display: block;
+    font-weight: 700;
+}
+
+.assist-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.ic-btn.primary.mini,
+.ic-btn.ghost.mini {
+    padding: 0.4rem 0.85rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.ic-btn.primary.mini {
+    background: linear-gradient(120deg, #7b68ee, #34d399);
+    color: #fff;
+    border: none;
+}
+
+.ic-btn.ghost.mini {
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.8);
+    color: #0f172a;
+}
+
+.life-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.life-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    padding: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+
+.life-card .label {
+    font-size: 0.85rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.6rem;
+}
+
+.streaks-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(32px, 1fr));
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+}
+
+.streaks-grid .dot {
+    display: grid;
+    place-items: center;
+    padding: 0.35rem 0;
+    border-radius: 12px;
+    background: rgba(148, 163, 184, 0.25);
+    font-weight: 700;
+    color: #475569;
+}
+
+.streaks-grid .dot.done {
+    background: #10b981;
+    color: #fff;
+}
+
+.quick-memos .memo {
+    background: rgba(59, 130, 246, 0.08);
+    border-radius: 12px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.7rem;
+}
+
+.quick-memos .memo:last-child {
+    margin-bottom: 0;
+}
+
+.quick-memos .tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+    color: #1d4ed8;
+}
+
+.quick-memos .tag.alt {
+    color: #d97706;
+}
+
+.helper .tips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.helper .tips li {
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+    .preview-list li {
+        grid-template-columns: 60px 1fr;
+    }
+
+    .preview-list .map {
+        grid-column: 2 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    .ic-extensions {
+        grid-template-columns: 1fr;
+    }
+
+    .iccard-linker .field {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .assist-actions {
+        width: 100%;
+    }
+}
+
 .ic-list-icon.icon-all {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: #fff;

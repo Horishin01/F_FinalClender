@@ -5,53 +5,94 @@
 <link rel="stylesheet" href="~/css/event-forms.css" asp-append-version="true" />
 
 <div class="page-wrap">
-    <div class="card">
-        <div class="head">
-            <div class="title">新しいイベント</div>
-            <div class="actions">
-                <a asp-action="Index" class="btn btn-secondary">
-                    キャンセル
-                </a>
-                <button form="eventCreateForm" type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-floppy-disk me-1"></i> 保存
-                </button>
-            </div>
-        </div>
-
-        <div class="body">
-            <div class="main">
-                <form id="eventCreateForm" asp-action="Create" method="post">
-                    @Html.AntiForgeryToken()
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    <partial name="_EditPartial.cshtml" model="Model" />
-                </form>
-            </div>
-
-            <aside class="side">
-                <div class="side-section">
-                    <div class="side-title">プレビュー</div>
-                    <div class="ev-chip" id="evPreview">
-                        <span class="dot" id="prevDot"></span>
-                        <span class="time" id="prevTime">--:--</span>
-                        <span class="ttl" id="prevTitle">タイトル未設定</span>
-                    </div>
-                    <div class="hint">タイトルや日時を入力するとプレビューがリアルタイムで更新されます。</div>
+    <div class="ev-shell">
+        <div class="ev-shell-inner">
+            <header class="ev-hero">
+                <div>
+                    <p class="ev-tag">CodeX Inspired Flow</p>
+                    <h1>新しいイベント</h1>
+                    <p class="ev-sub">統合カレンダーへの追加内容をひと目で確認しながら、必要な情報をすばやく入力できます。</p>
                 </div>
-
-                <div class="side-section">
-                    <div class="side-title">アピアランス (UIのみ)</div>
-                    <input id="evColor" type="color" value="#6d5dfc" class="color-picker" />
-                    <div class="swatches">
-                        <button type="button" class="sw" data-c="#ef4444" style="--c:#ef4444"></button>
-                        <button type="button" class="sw" data-c="#f97316" style="--c:#f97316"></button>
-                        <button type="button" class="sw" data-c="#10b981" style="--c:#10b981"></button>
-                        <button type="button" class="sw" data-c="#3b82f6" style="--c:#3b82f6"></button>
-                        <button type="button" class="sw" data-c="#8b5cf6" style="--c:#8b5cf6"></button>
-                        <button type="button" class="sw" data-c="#64748b" style="--c:#64748b"></button>
-                    </div>
-                    <div class="hint">色設定は現在 UI プレビュー専用です。将来的なカテゴリカラーに備えて保持しています。</div>
+                <div class="ev-hero-actions">
+                    <a asp-action="Index" class="btn btn-secondary ghost">
+                        <i class="fa-solid fa-arrow-left"></i> キャンセル
+                    </a>
+                    <button form="eventCreateForm" type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> 保存
+                    </button>
                 </div>
-            </aside>
+            </header>
+
+            <div class="ev-meta-chips">
+                <span class="meta-chip"><i class="fa-solid fa-wand-magic-sparkles"></i> スマートテンプレ</span>
+                <span class="meta-chip"><i class="fa-solid fa-calendar-plus"></i> 新規作成モード</span>
+                <span class="meta-chip muted"><i class="fa-solid fa-globe"></i> ローカル保存</span>
+            </div>
+
+            <div class="ev-grid">
+                <section class="ev-panel">
+                    <div class="ev-panel-head">
+                        <div class="ev-panel-title">
+                            <span class="ev-panel-icon"><i class="fa-solid fa-pen-ruler"></i></span>
+                            <div>
+                                <p class="eyebrow">ベーシックカード</p>
+                                <h2>イベント情報</h2>
+                            </div>
+                        </div>
+                        <div class="ev-panel-note">フィールドに入力すると右側のプレビューがリアルタイムに更新されます。</div>
+                    </div>
+
+                    <div class="ev-panel-body">
+                        <form id="eventCreateForm" asp-action="Create" method="post">
+                            @Html.AntiForgeryToken()
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                            <partial name="_EditPartial.cshtml" model="Model" />
+                        </form>
+                    </div>
+                </section>
+
+                <aside class="ev-side">
+                    <div class="ev-side-card">
+                        <div class="ev-side-head">
+                            <div>
+                                <p class="eyebrow">プレビュー</p>
+                                <h3>インタラクティブタイムライン</h3>
+                            </div>
+                            <span class="badge">Live</span>
+                        </div>
+                        <div class="ev-preview">
+                            <div class="ev-preview-meta">
+                                <span class="ev-preview-dot" id="prevDot"></span>
+                                <span class="ev-preview-time" id="prevTime">--:--</span>
+                            </div>
+                            <div class="ev-preview-title" id="prevTitle">タイトル未設定</div>
+                            <p class="ev-preview-sub">入力内容がここに要約され、実際のカード表示を擬似体験できます。</p>
+                        </div>
+                        <div class="hint">タイトルや開始時刻を更新すると即座に表示へ反映されます。</div>
+                    </div>
+
+                    <div class="ev-side-card">
+                        <div class="ev-side-head">
+                            <div>
+                                <p class="eyebrow">アピアランス (UIのみ)</p>
+                                <h3>アクセントカラー</h3>
+                            </div>
+                        </div>
+                        <div class="ev-color-picker">
+                            <input id="evColor" type="color" value="#6d5dfc" class="color-picker" />
+                            <div class="swatches">
+                                <button type="button" class="sw" data-c="#ef4444" style="--c:#ef4444"></button>
+                                <button type="button" class="sw" data-c="#f97316" style="--c:#f97316"></button>
+                                <button type="button" class="sw" data-c="#10b981" style="--c:#10b981"></button>
+                                <button type="button" class="sw" data-c="#3b82f6" style="--c:#3b82f6"></button>
+                                <button type="button" class="sw" data-c="#8b5cf6" style="--c:#8b5cf6"></button>
+                                <button type="button" class="sw" data-c="#64748b" style="--c:#64748b"></button>
+                            </div>
+                        </div>
+                        <div class="hint">色設定は UI プレビュー専用。将来的なカテゴリカラー拡張のためのプレースホルダです。</div>
+                    </div>
+                </aside>
+            </div>
         </div>
     </div>
 </div>

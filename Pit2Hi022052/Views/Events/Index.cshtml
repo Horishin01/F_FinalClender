@@ -205,6 +205,110 @@
             </div>
         </div>
     </div>
+
+    <div class="ic-extensions">
+        <section class="ic-extension-card ic-card-iccard">
+            <div class="extension-head">
+                <div>
+                    <p class="eyebrow">ICカード連携</p>
+                    <h3>ICカードライフログ</h3>
+                    <p class="sub">通勤・通学や買い物でのタッチをカレンダーに重ねて暮らしのリズムを可視化します。</p>
+                </div>
+                <span class="status-pill">
+                    <i class="fa-solid fa-wave-square"></i> 準備中
+                </span>
+            </div>
+            <div class="extension-body">
+                <div class="iccard-linker">
+                    <label for="icCardNumber">ICカードID</label>
+                    <div class="field">
+                        <input type="text" id="icCardNumber" placeholder="****-****-****" />
+                        <button type="button" class="ic-btn primary ghost">仮リンク</button>
+                    </div>
+                </div>
+                <div class="iccard-preview">
+                    <div class="preview-chip">
+                        <span class="label">次に反映予定</span>
+                        <strong>今日 23:00</strong>
+                    </div>
+                    <ul class="preview-list">
+                        <li>
+                            <span class="time">07:42</span>
+                            <span class="action">改札入場（自宅最寄り）</span>
+                            <span class="map">➡️ 「通勤」カレンダーへ</span>
+                        </li>
+                        <li>
+                            <span class="time">18:21</span>
+                            <span class="action">スーパー支払い</span>
+                            <span class="map">➡️ 「生活メモ」カレンダーへ</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="iccard-meta">
+                    <div>
+                        <span class="label">上限金額</span>
+                        <span class="value">¥10,000 / 日</span>
+                    </div>
+                    <div>
+                        <span class="label">共有カレンダー</span>
+                        <span class="value">暮らし / 家族</span>
+                    </div>
+                    <div>
+                        <span class="label">自動メモ</span>
+                        <span class="value">買い物詳細をメモに添付</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="ic-extension-card ic-card-life">
+            <div class="extension-head">
+                <div>
+                    <p class="eyebrow">暮らしのコンパニオン</p>
+                    <h3>デイリーアシスト</h3>
+                    <p class="sub">「忘れがちな用事」「セルフケア」「暮らしの達成感」を軽やかに記録できます。</p>
+                </div>
+                <div class="assist-actions">
+                    <button class="ic-btn primary mini"><i class="fa-solid fa-plus"></i> ノート追加</button>
+                    <button class="ic-btn ghost mini"><i class="fa-solid fa-sparkles"></i> テンプレ</button>
+                </div>
+            </div>
+            <div class="extension-body life-grid">
+                <div class="life-card streaks">
+                    <p class="label">週間セルフケア</p>
+                    <div class="streaks-grid">
+                        <span class="dot done">月</span>
+                        <span class="dot done">火</span>
+                        <span class="dot">水</span>
+                        <span class="dot done">木</span>
+                        <span class="dot">金</span>
+                        <span class="dot">土</span>
+                        <span class="dot">日</span>
+                    </div>
+                    <small>「30分散歩」「ストレッチ」などカレンダー外の習慣もここで管理。</small>
+                </div>
+                <div class="life-card quick-memos">
+                    <p class="label">クイックメモ</p>
+                    <div class="memo">
+                        <span class="tag">買い足し</span>
+                        <p>ハンドソープ、常備薬、冷凍野菜</p>
+                    </div>
+                    <div class="memo">
+                        <span class="tag alt">やること</span>
+                        <p>町内会費の支払い（今週末）</p>
+                    </div>
+                </div>
+                <div class="life-card helper">
+                    <p class="label">暮らしのヒント</p>
+                    <ul class="tips">
+                        <li><strong>雨雲注意</strong>：18時頃に雨予報。折りたたみ傘を玄関に。</li>
+                        <li><strong>ごみ収集</strong>：明日は資源ごみの日。</li>
+                        <li><strong>ありがとうメモ</strong>：お祝いのお礼メッセージを送る。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
 </div>
 
 @section Styles {

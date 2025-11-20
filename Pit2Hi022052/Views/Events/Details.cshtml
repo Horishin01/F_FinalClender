@@ -2,29 +2,54 @@
 @{
     if (Model is null) { throw new NullReferenceException(); }
     ViewData["Title"] = "イベント詳細";
+    string FormatDateTime(DateTime? dt) => dt?.ToString("yyyy/MM/dd HH:mm") ?? "--";
+    var scheduleSummary = Model.EndDate.HasValue
+        ? $"{FormatDateTime(Model.StartDate)} 〜 {FormatDateTime(Model.EndDate)}"
+        : FormatDateTime(Model.StartDate);
 }
 <link rel="stylesheet" href="~/css/event-forms.css" asp-append-version="true" />
 
 <div class="page-wrap">
-    <div class="details-sheet">
-        <div class="sheet-head">
-            <div>
-                <p class="sheet-sub">イベント詳細</p>
-                <div class="sheet-title">@Model.Title</div>
+    <div class="ev-shell ev-detail-shell">
+        <div class="ev-shell-inner">
+            <header class="ev-hero">
+                <div>
+                    <p class="ev-tag">Event Intelligence</p>
+                    <h1>@Model.Title</h1>
+                    <p class="ev-sub">@scheduleSummary</p>
+                </div>
+                <div class="ev-hero-actions">
+                    <a asp-action="Index" class="btn btn-secondary ghost">
+                        <i class="fa-solid fa-arrow-left"></i> 一覧へ戻る
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                        <i class="fa-solid fa-pen-to-square"></i> 編集
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                        <i class="fa-solid fa-trash-alt"></i> 削除
+                    </a>
+                </div>
+            </header>
+
+            <div class="ev-meta-chips">
+                <span class="meta-chip"><i class="fa-solid fa-layer-group"></i> @Model.Source</span>
+                <span class="meta-chip"><i class="fa-solid fa-shapes"></i> @Model.Category</span>
+                <span class="meta-chip"><i class="fa-solid fa-signal"></i> 優先度: @Model.Priority</span>
+                @if (Model.AllDay)
+                {
+                    <span class="meta-chip muted"><i class="fa-solid fa-infinity"></i> 終日</span>
+                }
+                @if (Model.Recurrence != EventRecurrence.None)
+                {
+                    <span class="meta-chip"><i class="fa-solid fa-arrows-rotate"></i> 繰り返し: @Model.Recurrence</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Location))
+                {
+                    <span class="meta-chip"><i class="fa-solid fa-location-dot"></i> @Model.Location</span>
+                }
             </div>
-            <a asp-action="Index" class="btn btn-secondary">一覧へ戻る</a>
-        </div>
 
-        <partial name="_DetailsPartial.cshtml" model="Model" />
-
-        <div class="sheet-actions">
-            <a asp-action="Index" class="btn btn-secondary">閉じる</a>
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
-                <i class="fa-solid fa-pen-to-square me-1"></i> 編集
-            </a>
-            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
-                <i class="fa-solid fa-trash-alt me-1"></i> 削除
-            </a>
+            <partial name="_DetailsPartial.cshtml" model="Model" />
         </div>
     </div>
 </div>
