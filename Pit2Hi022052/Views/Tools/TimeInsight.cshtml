@@ -1,0 +1,80 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "時間の使い方ダッシュボード";
+    ViewData["BodyClass"] = "timeinsight-page";
+
+    var today = DateTime.Now.Date;
+    var offset = today.DayOfWeek == DayOfWeek.Sunday ? -6 : (int)DayOfWeek.Monday - (int)today.DayOfWeek;
+    var start = today.AddDays(offset);
+    var end = start.AddDays(6);
+
+    var timeInsightSeed = new
+    {
+        weekLabel = $"今週 ({start:MM/dd} - {end:MM/dd})",
+        categories = new[]
+        {
+            new { name = "学習", actual = 6.5, target = 8.0, color = "#4f46e5" },
+            new { name = "仕事", actual = 18.0, target = 16.0, color = "#6366f1" },
+            new { name = "趣味", actual = 5.0, target = 6.0, color = "#ec4899" },
+            new { name = "移動", actual = 4.0, target = 3.0, color = "#059669" },
+            new { name = "睡眠", actual = 49.0, target = 49.0, color = "#0ea5e9" }
+        }
+    };
+}
+
+<div class="ic-root ti-root">
+    <header class="ti-header">
+        <p class="ti-eyebrow">Weekly Overview</p>
+        <h1 class="ti-title">時間の使い方ダッシュボード</h1>
+        <p class="ti-sub">いまはダミーデータですが、後で /api/events などから取得して集計する前提で JavaScript 側を分離しています。</p>
+    </header>
+
+    <div class="ti-layout">
+        <section class="ic-card ti-summary">
+            <div class="ic-card-head">
+                <span class="ic-card-title">週次サマリー</span>
+                <span class="ti-week-range" id="tiWeekRange"></span>
+            </div>
+            <div class="ic-card-body">
+                <div class="ti-metrics">
+                    <div class="ti-metric">
+                        <p class="label">合計時間</p>
+                        <p class="value"><span id="tiTotalHours">--</span>h</p>
+                    </div>
+                    <div class="ti-metric">
+                        <p class="label">平均/日</p>
+                        <p class="value"><span id="tiAvgPerDay">--</span>h</p>
+                    </div>
+                    <div class="ti-metric">
+                        <p class="label">最多カテゴリ</p>
+                        <p class="value" id="tiTopCategory">-</p>
+                    </div>
+                </div>
+                <div class="ti-bar-graph" id="tiBarGraph" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <section class="ic-card ti-categories">
+            <div class="ic-card-head">
+                <span class="ic-card-title">カテゴリ別の内訳</span>
+            </div>
+            <div class="ic-card-body">
+                <div id="tiCategoryList" class="ti-category-list"></div>
+                <p class="ti-note">目標と実績の差分は幅で表現されています。後で API に差し替える場合、`timeInsight.js` のダミーデータ読み込み部分を置き換えてください。</p>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script type="application/json" id="timeInsight-data">
+@Html.Raw(JsonSerializer.Serialize(timeInsightSeed))
+</script>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/events-integrated.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/timeInsight.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/timeInsight.js" asp-append-version="true"></script>
+}

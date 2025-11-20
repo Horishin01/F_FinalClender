@@ -1,0 +1,206 @@
+/* TimeInsight dashboard */
+.timeinsight-page .app-main.container-xl {
+    max-width: 1320px;
+}
+
+.ti-root {
+    background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+    padding: 1rem 0.8rem 1.4rem;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.14);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ti-header {
+    color: #fff;
+}
+
+.ti-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.8rem;
+    opacity: 0.85;
+    margin: 0 0 0.15rem 0;
+}
+
+.ti-title {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(1.3rem, 2.4vw, 1.9rem);
+}
+
+.ti-sub {
+    margin: 0.3rem 0 0;
+    opacity: 0.9;
+}
+
+.ti-layout {
+    display: grid;
+    gap: 1rem;
+    align-items: start;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+}
+
+.ti-week-range {
+    font-weight: 700;
+    color: #1f2937;
+    background: #eef2ff;
+    border-radius: 10px;
+    padding: 0.25rem 0.6rem;
+}
+
+.ti-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+}
+
+.ti-metric {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 0.7rem 0.8rem;
+}
+
+.ti-metric .label {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.ti-metric .value {
+    margin: 0.1rem 0 0;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: #111827;
+}
+
+.ti-bar-graph {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.ti-bar-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.65rem;
+    align-items: center;
+}
+
+.ti-bar-label {
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+}
+
+.ti-bar-track {
+    background: #eef2ff;
+    border-radius: 999px;
+    overflow: hidden;
+    height: 12px;
+}
+
+.ti-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
+.ti-bar-value {
+    font-weight: 700;
+    color: #4338ca;
+    min-width: 3.5rem;
+    text-align: right;
+}
+
+.ti-category-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.ti-category-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 0.8rem 0.9rem;
+    background: #f8fafc;
+}
+
+.ti-category-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.ti-category-name {
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.ti-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+.ti-hours {
+    color: #1f2937;
+    font-weight: 700;
+}
+
+.ti-progress {
+    background: #e5e7eb;
+    border-radius: 10px;
+    height: 12px;
+    overflow: hidden;
+    margin: 0.35rem 0;
+}
+
+.ti-progress-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+.ti-gap {
+    display: flex;
+    justify-content: space-between;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.ti-note {
+    margin: 0.75rem 0 0;
+    color: #4b5563;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 960px) {
+    .ti-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .ti-root {
+        padding: 0.8rem 0.65rem 1.2rem;
+    }
+
+    .ti-bar-row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+
+    .ti-bar-label, .ti-bar-value {
+        text-align: left;
+    }
+}
