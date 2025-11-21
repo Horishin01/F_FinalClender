@@ -1,16 +1,11 @@
 @{
-    if (ViewData.TryGetValue("ParentLayout", out var parentLayout) && parentLayout != null)
-    {
-        Layout = parentLayout.ToString();
-    }
-    else
-    {
-        Layout = "/Areas/Identity/Pages/_Layout.cshtml";
-    }
+    // アカウント管理領域は常に共有レイアウトを親にする
+    Layout = "/Views/Shared/_Layout.cshtml";
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/account-manage.css" asp-append-version="true" />
+    @RenderSection("ManageStyles", required: false)
 }
 
 <div class="account-shell">

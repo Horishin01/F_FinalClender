@@ -15,15 +15,6 @@ namespace Pit2Hi022052.Models
         Work
     }
 
-    public enum EventCategory
-    {
-        Work,
-        Meeting,
-        Personal,
-        Deadline,
-        Study
-    }
-
     public enum EventPriority
     {
         Low,
@@ -72,7 +63,7 @@ namespace Pit2Hi022052.Models
         public EventSource Source { get; set; } = EventSource.Local;
 
         [Display(Name = "カテゴリ")]
-        public EventCategory Category { get; set; } = EventCategory.Personal;
+        public string? CategoryId { get; set; }
 
         [Display(Name = "優先度")]
         public EventPriority Priority { get; set; } = EventPriority.Normal;
@@ -100,6 +91,9 @@ namespace Pit2Hi022052.Models
 
         [ForeignKey(nameof(UserId))] 
         public virtual ApplicationUser? User { get; set; }
+
+        [ForeignKey(nameof(CategoryId))]
+        public virtual CalendarCategory? Category { get; set; }
     }
     
 }

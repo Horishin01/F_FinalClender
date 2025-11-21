@@ -1,6 +1,6 @@
 ﻿# Pit2Hi022052 システム仕様書
 
-_最終更新: 2025-11-17。仕様書とコードコメントは日本語を基本言語とする。挙動・ルート・データモデル・フローを変更した場合は、本書も同じコミットで更新すること。_
+_最終更新: 2026-03-13。仕様書とコードコメントは日本語を基本言語とする。挙動・ルート・データモデル・フローを変更した場合は、本書も同じコミットで更新すること。_
 
 ## 1. 目的と適用範囲
 - iCloud (CalDAV) の予定をユーザー単位で取得し、FullCalendar 上で可視化しながら PostgreSQL に保存・編集できる Web アプリを提供する。
@@ -18,8 +18,9 @@ _最終更新: 2025-11-17。仕様書とコードコメントは日本語を基�
 1. `DefaultConnection` を構成ファイルから読み込み (未設定時は例外)。
 2. `ApplicationDbContext` を Npgsql プロバイダーで登録。
 3. Identity を設定 (`ApplicationUser` + Roles、メール確認必須、Razor Pages / MVCを登録)。
-4. `AddHttpContextAccessor`、`ICloudCalDavService`、`IcalParserService`、`AddMemoryCache`、`AddAntiforgery`(ヘッダー `RequestVerificationToken`) を DI へ追加。
-5. パイプライン: Development=`UseMigrationsEndPoint`、Production=`UseExceptionHandler("/Home/Error")`+`UseHsts()`、共通=HTTPS 強制/静的ファイル/StatusCodePages/Routing/Authentication/Authorization、既定ルート `{controller=Home}/{action=Index}/{id?}/{id2?}` + Razor Pages。
+4. Microsoft / Google OAuth を外部スキームとして追加（`CalendarAuthDefaults.OutlookScheme` / `GoogleScheme`、`SaveTokens=true`、スコープは Calendars.ReadWrite / Google Calendar）。※実値は `appsettings` から取得する TODO コメント付き。
+5. `AddHttpContextAccessor`、`ICloudCalDavService`、`IcalParserService`、外部カレンダー用 `OutlookCalendarService` / `GoogleCalendarService` / `ExternalCalendarSyncService`、`AddMemoryCache`、`AddAntiforgery`(ヘッダー `RequestVerificationToken`) を DI へ追加。
+6. パイプライン: Development=`UseMigrationsEndPoint`、Production=`UseExceptionHandler("/Home/Error")`+`UseHsts()`、共通=HTTPS 強制/静的ファイル/StatusCodePages/Routing/Authentication/Authorization、既定ルート `{controller=Home}/{action=Index}/{id?}/{id2?}` + Razor Pages。
 
 ## 4. 設定と環境
 - `appsettings.json`: PostgreSQL 接続文字列 (Host `192.168.1.104`, DB `pit2_hi022052`)。本番は Secret Manager / KeyVault で秘匿する。
@@ -36,7 +37,11 @@ _最終更新: 2025-11-17。仕様書とコードコメントは日本語を基�
 ## 6. ドメインモデル概要
 | エンティティ | 主なフィールド | 目的 / メモ |
 | --- | --- | --- |
-| `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description`, `AllDay` (+ UI 用 `IsAllDay`)、`Source`,`Category`,`Priority`,`Location`,`AttendeesCsv`,`Recurrence`,`ReminderMinutesBefore` | カレンダー予定。`UID` で iCloud イベントと紐付け。開始/終了は null 許容。ソース/カテゴリ/優先度/参加者/繰り返し/リマインダーは現状保存のみ（処理は未実装）。 |
+| `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description`, `AllDay` (+ UI 用 `IsAllDay`)、`Source`,`CategoryId`(FK→`CalendarCategory`),`Priority`,`Location`,`AttendeesCsv`,`Recurrence`,`ReminderMinutesBefore` | カレンダー予定。`UID` で iCloud イベントと紐付け。カテゴリはマスタ参照型に変更し、色/アイコンをカテゴリ側で管理。ソース/優先度/参加者/繰り返し/リマインダーは現状保存のみ（処理は未実装）。 |
+| `CalendarCategory` (`Models/CalendarCategory.cs`) | `Id`, `UserId`, `Name`, `Icon`, `Color` | ユーザーごとのカテゴリマスタ。アイコン(FontAwesome)とカラーを任意設定可。`CategoriesController` で CRUD。Events から FK 参照。 |
+| `OutlookCalendarConnection` (`Models/OutlookCalendarConnection.cs`) | `Id`, `UserId`, `Provider="Outlook"`, `AccountEmail`, `AccessTokenEncrypted`, `RefreshTokenEncrypted?`, `ExpiresAtUtc?`, `Scope?`, `LastSyncedAtUtc?`, `CreatedAtUtc`, `UpdatedAtUtc` | Outlook カレンダー用の認可コードフローで取得したトークンをサーバー側が保持。将来暗号化を前提としたプレーン保存。ユーザーは手入力しない。 |
+| `GoogleCalendarConnection` (`Models/GoogleCalendarConnection.cs`) | `Id`, `UserId`, `Provider="Google"`, `AccountEmail`, `AccessTokenEncrypted`, `RefreshTokenEncrypted?`, `ExpiresAtUtc?`, `Scope?`, `LastSyncedAtUtc?`, `CreatedAtUtc`, `UpdatedAtUtc` | Google Calendar 用トークンストア。Outlook と同様に OAuth 認可コードフローでサーバーが保存し、リフレッシュ/同期状態を管理。 |
+| `ExternalCalendarAccount` (`Models/ExternalCalendarAccount.cs`) | (legacy) `Id`, `UserId`, `Provider`, `AccountEmail`, `AccessToken`, `RefreshToken?`, `ExpiresAt?`, `Scope?`, `CreatedAt`, `UpdatedAt` | 旧テーブル。トークン手貼り付け用の暫定実装として残置。新設の接続テーブルへ段階的に移行する。 |
 | `ICloudSetting` (`Models/ICloudSetting.cs`) | `Id`(GUID文字列), `UserId`, `Username`, `Password` | iCloud 認証情報。現在は平文保存のため暗号化対応が今後の課題。 |
 | `ICCard` (`Models/ICCard.cs`) | `Id`, `UserId`, `Uid` | IC カード UID とユーザーの紐付け用。現状 UI からは未使用。 |
 | Identity テーブル | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles` など | マイグレーション (`Migrations/*`) で生成。 |
@@ -48,20 +53,36 @@ _最終更新: 2025-11-17。仕様書とコードコメントは日本語を基�
   - `/Events/Sync` 呼び出し時は CSRF 対策ヘッダー `RequestVerificationToken` を必須化。
 - **IcalParserService (`Services/IcalParserService.cs`):**
   - Ical.Net を用いて ICS 文字列を `Event` リストへ変換。UID 重複排除、終日判定、最終更新日時を付与。取り込み時の `Source`/`Category`/`Priority`/`Location` などの拡張メタは設定していない（UI ではデフォルト値で表示）。
+- **OutlookCalendarService / GoogleCalendarService (`Services/*CalendarService.cs`):**
+  - OAuth2 認可コードフローで保存されたアクセストークン/リフレッシュトークン/有効期限/スコープを取得・更新・保存。`EnsureValidAccessTokenAsync` で期限切れならリフレッシュ。将来暗号化を前提としたプレーン保存で TODO コメントを残置。
+  - `UpdateLastSyncedAtAsync` で同期日時を記録。`RemoveConnectionAsync` はユーザー単位で連携解除。
+- **ExternalCalendarSyncService (`Services/ExternalCalendarSyncService.cs`):**
+  - `IExternalCalendarClient` (Outlook/Google stub) を経由して外部予定を取得し、`Events` に upsert。取得ゼロ件でも最終同期日時を更新。
+- **OAuth フロー (`Controllers/AuthController.cs`):**
+  - `GET /auth/outlook/connect` → `Challenge` で Microsoft (v2.0) へリダイレクト（`offline_access Calendars.ReadWrite User.Read`）。
+  - `GET /auth/outlook/callback` で `IdentityConstants.ExternalScheme` のトークンを取得・保存後、管理画面へリダイレクト。
+  - `GET /auth/google/calendar/connect` → Google 認可エンドポイントへリダイレクト（`https://www.googleapis.com/auth/calendar` + `offline`）。
+  - `GET /auth/google/calendar/callback` でトークン保存。いずれもユーザーはトークンを手入力しない。
 - **PCSC ライブラリ:** `PCSC` / `PCSC.Iso7816` を参照済み。IC カード機能を実装する際は要件とセキュリティを別途整理する。
 
 ## 8. コントローラーと機能
 ### 8.1 `EventsController`
-- `Index`: ログインユーザーの予定一覧。FullCalendar 用 JSON (`GetEvents`) と CalDAV 同期 (`Sync`: 60 秒クールダウン、結果 JSON) を提供。JSON は拡張メタ（ソース/カテゴリ/優先度など）を extendedProps として返す。
+- `Index`: ログインユーザーの予定一覧。FullCalendar 用 JSON (`GetEvents`) と CalDAV 同期 (`Sync`: 60 秒クールダウン、結果 JSON) を提供。JSON は拡張メタ（ソース/カテゴリ/優先度など）を extendedProps として返す。カテゴリはマスタ参照で名前/色/アイコンを含めて返却。
 - `Sync`: CalDAV から新規 UID だけを追加（更新/削除は未対応）。戻り値は { saved, scanned, durationMs }。
 - `Create` / `Edit` / `Delete` / `Details`: GUID ID による CRUD。`Create` は `startDate`/`endDate` をクエリで受け取り初期値をセット。`Edit` は同時更新例外をハンドリング。
-### 8.2 `ICloudSettingController`
+### 8.2 `CategoriesController`
+- カテゴリマスタの CRUD（ユーザー単位）。初回アクセスでデフォルトカテゴリ（仕事/会議/プライベート/締切/学習）をシード（UserId を付与）。FontAwesome アイコンとカラーコードを選択可。削除時、使用中カテゴリは削除不可（イベント再割当てが必要）。
+### 8.3 `AuthController`
+- `/auth/outlook/connect` / `/auth/outlook/callback` / `/auth/google/calendar/connect` / `/auth/google/calendar/callback` を提供。`Challenge` で外部プロバイダーへ遷移し、コールバックでサーバーがトークンを保存。
+- トークンは `OutlookCalendarConnection` / `GoogleCalendarConnection` に自動保存され、ユーザーは値を入力しない。エラー時は管理画面へステータスメッセージを返してリダイレクト。
+- 同期そのものは `ExternalCalendarSyncService` を経由（イベント同期 UI は今後の実装に委ねる）。
+### 8.4 `ICloudSettingController`
 - ユーザーにつき 1 件の認証情報を `Index`/`Create`/`Edit`/`Delete` で管理。重複登録は `ModelState` エラーに。
-### 8.3 Identity 管理系
+### 8.5 Identity 管理系
 - `UsersController`: ユーザーの作成・編集・削除。メール重複チェックとパスワード入力必須。
 - `RolesController`: `IdentityRole` の CRUD。
 - `UserRolesController`: `IdentityUserRole<string>` の追加・更新・削除 (`UserManager.AddToRoleAsync` / `RemoveFromRoleAsync`)。
-### 8.4 `HomeController`
+### 8.6 `HomeController`
 - `Index`, `Privacy`, `Error` を提供。認証後のデフォルト遷移先。
 
 ## 9. UI / UX 指針
@@ -69,8 +90,8 @@ _最終更新: 2025-11-17。仕様書とコードコメントは日本語を基�
   - 画面全体にグラデーション背景を敷き、ガラス調ナビゲーション (ブランドピル + 丸型メニュー) を配置。
   - `.app-hero` と `.app-content` でカードが背景から浮き上がる構成。
 - **カレンダー (`Views/Events/Index.cshtml` + `wwwroot/css/calendar-ui.css` + `wwwroot/css/events-integrated.css` + `wwwroot/js/events-integrated.js`):**
-  - 左サイドでソース/カテゴリのフィルター、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。
-  - FullCalendar に拡張メタを渡し、フィルター/統計用に利用する。同期ボタンは `/Events/Sync` を AJAX 呼び出し。
+  - 左サイドでソース/カテゴリのフィルター（カテゴリは DB マスタから動的生成）、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。
+  - FullCalendar に拡張メタを渡し、フィルター/統計用に利用する。同期ボタンは `/Events/Sync` (iCloud) を AJAX 呼び出し、Outlook/Google 同期ボタンは `ExternalCalendars/Sync` へ POST。
 - **フォーム/詳細 (`Views/Events/Create|Edit|Details|Delete` + `wwwroot/css/event-forms.css` + `wwwroot/js/event-forms.js`):**
   - 円弧の大きいカード、丸みのある入力欄、グラデーションボタンを採用。
   - プレビューカードとカラースウォッチで UI の雰囲気を即時確認可能 (`event-forms.js` がタイトル/開始時刻/色をリアルタイム反映)。
@@ -79,7 +100,7 @@ _最終更新: 2025-11-17。仕様書とコードコメントは日本語を基�
 - **アカウント設定 (`Areas/Identity/Pages/Account/Manage/*` + `wwwroot/css/account-manage.css`):**
   - `_Layout.cshtml` でガラス調ヘッダー＋サイドナビを備えたカード UI に統一し、ナビ文言や各ページ内文書を日本語化。
   - `_ManageNav.cshtml` はカテゴリとラベルを併記したタブ型リンク、`_StatusMessage.cshtml` はトースト表示。
-  - プロフィール/メール/パスワード/2FA/個人データ/ICカード/iCloud など主要フォームは `settings-card`, `form-grid`, `btn-primary-modern` を用いた操作性重視の配置へ変更。
+  - プロフィール/メール/パスワード/2FA/個人データ/ICカード/iCloud/Outlook/Google など主要フォームは `settings-card`, `form-grid`, `btn-primary-modern` を用いた操作性重視の配置へ変更。Outlook/Google は「状態表示＋連携/解除ボタン」だけを表示し、トークン入力欄を廃止（必要なら別の管理者専用デバッグ画面を導入）。
 
 ## 10. 遷移 (テキスト)
 ### 10.1 認証済みユーザー
@@ -108,6 +129,7 @@ _最終更新: 2025-11-17。仕様書とコードコメントは日本語を基�
 - 基点は Identity の `AspNetUsers`。`Events` は 1 対多、`ICloudSettings` と `ICCards` は 1 対 1 想定（ICCards は Unique 未設定のため要検討）。
 - モデルは `Event` / `ICloudSetting` / `ICCard` を ApplicationDbContext に登録済み。`BalanceSheetEntry` や `Personal` は削除済み。
 - 予定同期 UI は `EventsController` + `Views/Events/Index.cshtml` + `wwwroot/js/events-integrated.js`（FullCalendar 使用）。ソース/カテゴリ/検索/統計/直近予定/現在時刻インジケーターを備える。IC カードは現状 UI 未連携。
-- CalDAV 同期は iCloud の新規 UID 挿入のみ。UID が既存でも更新/削除は反映されない。取り込み時の拡張メタはデフォルト値のまま。
+- CalDAV 同期は iCloud の新規 UID 挿入のみ。UID が既存でも更新/削除は未対応。取り込み時の拡張メタはデフォルト値のまま。
+- 外部カレンダー連携は Outlook/Google の OAuth 認可コードフローを追加。トークンはユーザー入力不要で `*_CalendarConnection` テーブルにサーバー保存し、リフレッシュ処理をサービス層に分離。旧 `ExternalCalendarAccount` はレガシーとして残置。
 - セキュリティ想定: `ICloudSettings` は暗号化ストア前提（平文保存しない）。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。本番前に管理系 `[Authorize]` を有効化。
 - 運用: スキーマ変更時は `docs/db-3nf.txt` と本仕様書を同じコミットで更新する。公開前は現行 RDB を軸に内容を維持・更新する。

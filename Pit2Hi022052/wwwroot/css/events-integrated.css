@@ -73,7 +73,7 @@ body.app-body.events-page .ic-root {
     width: 100%;
     max-width: 1900px;
     margin: 0 auto;
-    align-items: start;
+    align-items: stretch;  /* サイドと中央の縦位置を揃える */
 }
 
 .ic-sidebar-left {
@@ -84,6 +84,8 @@ body.app-body.events-page .ic-root {
     padding: 0.7rem;
     border-radius: 22px;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    align-self: stretch;
+    height: 100%;
 }
 
 .ic-sidebar-right-wrapper {
@@ -555,8 +557,8 @@ body.app-body.events-page .ic-root {
     border-radius: 18px;
     box-shadow: 0 10px 35px rgba(0,0,0,0.1);
 
-    /* カレンダー領域を最大化するため横パディングを抑えめに */
-    padding: 1rem 0.35rem 1rem;
+    /* カレンダー領域を最大化するためパディングをさらに抑制 */
+    padding: 0.6rem 0.2rem 0.75rem;
     box-sizing: border-box;
 }
 
@@ -662,8 +664,9 @@ body.app-body.events-page .ic-root {
     border-radius: 16px;
     overflow: hidden;
     background: #fff;
-    min-height: 680px;
+    min-height: 820px; /* カレンダー表示域を縦に広げる */
     box-sizing: border-box;
+    padding: 0.2rem; /* 余白を縮めて表示域を広げる */
 }
 
 .fc .fc-timegrid-now-indicator-line {
@@ -675,8 +678,9 @@ body.app-body.events-page .ic-root {
 }
 
 .calendar-main-card {
-    min-height: 680px;
+    min-height: 820px;
     background: #fff;
+    padding: 0.15rem; /* FullCalendarエリアを枠いっぱいに寄せる */
 }
 
 /* 右サイドバー（検索／統計／直近予定） */
@@ -687,6 +691,8 @@ body.app-body.events-page .ic-root {
     padding: 0.7rem;
     border-radius: 22px;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    align-self: stretch;
+    height: 100%;
 }
 
 .ic-input {

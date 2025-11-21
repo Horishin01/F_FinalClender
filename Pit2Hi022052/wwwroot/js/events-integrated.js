@@ -21,7 +21,10 @@
         state.allEvents = json.map(e => ({
             ...e,
             source: (e.source || 'Local'),
-            type: (e.type || 'Personal'),
+            type: (e.type || '未分類'),
+            categoryId: e.categoryId || '',
+            categoryIcon: e.categoryIcon || '',
+            categoryColor: e.categoryColor || '',
             priority: (e.priority || 'Normal')
         }));
     }
@@ -31,7 +34,7 @@
         const term = query.trim().toLowerCase();
         state.filtered = state.allEvents.filter(e => {
             const sOk = source === 'all' || (e.source || '').toLowerCase() === source.toLowerCase();
-            const cOk = category === 'all' || (e.type || '').toLowerCase() === category.toLowerCase();
+            const cOk = category === 'all' || (e.categoryId || e.type || '').toLowerCase() === category.toLowerCase();
             const qOk = !term || `${e.title} ${e.description || ''} ${e.location || ''}`.toLowerCase().includes(term);
             return sOk && cOk && qOk;
         });
@@ -59,11 +62,11 @@
 
         // counts
         const bySource = countBy(state.filtered, e => e.source);
-        const byCat = countBy(state.filtered, e => e.type);
+        const byCat = countBy(state.filtered, e => e.categoryId || e.type);
         setText('#srcAll', total); setText('#srcGoogle', bySource.Google || 0); setText('#srcICloud', bySource.ICloud || 0);
         setText('#srcOutlook', bySource.Outlook || 0); setText('#srcWork', bySource.Work || 0); setText('#srcLocal', bySource.Local || 0);
-        setText('#catAll', total); setText('#catWork', byCat.Work || 0); setText('#catMeeting', byCat.Meeting || 0);
-        setText('#catPersonal', byCat.Personal || 0); setText('#catDeadline', byCat.Deadline || 0); setText('#catStudy', byCat.Study || 0);
+        setText('#catAll', total);
+        renderCategoryFilters();
     }
 
     function updateUpcoming() {
@@ -80,7 +83,7 @@
             .filter(Boolean)
             .filter(item => item.start >= todayAnchor || item.end >= now)
             .sort((a, b) => a.start - b.start)
-            .slice(0, 8);
+            .slice(0, 4);
 
         if (upcoming.length === 0) {
             const empty = document.createElement('li');
@@ -169,6 +172,55 @@
         }, {});
     }
 
+    function renderCategoryFilters() {
+        const list = qs('#icCategoryList');
+        if (!list) return;
+        const base = state.allEvents.filter(e => {
+            const sOk = state.filters.source === 'all' || (e.source || '').toLowerCase() === state.filters.source.toLowerCase();
+            const term = state.filters.query.trim().toLowerCase();
+            const qOk = !term || `${e.title} ${e.description || ''} ${e.location || ''}`.toLowerCase().includes(term);
+            return sOk && qOk;
+        });
+        const categories = new Map();
+        base.forEach(e => {
+            const key = (e.categoryId || e.type || 'uncat').toLowerCase();
+            if (!categories.has(key)) {
+                categories.set(key, {
+                    id: e.categoryId || key,
+                    name: e.type || '未分類',
+                    color: e.categoryColor || '#e5e7eb',
+                    icon: e.categoryIcon || 'fa-shapes'
+                });
+            }
+        });
+
+        const counts = countBy(base, e => (e.categoryId || e.type || 'uncat').toLowerCase());
+        list.innerHTML = '';
+
+        const makeBtn = (label, key, color, icon, count) => {
+            const btn = document.createElement('button');
+            btn.className = 'ic-list-item';
+            btn.dataset.category = key;
+            btn.innerHTML = `
+                <span class="ic-list-label">
+                    <span class="ic-list-icon" style="background:${color}; color:#fff;"><i class="fa-solid ${icon}"></i></span>
+                    <span>${label}</span>
+                </span>
+                <span class="count">${count}</span>
+            `;
+            if (state.filters.category === key) btn.classList.add('active');
+            return btn;
+        };
+
+        const totalBtn = makeBtn('すべて', 'all', '#e5e7eb', 'fa-shapes', state.filtered.length);
+        list.appendChild(totalBtn);
+
+        categories.forEach((cat, key) => {
+            const count = counts[key] || 0;
+            list.appendChild(makeBtn(cat.name, key, cat.color, cat.icon, count));
+        });
+    }
+
     function bindFilters() {
         const sourceList = qs('#icSourceList');
         const catList = qs('#icCategoryList');
@@ -236,6 +288,9 @@
             extendedProps: {
                 source: e.source,
                 type: e.type,
+                categoryId: e.categoryId,
+                categoryIcon: e.categoryIcon,
+                categoryColor: e.categoryColor,
                 priority: e.priority,
                 location: e.location
             }

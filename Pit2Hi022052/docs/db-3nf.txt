@@ -7,10 +7,45 @@ Table: AspNetUsers (ApplicationUser)
 - Columns（Identity標準一式）: UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount
 - 備考: Identityの関連（AspNetUserRoles, AspNetRoles, 各種claims/logins/tokens）は標準。全ての属性はユーザーを表し、Idに従属。
 
+Table: AspNetRoles
+- PK: Id (string)
+- Columns: Name, NormalizedName, ConcurrencyStamp
+- 備考: ロール名のみを保持するマスタ。Id -> 全カラム。
+
+Table: AspNetUserRoles
+- PK: (UserId, RoleId)
+- Columns: UserId (FK -> AspNetUsers.Id), RoleId (FK -> AspNetRoles.Id)
+- 備考: ユーザーとロールの多対多対応表で、組の主キー以外に属性は持たない（完全従属）。
+
+Table: AspNetRoleClaims / AspNetUserClaims / AspNetUserLogins / AspNetUserTokens
+- PK: Identity標準の複合キー
+- 役割: 追加クレーム、外部ログイン、リフレッシュトークン等。全て主キーに従属。
+
 Table: Events
 - PK: Id (string)
-- Columns: UserId (FK -> AspNetUsers.Id), UID, Title, StartDate (null可), EndDate (null可), LastModified (null可), Description, AllDay (bool), Source (enum), Category (enum), Priority (enum), Location (nullable), AttendeesCsv (nullable), Recurrence (enum), ReminderMinutesBefore (nullable int)
-- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。`IsAllDay` は NotMapped（DB非格納）。
+- Columns: UserId (FK -> AspNetUsers.Id), UID, Title, StartDate (null可), EndDate (null可), LastModified (null可), Description, AllDay (bool), Source (enum), CategoryId (FK -> CalendarCategories.Id), Priority (enum), Location (nullable), AttendeesCsv (nullable), Recurrence (enum), ReminderMinutesBefore (nullable int)
+- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。`IsAllDay` は NotMapped（DB非格納）。CategoryId はカテゴリマスタへの外部キー。
+- スケーリング: UserIdカーディナリティは高い。アクセス頻度が高い場合、UserId+StartDateに複合インデックス検討。
+
+Table: CalendarCategories
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Name (カテゴリ名), Icon (FontAwesome等のキー), Color (カラーコード)
+- 備考: ユーザーごとに管理するカテゴリマスタ。アイコン/カラーを任意に設定可能。UserId -> Name/Icon/Color の完全従属。
+
+Table: ExternalCalendarAccounts
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Provider (enum: Outlook/Google), AccountEmail, AccessToken, RefreshToken (nullable), ExpiresAt (nullable), Scope (nullable), CreatedAt, UpdatedAt
+- 備考: 旧トークンストア（手貼り付け用レガシー）。UserId -> Provider/AccountEmail/Token/Scope/ExpiresAt/CreatedAt/UpdatedAt に従属。新しい OAuth 接続テーブルへ移行予定。
+
+Table: OutlookCalendarConnections
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Provider (varchar, "Outlook"), AccountEmail (nullable), AccessTokenEncrypted, RefreshTokenEncrypted (nullable), ExpiresAtUtc (nullable), Scope (nullable), LastSyncedAtUtc (nullable), CreatedAtUtc, UpdatedAtUtc
+- 備考: Outlook カレンダー用 OAuth 認可コードフローで取得したトークンを保存。UserId をユニーク想定で 1:1 にしたい場合は Unique 制約を設定。暗号化保存を前提にプレーンで保持している。
+
+Table: GoogleCalendarConnections
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Provider (varchar, "Google"), AccountEmail (nullable), AccessTokenEncrypted, RefreshTokenEncrypted (nullable), ExpiresAtUtc (nullable), Scope (nullable), LastSyncedAtUtc (nullable), CreatedAtUtc, UpdatedAtUtc
+- 備考: Google Calendar 用トークンストア。リフレッシュトークンによる更新をサービス層で実装。暗号化保存を前提にプレーンで保持している。
 
 Table: ICCards
 - PK: Id (string)
@@ -30,24 +65,20 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
 │   AspNetUsers   │
 │   ● Id (PK)     │
 │   ...Identity...│
-└──────┬──────────┬──────────┬──────────┐
-       │0..1       │0..1       │0..*       │
-       │           │           │           │
-┌──────▼─────┐ ┌──▼────────┐ ┌──────────▼─────────┐
-│ICloudSettings│ │ ICCards   │   │ Events             │
-│○ UserId      │ │○ UserId   │   │○ UserId            │
-│Username      │ │Uid        │   │UID                 │
-│Password      │ └───────────┘   │Title               │
-└──────────────┘ ※ICCardsは1対1  │StartDate          │
-（モデルにUnique未設定）           │EndDate            │
-                                 │LastModified       │
-                                 │Description        │
-                                 │AllDay             │
-                                 │Source/Category    │
-                                 │Priority/Location  │
-                                 │Attendees/Recurr.  │
-                                 │ReminderMinutes    │
-                                 └───────────────────┘
+└──────┬──────────┬──────────┬──────────┬─────────────┬───────────────┬────────────────────┐
+       │0..1       │0..1       │0..*       │0..*         │0..*           │0..*                │
+       │           │           │           │             │               │                    │
+┌──────▼─────┐ ┌──▼────────┐ ┌──────────▼─────────┐ ┌───────────────▼─────────┐ ┌─────────────▼─────────┐ ┌──────────────────▼────────────┐ ┌──────────────────▼────────────┐
+│ICloudSettings│ │ ICCards   │   │ Events             │ │   AspNetUserRoles       │ │ CalendarCategories     │ │ OutlookCalendarConnections   │ │ GoogleCalendarConnections     │
+│○ UserId      │ │○ UserId   │   │○ UserId            │ │○ UserId                 │ │● Id (PK)               │ │● Id (PK)                     │ │● Id (PK)                      │
+│Username      │ │Uid        │   │CategoryId (FK)     │ │○ RoleId                 │ │○ UserId                │ │○ UserId                      │ │○ UserId                       │
+│Password      │ └───────────┘   │UID / Title ...     │ └───────────────▲─────────┘ │Name / Icon / Color     │ │Provider/Token...             │ │Provider/Token...              │
+└──────────────┘ ※ICCardsは1対1  │StartDate/EndDate  │                 │            └──────────────────────┘ └────────────────────────────┘ └─────────────────────────────┘
+（モデルにUnique未設定）           │AllDay/Location…   │        ┌────────┴────────┐
+                                 │Priority/Recurr…    │        │    AspNetRoles    │
+                                 │Reminder            │        │    ● Id (PK)      │
+                                 └───────────────────┘        │    Name           │
+                                                             └───────────────────┘
 
 セキュリティ前提メモ（公開時想定）
 - ICloudSettings: 認証情報は平文保存しない。暗号化ストア/Key Vault等を前提に設計し、可能なら保存自体を最小化（トークンのみ保存）する。
@@ -60,21 +91,18 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
 │   AspNetUsers    │
 │   ● Id (PK)      │ 1
 │   ...Identity... │
-└──────┬───────────┬───────────┬────────────┐
-       │0..1(Unique)│0..1(Unique)│0..*        │
-       │            │            │            │
-┌──────▼──────────┐┌──────────▼────────┐┌───────────▼─────────┐
-│ICloudSettings   ││     ICCards        ││       Events        │
-│○ UserId (UQ)    ││ ○ UserId (UQ)      ││ ○ UserId            │
-│Username (secure)││ Uid (IC UID)       ││ UID (external sync) │
-│Password (secure)│└────────────────────┘│ Title               │
-└─────────────────┘                      │ StartDate           │
-                                         │ EndDate             │
-                                         │ LastModified        │
-                                         │ Description         │
-                                         │ AllDay              │
-                                         │ Source/Category     │
-                                         │ Priority/Location   │
-                                         │ Attendees/Recurr.   │
-                                         │ ReminderMinutes     │
+└──────┬───────────┬───────────┬────────────┬───────────────┬───────────────┐
+       │0..1(UQ)    │0..1(UQ)    │0..*        │0..*            │0..*            │
+       │            │            │            │                │                │
+┌──────▼──────────┐┌──────────▼────────┐┌───────────▼─────────┐┌───────────────▼─────────┐┌───────────────▼────────┐┌────────────────────▼────────┐
+│ICloudSettings   ││     ICCards        ││       Events        ││    AspNetUserRoles       ││   CalendarCategories   ││ ExternalCalAccounts        │
+│○ UserId (UQ)    ││ ○ UserId (UQ)      ││ ○ UserId            ││ ○ UserId                 ││ ○ Id (PK)              ││ ○ Id (PK)                  │
+│Username (secure)││ Uid (IC UID)       ││ CategoryId (FK)     ││ ○ RoleId                 ││ ○ UserId               ││ ○ UserId                   │
+│Password (secure)│└────────────────────┘│ UID (external sync) │└───────────────▲─────────┘│ Name/Icon/Color        ││ Provider/Token/Expires     │
+└─────────────────┘                      │ Title               │                │└────────────────────────┘└────────────────────────────┘
+                                         │ StartDate / EndDate │       ┌────────┴────────┐
+                                         │ Description / AllDay│       │    AspNetRoles   │
+                                         │ Source / Priority   │       │    ● Id (PK)     │
+                                         │ Location / Recurr.  │       │    Name          │
+                                         │ ReminderMinutes     │       └──────────────────┘
                                          └─────────────────────┘

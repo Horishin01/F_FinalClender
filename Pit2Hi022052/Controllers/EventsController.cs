@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 using Pit2Hi022052.Services;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Pit2Hi022052.Controllers
 {
@@ -50,6 +51,7 @@ namespace Pit2Hi022052.Controllers
             if (currentUser == null) return Unauthorized();
 
             var events = await _context.Events
+                .Include(e => e.Category)
                 .Where(e => e.UserId == currentUser.Id)
                 .OrderBy(e => e.StartDate ?? DateTime.MinValue)
                 .ToListAsync();
@@ -69,6 +71,7 @@ namespace Pit2Hi022052.Controllers
             }
 
             var dbEvents = await _context.Events
+                .Include(e => e.Category)
                 .Where(e => e.UserId == currentUser.Id)
                 .OrderBy(e => e.StartDate ?? DateTime.MinValue)
                 .ToListAsync();
@@ -83,7 +86,10 @@ namespace Pit2Hi022052.Controllers
                 allDay = e.AllDay,
                 // 拡張メタをFullCalendarのextendedPropsに渡してUIで利用する
                 source = e.Source.ToString(),
-                type = e.Category.ToString(),
+                type = e.Category?.Name ?? string.Empty,
+                categoryId = e.CategoryId,
+                categoryIcon = e.Category?.Icon ?? string.Empty,
+                categoryColor = e.Category?.Color ?? string.Empty,
                 priority = e.Priority.ToString(),
                 location = e.Location,
                 attendees = e.AttendeesCsv,
@@ -153,6 +159,7 @@ namespace Pit2Hi022052.Controllers
             if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var parsedEnd))
                 model.EndDate = parsedEnd;
 
+            await PopulateCategoriesAsync();
             return View(model);
         }
 
@@ -172,6 +179,7 @@ namespace Pit2Hi022052.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+            await PopulateCategoriesAsync(model.CategoryId);
             return View(model);
         }
 
@@ -179,9 +187,12 @@ namespace Pit2Hi022052.Controllers
         {
             if (string.IsNullOrEmpty(id)) return NotFound("IDが指定されていません。");
 
-            var ev = await _context.Events.FindAsync(id);
+            var ev = await _context.Events
+                .Include(e => e.Category)
+                .FirstOrDefaultAsync(e => e.Id == id);
             if (ev == null) return NotFound("指定されたイベントが見つかりません。");
 
+            await PopulateCategoriesAsync(ev.CategoryId);
             return View(ev);
         }
 
@@ -206,6 +217,7 @@ namespace Pit2Hi022052.Controllers
                     else throw;
                 }
             }
+            await PopulateCategoriesAsync(model.CategoryId);
             return View(model);
         }
 
@@ -213,7 +225,9 @@ namespace Pit2Hi022052.Controllers
         {
             if (string.IsNullOrEmpty(id)) return NotFound("イベントIDが指定されていません。");
 
-            var ev = _context.Events.FirstOrDefault(e => e.Id == id);
+            var ev = _context.Events
+                .Include(e => e.Category)
+                .FirstOrDefault(e => e.Id == id);
             if (ev == null) return NotFound($"ID({id})のイベントは存在しません。");
 
             return View(ev);
@@ -222,7 +236,9 @@ namespace Pit2Hi022052.Controllers
         [HttpGet]
         public IActionResult Delete(string id)
         {
-            var ev = _context.Events.FirstOrDefault(e => e.Id == id);
+            var ev = _context.Events
+                .Include(e => e.Category)
+                .FirstOrDefault(e => e.Id == id);
             if (ev == null) return NotFound("削除対象のイベントが見つかりません。");
             return View(ev);
         }
@@ -238,6 +254,41 @@ namespace Pit2Hi022052.Controllers
                 _context.SaveChanges();
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task PopulateCategoriesAsync(string? selectedId = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                ViewBag.CategoryOptions = new List<SelectListItem>();
+                return;
+            }
+
+            var categories = await _context.Categories
+                .Where(c => c.UserId == user.Id)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+            if (!categories.Any())
+            {
+                categories = new List<CalendarCategory>
+                {
+                    new CalendarCategory { Name = "仕事・業務", Icon = "fa-briefcase", Color = "#3b82f6", UserId = user.Id },
+                    new CalendarCategory { Name = "会議・打ち合わせ", Icon = "fa-people-group", Color = "#0ea5e9", UserId = user.Id },
+                    new CalendarCategory { Name = "プライベート", Icon = "fa-house", Color = "#f97316", UserId = user.Id },
+                    new CalendarCategory { Name = "締切・期限", Icon = "fa-bell", Color = "#ef4444", UserId = user.Id },
+                    new CalendarCategory { Name = "学習・勉強", Icon = "fa-book-open", Color = "#10b981", UserId = user.Id }
+                };
+                _context.Categories.AddRange(categories);
+                await _context.SaveChangesAsync();
+            }
+
+            ViewBag.CategoryOptions = categories.Select(c => new SelectListItem
+            {
+                Text = c.Name,
+                Value = c.Id,
+                Selected = !string.IsNullOrEmpty(selectedId) && c.Id == selectedId
+            }).ToList();
         }
     }
 }

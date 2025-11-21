@@ -33,7 +33,7 @@
 
             <div class="ev-meta-chips">
                 <span class="meta-chip"><i class="fa-solid fa-layer-group"></i> @Model.Source</span>
-                <span class="meta-chip"><i class="fa-solid fa-shapes"></i> @Model.Category</span>
+                <span class="meta-chip"><i class="fa-solid fa-shapes"></i> @(Model.Category?.Name ?? "未設定")</span>
                 <span class="meta-chip"><i class="fa-solid fa-signal"></i> 優先度: @Model.Priority</span>
                 @if (Model.AllDay)
                 {

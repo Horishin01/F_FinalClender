@@ -7,8 +7,8 @@ using Pit2Hi022052.Models;
 namespace Pit2Hi022052.Data;
 //==========================================================
 // ApplicationDbContext クラス
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
-{
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+    {
 
     //--------
     // 基幹処理
@@ -24,6 +24,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     //カレンダー
     public virtual DbSet<Event>? Events { get; set; }
     public virtual DbSet<ICCard>? ICCards { get; set; }
+    public virtual DbSet<CalendarCategory>? Categories { get; set; }
+    public virtual DbSet<ExternalCalendarAccount>? ExternalCalendarAccounts { get; set; }
+    public virtual DbSet<OutlookCalendarConnection> OutlookCalendarConnections { get; set; } = default!;
+    public virtual DbSet<GoogleCalendarConnection> GoogleCalendarConnections { get; set; } = default!;
 
     //--------
     // icouldプロパティ
