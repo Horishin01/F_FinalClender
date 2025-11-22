@@ -34,8 +34,11 @@
                     <ul class="app-menu">
                         <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
                         <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
-                        <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
-                        <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
+                        {
+                            <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
+                            <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
+                        }
                         <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
                         <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
                         <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
@@ -79,8 +82,11 @@
         <ul class="mobile-menu-list">
             <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
             <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
-            <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
-            <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
+            {
+                <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
+                <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
+            }
             <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
             <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
             <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
