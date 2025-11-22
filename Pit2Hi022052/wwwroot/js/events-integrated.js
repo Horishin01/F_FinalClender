@@ -6,11 +6,13 @@
     const state = {
         allEvents: [],
         filtered: [],
+        filteredBase: [],
         filters: {
             source: 'all',
             category: 'all',
             query: ''
         },
+        focusStat: null,
         calendar: null
     };
 
@@ -32,28 +34,45 @@
     function applyFilters() {
         const { source, category, query } = state.filters;
         const term = query.trim().toLowerCase();
-        state.filtered = state.allEvents.filter(e => {
+        const base = state.allEvents.filter(e => {
             const sOk = source === 'all' || (e.source || '').toLowerCase() === source.toLowerCase();
             const cOk = category === 'all' || (e.categoryId || e.type || '').toLowerCase() === category.toLowerCase();
             const qOk = !term || `${e.title} ${e.description || ''} ${e.location || ''}`.toLowerCase().includes(term);
             return sOk && cOk && qOk;
         });
+        state.filteredBase = base;
+
+        let focused = base;
+        const today = startOfDay(new Date());
+        const startWeek = startOfWeek(new Date());
+        const endWeek = endOfWeek(new Date());
+        if (state.focusStat === 'today') {
+            focused = base.filter(e => isSameDay(parseDate(e.start), today));
+        } else if (state.focusStat === 'week') {
+            focused = base.filter(e => {
+                const d = parseDate(e.start);
+                return d >= startWeek && d <= endWeek;
+            });
+        } else if (state.focusStat === 'dup') {
+            const dupIds = findDuplicateIds(base);
+            focused = base.filter(e => dupIds.has(e.id));
+        }
+
+        state.filtered = focused;
     }
 
     function updateStats() {
         const today = new Date();
-        const startWeek = new Date(today);
-        startWeek.setDate(today.getDate() - today.getDay());
-        const endWeek = new Date(startWeek);
-        endWeek.setDate(startWeek.getDate() + 6);
+        const startWeek = startOfWeek(today);
+        const endWeek = endOfWeek(today);
 
-        const total = state.filtered.length;
-        const todayCount = state.filtered.filter(e => isSameDay(parseDate(e.start), today)).length;
-        const weekCount = state.filtered.filter(e => {
+        const total = state.filteredBase.length;
+        const todayCount = state.filteredBase.filter(e => isSameDay(parseDate(e.start), today)).length;
+        const weekCount = state.filteredBase.filter(e => {
             const d = parseDate(e.start);
             return d >= startWeek && d <= endWeek;
         }).length;
-        const dup = detectDup(state.filtered);
+        const dup = detectDup(state.filteredBase);
 
         setText('#statTotal', total);
         setText('#statToday', todayCount);
@@ -132,6 +151,20 @@
         return d;
     }
 
+    function startOfWeek(date) {
+        const d = startOfDay(date);
+        const day = d.getDay();
+        d.setDate(d.getDate() - day);
+        return d;
+    }
+
+    function endOfWeek(date) {
+        const d = startOfWeek(date);
+        d.setDate(d.getDate() + 6);
+        d.setHours(23, 59, 59, 999);
+        return d;
+    }
+
     function formatTime(date) {
         return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
     }
@@ -161,6 +194,18 @@
             if (seen.has(key)) dup += 1;
             seen.add(key);
         });
+        return dup;
+    }
+
+    function findDuplicateIds(events) {
+        const map = new Map();
+        events.forEach(e => {
+            const key = `${(e.start || '').split('T')[0]}-${(e.title || '').toLowerCase()}`;
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(e.id);
+        });
+        const dup = new Set();
+        map.forEach(ids => { if (ids.length > 1) ids.forEach(id => dup.add(id)); });
         return dup;
     }
 
@@ -230,6 +275,9 @@
             qsa('#icSourceList .ic-list-item').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             state.filters.source = btn.dataset.source || 'all';
+            // 絞り込みを戻したときに統計フォーカスが効いたままにならないようにリセット
+            state.focusStat = null;
+            qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
         });
         catList?.addEventListener('click', (e) => {
@@ -238,11 +286,15 @@
             qsa('#icCategoryList .ic-list-item').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             state.filters.category = btn.dataset.category || 'all';
+            state.focusStat = null;
+            qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
         });
         const search = qs('#icSearch');
         search?.addEventListener('input', (e) => {
             state.filters.query = e.target.value || '';
+            state.focusStat = null;
+            qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
         });
     }
@@ -262,6 +314,38 @@
         });
     }
 
+    function setActiveViewButton(viewName) {
+        const mapping = { dayGridMonth: 'viewMonth', timeGridWeek: 'viewWeek', timeGridDay: 'viewDay', listWeek: null };
+        Object.values(mapping).forEach(id => id && qs('#' + id)?.classList.remove('active'));
+        const btnId = mapping[viewName];
+        if (btnId) qs('#' + btnId)?.classList.add('active');
+    }
+
+    function focusCalendar(kind) {
+        if (!state.calendar) return;
+        const now = new Date();
+        if (kind === 'today') {
+            state.calendar.gotoDate(now);
+            state.calendar.changeView('timeGridDay');
+            setActiveViewButton('timeGridDay');
+        } else if (kind === 'week') {
+            state.calendar.gotoDate(now);
+            state.calendar.changeView('timeGridWeek');
+            setActiveViewButton('timeGridWeek');
+        } else if (kind === 'dup') {
+            const dupIds = findDuplicateIds(state.filteredBase);
+            if (dupIds.size > 0) {
+                const first = state.filteredBase.find(e => dupIds.has(e.id));
+                if (first?.start) state.calendar.gotoDate(new Date(first.start));
+            }
+            state.calendar.changeView('dayGridMonth');
+            setActiveViewButton('dayGridMonth');
+        } else {
+            state.calendar.changeView('dayGridMonth');
+            setActiveViewButton('dayGridMonth');
+        }
+    }
+
     async function bindSync() {
         const btn = qs('#syncBtn');
         if (!btn) return;
@@ -275,6 +359,21 @@
                 rerender(true);
             } catch (e) { alert('同期エラー'); }
             finally { btn.disabled = false; }
+        });
+    }
+
+    function bindStats() {
+        const wrap = qs('#icStats');
+        if (!wrap) return;
+        wrap.addEventListener('click', (e) => {
+            const btn = e.target.closest('.ic-stat[data-stat]');
+            if (!btn) return;
+            const kind = btn.dataset.stat;
+            state.focusStat = state.focusStat === kind ? null : kind;
+            qsa('.ic-stat').forEach(el => el.classList.toggle('active', el.dataset.stat === state.focusStat));
+            applyFilters();
+            rerender(true);
+            focusCalendar(state.focusStat);
         });
     }
 
@@ -313,16 +412,18 @@
     function initCalendar() {
         const calEl = qs('#calendar');
         const period = qs('#calPeriod');
+        const mobileMq = window.matchMedia('(max-width: 768px)');
+        const initialView = mobileMq.matches ? 'listWeek' : 'dayGridMonth';
         const calendar = new FullCalendar.Calendar(calEl, {
             headerToolbar: false,
             locale: 'ja',
             timeZone: 'local',
             buttonText: { month: '月', week: '週', day: '日' },
             nowIndicator: true,
-            height: 'auto',
-            contentHeight: 'auto',
-            expandRows: true,
+            height: '80vh',
+            expandRows: false,
             dayMaxEvents: true,
+            initialView,
             events: mapToFc(state.filtered),
             datesSet(info) { if (period) period.textContent = info.view.title; },
             dateClick(info) {
@@ -336,6 +437,39 @@
         });
         calendar.render();
         state.calendar = calendar;
+
+        const handleMobileView = (e) => {
+            if (!state.calendar) return;
+            if (e.matches) {
+                state.calendar.changeView('listWeek');
+            } else if (state.focusStat !== 'week' && state.focusStat !== 'today') {
+                state.calendar.changeView('dayGridMonth');
+                setActiveViewButton('dayGridMonth');
+            }
+        };
+        mobileMq.addEventListener('change', handleMobileView);
+        handleMobileView(mobileMq);
+    }
+
+    function bindMobileToggles() {
+        const wrap = qs('.mobile-quick-actions');
+        if (!wrap) return;
+        const sidebarLeft = qs('#icSidebarLeft');
+        const sidebarRight = qs('#icSidebarRight');
+        wrap.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            if (action === 'scroll-calendar') {
+                qs('#calendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            if (action === 'toggle-filters') {
+                sidebarLeft?.classList.toggle('is-open');
+            }
+            if (action === 'toggle-insights') {
+                sidebarRight?.classList.toggle('is-open');
+            }
+        });
     }
 
     async function init() {
@@ -347,9 +481,12 @@
         updateUpcoming();
         bindCalendarNav(state.calendar);
         bindSync();
+        bindStats();
+        bindMobileToggles();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         init().catch(err => console.error(err));
     });
+
 })();

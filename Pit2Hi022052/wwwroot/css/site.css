@@ -10,6 +10,7 @@
     --accent-green: #1dd1a1;
     --accent-orange: #ff9f43;
     --accent-red: #ff6b6b;
+    --page-gutter: clamp(0.75rem, 3vw, 1.5rem);
 }
 
 *, *::before, *::after {
@@ -32,9 +33,16 @@ body.app-body {
     flex-direction: column;
 }
 
+body.nav-open {
+    overflow: hidden;
+}
+
 .container-xl {
     width: min(98vw, 1480px);
     max-width: 1480px;
+    margin: 0 auto;
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
 }
 
 .app-header {
@@ -45,17 +53,18 @@ body.app-body {
 }
 
 .app-nav {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    position: relative;
     padding: 0.6rem 1.1rem;
     background: rgba(255, 255, 255, 0.96);
     border-radius: 999px;
     box-shadow: 0 18px 45px rgba(107, 125, 255, 0.12);
     backdrop-filter: blur(18px);
     border: 1px solid rgba(255, 255, 255, 0.65);
-    flex-wrap: nowrap;
+    column-gap: clamp(0.5rem, 2vw, 1rem);
+    row-gap: 0.5rem;
 }
 
 .brand {
@@ -74,6 +83,105 @@ body.app-body {
     text-decoration: none;
 }
 
+.nav-toggle {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid rgba(98, 114, 255, 0.35);
+    background: rgba(98, 114, 255, 0.08);
+    color: var(--ink-900);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 21;
+}
+
+.nav-close {
+    display: none;
+    align-self: flex-end;
+    border: none;
+    background: rgba(15, 23, 42, 0.08);
+    color: var(--ink-900);
+    border-radius: 12px;
+    padding: 0.4rem 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.mobile-menu {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    flex-direction: column;
+    gap: 1rem;
+    padding: calc(clamp(1rem, 4vw, 1.5rem) + env(safe-area-inset-top, 0px)) clamp(1rem, 4vw, 1.5rem) clamp(1.3rem, 4vw, 1.8rem);
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.mobile-menu.is-open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.mobile-menu-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mobile-menu-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mobile-menu-list a {
+    display: block;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--ink-900);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.mobile-login {
+    margin-top: 1rem;
+}
+
+.app-menu {
+    list-style: none;
+    display: flex;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+}
+
+.app-nav .brand {
+    flex: 0 0 auto;
+    align-self: center;
+}
+
 .brand-pill {
     display: inline-flex;
     align-items: center;
@@ -85,17 +193,12 @@ body.app-body {
     background: linear-gradient(120deg, var(--brand-start), var(--brand-end));
 }
 
-.app-menu {
-    list-style: none;
+.app-nav-block {
     display: flex;
-    gap: 0.2rem;
-    margin: 0;
-    padding: 0;
-    flex-wrap: nowrap;
-}
-
-.app-nav .brand {
-    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    pointer-events: auto;
 }
 
 .app-nav .app-menu {
@@ -113,6 +216,7 @@ body.app-body {
     color: var(--ink-600);
     text-decoration: none;
     transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
 }
 
 .app-menu a:hover,
@@ -126,39 +230,16 @@ body.app-body {
     align-items: center;
     justify-content: flex-end;
     flex: 0 0 auto;
-    min-width: 180px;
+    min-width: clamp(140px, 22vw, 220px);
     white-space: nowrap;
     flex-shrink: 0;
-}
-
-@media (max-width: 900px) {
-    .app-nav {
-        border-radius: 40px;
-        flex-direction: row;
-        align-items: center;
-        flex-wrap: nowrap;
-        overflow-x: hidden;
-        gap: 0.5rem;
-    }
-
-    .app-login {
-        width: auto;
-        justify-content: flex-end;
-        min-width: unset;
-        white-space: nowrap;
-    }
-
-    .app-nav .app-menu {
-        width: auto;
-        justify-content: flex-start;
-        flex-wrap: nowrap;
-    }
 }
 
 @media (max-width: 1400px) {
     .app-nav {
         padding: 0.8rem 1.1rem;
         overflow-x: hidden;
+        grid-template-columns: auto 1fr auto;
     }
 
     .app-nav .app-menu {
@@ -172,6 +253,78 @@ body.app-body {
         min-width: unset;
         white-space: nowrap;
     }
+}
+
+@media (max-width: 1100px) {
+    .app-nav {
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        position: relative;
+        z-index: 30;
+    }
+
+    .nav-toggle { display: inline-flex; justify-self: end; }
+
+    .app-nav-block {
+        display: none;
+    }
+
+    .app-nav.is-open .app-nav-block,
+    body.nav-open #primaryNav {
+        display: none;
+    }
+
+    .app-menu {
+        display: none;
+    }
+
+    .app-login {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .app-nav {
+        border-radius: 40px;
+        overflow-x: hidden;
+        row-gap: 0.6rem;
+        grid-template-columns: 1fr auto;
+        position: static;
+    }
+
+    .nav-close {
+        display: inline-flex;
+    }
+
+    .app-login {
+        width: 100%;
+        justify-content: flex-start;
+        min-width: unset;
+        white-space: nowrap;
+    }
+
+    .app-nav .app-menu {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .nav-close {
+        display: inline-flex;
+    }
+}
+
+@media (max-width: 640px) {
+    .app-nav { border-radius: 28px; }
+    .brand { justify-content: space-between; width: 100%; }
+    .brand-pill { display: none; }
+    .app-nav-block { padding-top: 3.5rem; }
+    .nav-toggle { width: 100%; justify-content: center; }
+}
+
+.app-nav.is-open {
+    position: relative;
+    z-index: 1200;
 }
 
 .app-hero {

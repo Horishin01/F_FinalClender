@@ -26,19 +26,24 @@
                     <a asp-area="" asp-controller="Home" asp-action="Index">Pi12Hi022052</a>
                     <span class="brand-pill">Calendar</span>
                 </div>
-                <ul class="app-menu">
-                    <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
-                    <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
-                    <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
-                    <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
-                    <li><a asp-area="" asp-controller="Events" asp-action="Index">Events</a></li>
-                    <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
-                    <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
-                    <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
-                    <li><a asp-area="" asp-controller="Categories" asp-action="Index">Categories</a></li>
-                </ul>
-                <div class="app-login">
-                    <partial name="_LoginPartial" />
+                <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobileMenu">
+                    <i class="fa-solid fa-bars"></i>
+                    <span class="nav-toggle-text">メニュー</span>
+                </button>
+                <div class="app-nav-block" id="primaryNav">
+                    <ul class="app-menu">
+                        <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
+                        <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
+                        <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
+                        <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
+                        <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
+                        <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
+                        <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
+                    </ul>
+                    <div class="app-login">
+                        <partial name="_LoginPartial" />
+                    </div>
                 </div>
             </nav>
         </div>
@@ -63,5 +68,27 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     @RenderSection("Scripts", required: false)
+
+    <div id="mobileMenu" class="mobile-menu" aria-hidden="true" tabindex="-1">
+        <div class="mobile-menu-head">
+            <span class="mobile-brand">Pi12Hi022052</span>
+            <button type="button" class="nav-close" aria-label="メニューを閉じる">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <ul class="mobile-menu-list">
+            <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+            <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
+            <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
+            <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
+            <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
+            <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
+            <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
+            <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
+        </ul>
+        <div class="mobile-login">
+            <partial name="_LoginPartial" />
+        </div>
+    </div>
 </body>
 </html>

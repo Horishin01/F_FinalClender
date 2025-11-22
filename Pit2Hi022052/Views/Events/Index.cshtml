@@ -15,8 +15,20 @@
         <div class="ic-head-actions"></div>
     </div>
 
+    <div class="mobile-quick-actions" aria-label="モバイル用のショートカット">
+        <button type="button" class="ic-btn ghost mini" data-action="scroll-calendar">
+            <i class="fa-solid fa-calendar-day"></i> カレンダーへ
+        </button>
+        <button type="button" class="ic-btn primary mini" data-action="toggle-filters">
+            <i class="fa-solid fa-sliders"></i> フィルター表示
+        </button>
+        <button type="button" class="ic-btn ghost mini" data-action="toggle-insights">
+            <i class="fa-solid fa-chart-column"></i> 統計/予定
+        </button>
+    </div>
+
     <div class="ic-layout">
-        <div class="ic-sidebar-left">
+        <div class="ic-sidebar-left mobile-collapsible" id="icSidebarLeft">
             <div class="ic-card">
                 <div class="ic-card-head">カレンダーソース</div>
                 <div class="ic-card-body ic-list" id="icSourceList">
@@ -66,12 +78,19 @@
             </div>
 
             <div class="ic-card">
-                <div class="ic-card-head">カテゴリフィルター</div>
+                <div class="ic-card-head">
+                    <span>カテゴリフィルター</span>
+                    <div class="ic-head-actions">
+                        <a class="ic-btn ghost mini" asp-controller="Categories" asp-action="Index">
+                            <i class="fa-solid fa-plus"></i> カテゴリ管理
+                        </a>
+                    </div>
+                </div>
                 <div class="ic-card-body ic-list" id="icCategoryList"></div>
             </div>
         </div>
 
-        <div class="ic-main">
+        <div class="ic-main" id="icMain">
             <div class="ic-main-head">
                 <div class="ic-month-nav">
                     <button id="calPrev" class="ic-nav-btn">◀</button>
@@ -107,7 +126,7 @@
             </div>
         </div>
 
-        <div class="ic-sidebar-right">
+        <div class="ic-sidebar-right mobile-collapsible" id="icSidebarRight">
             <div class="ic-card">
                 <div class="ic-card-head">
                     <span class="ic-card-title">
@@ -127,35 +146,35 @@
                         <span>統計情報</span>
                     </span>
                 </div>
-                <div class="ic-card-body ic-stats">
-                    <div class="ic-stat">
+                <div class="ic-card-body ic-stats" id="icStats">
+                    <button type="button" class="ic-stat" data-stat="all">
                         <div class="ic-stat-text">
                             <div class="label">総イベント数</div>
                             <div class="value" id="statTotal">0</div>
                         </div>
                         <span class="ic-stat-icon icon-total">📅</span>
-                    </div>
-                    <div class="ic-stat">
+                    </button>
+                    <button type="button" class="ic-stat" data-stat="today">
                         <div class="ic-stat-text">
                             <div class="label">今日</div>
                             <div class="value" id="statToday">0</div>
                         </div>
                         <span class="ic-stat-icon icon-today">📆</span>
-                    </div>
-                    <div class="ic-stat">
+                    </button>
+                    <button type="button" class="ic-stat" data-stat="week">
                         <div class="ic-stat-text">
                             <div class="label">今週</div>
                             <div class="value" id="statWeek">0</div>
                         </div>
                         <span class="ic-stat-icon icon-week">🗓️</span>
-                    </div>
-                    <div class="ic-stat">
+                    </button>
+                    <button type="button" class="ic-stat" data-stat="dup">
                         <div class="ic-stat-text">
                             <div class="label">重複推定</div>
                             <div class="value" id="statDup">0</div>
                         </div>
                         <span class="ic-stat-icon icon-conflict">⚠️</span>
-                    </div>
+                    </button>
                 </div>
             </div>
 

@@ -125,6 +125,17 @@ body.app-body.events-page .ic-root {
     font-weight: 800;
     color: #1f2937;
     border-bottom: 1px solid #e8ecf5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.ic-head-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 .ic-card-title {
@@ -164,6 +175,18 @@ body.app-body.events-page .ic-root {
 .ic-list {
     display: grid;
     gap: 0.5rem;
+}
+
+.mobile-quick-actions {
+    display: none;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin: 0.6rem 0 0.8rem;
+}
+
+.mobile-quick-actions .ic-btn {
+    flex: 1 1 auto;
+    justify-content: center;
 }
 
 .ic-list-item {
@@ -664,9 +687,8 @@ body.app-body.events-page .ic-root {
     border-radius: 16px;
     overflow: hidden;
     background: #fff;
-    min-height: 820px; /* カレンダー表示域を縦に広げる */
     box-sizing: border-box;
-    padding: 0.2rem; /* 余白を縮めて表示域を広げる */
+    padding: 0; /* 余白をなくす */
 }
 
 .fc .fc-timegrid-now-indicator-line {
@@ -717,6 +739,21 @@ body.app-body.events-page .ic-root {
     justify-content: space-between;
     align-items: center;
     gap: 0.6rem;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.ic-stat:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 10px 18px rgba(99, 102, 241, 0.12);
+}
+
+.ic-stat.active {
+    border-color: #818cf8;
+    box-shadow: 0 12px 22px rgba(99, 102, 241, 0.18);
+    transform: translateY(-1px);
 }
 
 .ic-stat-text {
@@ -856,18 +893,39 @@ body.app-body.events-page .ic-root {
 }
 
 @media (max-width: 768px) {
+    .mobile-quick-actions { display: flex; }
     .ic-layout {
-        gap: 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
+    .ic-main {
+        order: 1;
+        padding: 0.8rem 0.35rem 0.9rem;
+    }
+    .ic-sidebar-left { order: 2; }
+    .ic-sidebar-right { order: 3; }
     .ic-sidebar-left,
     .ic-sidebar-right {
         gap: 0.75rem;
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
     }
     .ic-card {
         width: 100%;
     }
-    .ic-main {
-        padding: 0.8rem 0.35rem 0.9rem;
+    .ic-calendar-wrap {
+        min-height: 620px;
+    }
+    .mobile-collapsible {
+        display: none;
+    }
+    #icSidebarLeft.is-open {
+        display: flex;
+    }
+    #icSidebarRight.is-open {
+        display: grid;
     }
 }
 
