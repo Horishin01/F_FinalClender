@@ -241,6 +241,65 @@
         </div>
     </aside>
 
+    <article class="panel flow-panel glass" aria-labelledby="panel-flow-title" data-panel-id="flow" data-panel-span="1">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">習慣ハック</p>
+                <h2 id="panel-flow-title">Flowリスト（やったことログ）</h2>
+                <p class="sub">ToDoを溜めず「今やった／今やる」ことだけを書く、持ち越さないリスト。</p>
+            </div>
+            <div class="flow-badges">
+                <span class="badge ghost">持ち越さない</span>
+                <span class="badge ghost">フロントのみ</span>
+            </div>
+        </header>
+
+        <div class="flow-form">
+            <input type="text" id="flowInput" placeholder="今やったことを書く (例: スマホ開く前に深呼吸)" maxlength="80">
+            <div class="flow-inline">
+                <select id="flowContext" aria-label="カテゴリ">
+                    <option value="仕事">仕事</option>
+                    <option value="プライベート">プライベート</option>
+                    <option value="健康">健康</option>
+                </select>
+                <button type="button" class="btn primary" id="btnAddFlow">記録する</button>
+            </div>
+        </div>
+        <p class="annotation">docs/新しい機能　検討.txt のコンセプトをフロントだけで体験できるモックです。</p>
+
+        <div class="suggestion-chips" id="flowSuggestionChips"></div>
+
+        <div class="flow-stats-grid">
+            <div class="flow-stat">
+                <p>今日</p>
+                <strong id="flowCountToday">0</strong>
+                <small>件記録</small>
+            </div>
+            <div class="flow-stat">
+                <p>今週</p>
+                <strong id="flowCountWeek">0</strong>
+                <small>件積み上げ</small>
+            </div>
+            <div class="flow-stat">
+                <p>連続日数</p>
+                <strong id="flowStreak">0</strong>
+                <small>日継続</small>
+            </div>
+        </div>
+
+        <div class="pill-group tiny flow-filter" role="group" aria-label="表示切替">
+            <button type="button" class="pill active" data-flow-filter="today">今日</button>
+            <button type="button" class="pill" data-flow-filter="all">全期間</button>
+        </div>
+
+        <ul id="flowList" class="flow-log" aria-live="polite">
+            <li class="flow-empty">まだ記録がありません。</li>
+        </ul>
+    </article>
+
     <article class="panel card-panel glass" aria-labelledby="panel-card-title" data-panel-id="card" data-panel-span="2">
         <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
             <i class="fa-solid fa-grip-vertical"></i>

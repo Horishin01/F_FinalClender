@@ -111,14 +111,23 @@
                     <form asp-controller="ExternalCalendars" asp-action="Sync" method="post" class="d-inline">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="provider" value="Outlook" />
-                        <button type="submit" class="ic-btn ghost"><i class="fa-brands fa-microsoft"></i> Outlook同期</button>
+                        <button type="submit" class="ic-btn ghost" data-sync-provider="Outlook"><i class="fa-brands fa-microsoft"></i> Outlook同期</button>
                     </form>
                     <form asp-controller="ExternalCalendars" asp-action="Sync" method="post" class="d-inline">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="provider" value="Google" />
-                        <button type="submit" class="ic-btn ghost"><i class="fa-brands fa-google"></i> Google同期</button>
+                        <button type="submit" class="ic-btn ghost" data-sync-provider="Google"><i class="fa-brands fa-google"></i> Google同期</button>
                     </form>
                     <a class="ic-btn primary" asp-action="Create"><i class="fa-solid fa-plus"></i> 新規追加</a>
+                </div>
+                <div class="sync-visual" id="syncVisual" data-state="idle" aria-live="polite">
+                    <div class="sync-icon" id="syncIcon">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </div>
+                    <div class="sync-meter" aria-hidden="true">
+                        <div class="sync-meter-fill" id="syncMeterFill"></div>
+                    </div>
+                    <div class="sync-status" id="syncStatusText">待機中</div>
                 </div>
             </div>
             <div class="ic-calendar-wrap">

@@ -1,4 +1,7 @@
-@* Views/Shared/_Layout.cshtml *@
+@* Views/Shared/_Layout.cshtml
+   目的: 全ページ共通のレイアウト（ヘッダー/ナビ/フッター/スクリプト差し込み）を提供。
+   主な構成: ナビ（ロール別リンク制御あり）、モバイルメニュー、RenderBody/RenderSection。
+   依存: Bootstrap, FontAwesome, site.css, 個別セクションの Styles/Scripts。 *@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 <!DOCTYPE html>
 <html lang="ja">
@@ -40,9 +43,13 @@
                             <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
                         }
                         <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
-                        <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
-                        <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
-                        <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
+                        {
+                            <li><a asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a></li>
+                            <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
+                            <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
+                            <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
+                        }
                     </ul>
                     <div class="app-login">
                         <partial name="_LoginPartial" />
@@ -88,9 +95,13 @@
                 <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
             }
             <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
-            <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
-            <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
-            <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
+            {
+                <li><a asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a></li>
+                <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
+                <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
+                <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
+            }
         </ul>
         <div class="mobile-login">
             <partial name="_LoginPartial" />

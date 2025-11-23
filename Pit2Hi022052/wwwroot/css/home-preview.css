@@ -514,6 +514,152 @@
     font-size: 0.9rem;
 }
 
+.flow-panel .sub {
+    margin-top: 0.25rem;
+    color: var(--ink-600);
+}
+
+.flow-badges {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.flow-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 0.3rem;
+}
+
+.flow-form input,
+.flow-form select {
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.6);
+    padding: 0.65rem 0.9rem;
+    font-size: 0.95rem;
+    background: #fff;
+}
+
+.flow-inline {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.flow-inline select {
+    max-width: 180px;
+}
+
+.flow-filter {
+    margin: 0.35rem 0;
+    flex-wrap: nowrap;
+}
+
+.suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0.4rem 0 0.3rem;
+}
+
+.idea-chip {
+    border-radius: 12px;
+    border: 1px dashed rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.08);
+    padding: 0.4rem 0.75rem;
+    font-weight: 700;
+    color: var(--ink-700);
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.idea-chip:hover {
+    transform: translateY(-1px);
+    border-color: rgba(99, 102, 241, 0.8);
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.12);
+}
+
+.flow-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.65rem;
+    margin: 0.35rem 0 0.5rem;
+}
+
+.flow-stat {
+    background: rgba(15, 23, 42, 0.03);
+    border: 1px solid rgba(15, 23, 42, 0.07);
+    border-radius: 14px;
+    padding: 0.75rem 0.9rem;
+}
+
+.flow-stat p {
+    margin: 0;
+    color: var(--ink-600);
+}
+
+.flow-stat strong {
+    font-size: 1.4rem;
+}
+
+.flow-stat small {
+    color: var(--ink-500);
+}
+
+.flow-log {
+    list-style: none;
+    padding: 0;
+    margin: 0.6rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.flow-log li {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    padding: 0.65rem 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.flow-text {
+    font-weight: 700;
+}
+
+.flow-meta {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+    color: var(--ink-500);
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.flow-context {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+    font-weight: 700;
+    color: var(--ink-700);
+}
+
+.flow-empty {
+    justify-content: center;
+    color: var(--ink-500);
+    border-style: dashed;
+    text-align: center;
+}
+
 .dot {
     display: inline-block;
     width: 10px;
@@ -876,6 +1022,15 @@
 
     .field-grid {
         grid-template-columns: 1fr;
+    }
+
+    .flow-inline {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .flow-filter {
+        flex-wrap: wrap;
     }
 
     .calendar-toolbar {

@@ -346,19 +346,75 @@
         }
     }
 
+    let syncVisual;
+
+    function getSyncVisual() {
+        if (!syncVisual) syncVisual = setupSyncVisual();
+        return syncVisual;
+    }
+
     async function bindSync() {
         const btn = qs('#syncBtn');
+        const visual = getSyncVisual();
         if (!btn) return;
         const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
         btn.addEventListener('click', async () => {
             btn.disabled = true;
+            visual.setState('running', 'すべて同期中…');
             try {
                 const res = await fetch('/Events/Sync', { method: 'POST', headers: { 'RequestVerificationToken': token } });
-                if (!res.ok) { alert('同期に失敗しました'); return; }
+                if (!res.ok) {
+                    visual.setState('error', '同期に失敗しました');
+                    alert('同期に失敗しました');
+                    return;
+                }
+                const payload = await res.json().catch(() => null);
+                const saved = payload?.saved ?? '?';
+                const scanned = payload?.scanned ?? '?';
+                visual.setState('done', `同期完了: 保存 ${saved} / 取得 ${scanned}`);
                 await fetchEvents();
                 rerender(true);
-            } catch (e) { alert('同期エラー'); }
-            finally { btn.disabled = false; }
+            } catch (e) {
+                visual.setState('error', '同期でエラーが発生しました');
+                alert('同期エラー');
+            }
+            finally {
+                btn.disabled = false;
+                setTimeout(() => visual.setState('idle', '待機中'), 1600);
+            }
+        });
+    }
+
+    function setupSyncVisual() {
+        const root = qs('#syncVisual');
+        const status = qs('#syncStatusText');
+        const meter = qs('#syncMeterFill');
+        const setState = (state, message) => {
+            if (!root) return;
+            root.dataset.state = state;
+            if (status && message) status.textContent = message;
+            if (meter) {
+                if (state === 'idle') {
+                    meter.style.transform = 'scaleX(0)';
+                } else if (state === 'done' || state === 'error') {
+                    meter.style.transform = 'scaleX(1)';
+                } else {
+                    meter.style.transform = 'scaleX(1)';
+                }
+            }
+        };
+        setState('idle', '待機中');
+        return { setState };
+    }
+
+    function bindExternalSyncButtons() {
+        const visual = getSyncVisual();
+        qsa('button[data-sync-provider]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const provider = btn.dataset.syncProvider || '外部';
+                visual.setState('running', `${provider} 同期中…`);
+                btn.classList.add('is-loading');
+            });
         });
     }
 
@@ -481,6 +537,7 @@
         updateUpcoming();
         bindCalendarNav(state.calendar);
         bindSync();
+        bindExternalSyncButtons();
         bindStats();
         bindMobileToggles();
     }
