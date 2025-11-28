@@ -173,10 +173,13 @@ namespace Pit2Hi022052.Controllers
                     model.Id = Guid.NewGuid().ToString("N");
 
                 var currentUser = await _userManager.GetUserAsync(User);
-                model.UserId = currentUser?.Id ?? string.Empty;
+                if (currentUser == null) return Unauthorized();
+                model.UserId = currentUser.Id;
+                model.LastModified = DateTime.UtcNow;
 
                 _context.Events.Add(model);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
             await PopulateCategoriesAsync(model.CategoryId);
@@ -204,10 +207,37 @@ namespace Pit2Hi022052.Controllers
 
             if (ModelState.IsValid)
             {
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser == null) return Unauthorized();
+                var existing = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+                if (existing == null) return NotFound($"ID({id})のイベントは存在しません。");
+
+                // フォームからの値を既存エンティティに適用（UIDは保持）
+                existing.Title = model.Title;
+                existing.Description = model.Description;
+                existing.StartDate = model.StartDate;
+                existing.EndDate = model.EndDate;
+                existing.AllDay = model.AllDay;
+                existing.CategoryId = model.CategoryId;
+                existing.Priority = model.Priority;
+                existing.Location = model.Location;
+                existing.AttendeesCsv = model.AttendeesCsv;
+                existing.Recurrence = model.Recurrence;
+                existing.ReminderMinutesBefore = model.ReminderMinutesBefore;
+                existing.Source = model.Source;
+                existing.LastModified = DateTime.UtcNow;
+
+                // UID を保持しつつ、UID があればソースを iCloud に寄せる
+                if (!string.IsNullOrWhiteSpace(existing.UID))
+                {
+                    existing.Source = EventSource.ICloud;
+                }
+                existing.UserId = currentUser.Id;
+
                 try
                 {
-                    _context.Update(model);
                     await _context.SaveChangesAsync();
+
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
@@ -245,13 +275,17 @@ namespace Pit2Hi022052.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Delete(string id, bool confirm)
+        public async Task<IActionResult> Delete(string id, bool confirm)
         {
-            var ev = _context.Events.FirstOrDefault(e => e.Id == id);
+            var ev = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
             if (ev != null)
             {
+                var currentUser = await _userManager.GetUserAsync(User);
+                var shouldSync = false;
+
                 _context.Events.Remove(ev);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
+
             }
             return RedirectToAction(nameof(Index));
         }

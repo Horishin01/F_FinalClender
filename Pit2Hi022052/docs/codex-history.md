@@ -16,3 +16,5 @@
 - 2025-11-20 Codex: Outlook/Google 連携の土台を追加（`ExternalCalendarAccount` モデル/テーブル、`ExternalCalendarsController` とビュー、`ExternalCalendarSyncService` スタブ、Events画面に同期ボタン）。ドキュメントに外部カレンダー連携を追記。
 - 2025-11-20 Codex: 外部カレンダー設定をアカウント設定配下で Outlook/Google 別ページに分離。ドキュメントは UI/コントローラ構成変更に合わせて更新。
 - 2026-03-13 Codex: Outlook/Google 連携を本番向け OAuth 認可コードフローに刷新（`OutlookCalendarConnection`/`GoogleCalendarConnection` 追加、`AuthController` で connect/callback、Manage ページを状態表示+連携/解除ボタン化、トークン手入力廃止）。`docs/specification.md` と `docs/db-3nf.txt` を更新。
+- 2025-11-27 Codex: iCloud CalDAV に対して PUT/DELETE で書き戻す機能を `CloudCalDavService` と `EventsController` に追加（Source=ICloud あるいは UID 付きイベントの作成/更新/削除時に反映）。取り込み時は Source を iCloud に付与。`docs/specification.md` を書き戻し対応の記述に更新。
+- 2025-11-27 Codex: iCloud 書き戻し（PUT/DELETE）を無効化し、EventsController はローカルDB更新のみとする。理由: iCloud 側で書き込み権限がないカレンダーに対し 403 Forbidden が継続したため。関連コードは残置するが呼び出さない。仕様書は未更新。

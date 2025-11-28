@@ -39,8 +39,8 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 | --- | --- | --- |
 | `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description`, `AllDay` (+ UI 用 `IsAllDay`)、`Source`,`CategoryId`(FK→`CalendarCategory`),`Priority`,`Location`,`AttendeesCsv`,`Recurrence`,`ReminderMinutesBefore` | カレンダー予定。`UID` で iCloud イベントと紐付け。カテゴリはマスタ参照型に変更し、色/アイコンをカテゴリ側で管理。ソース/優先度/参加者/繰り返し/リマインダーは現状保存のみ（処理は未実装）。 |
 | `CalendarCategory` (`Models/CalendarCategory.cs`) | `Id`, `UserId`, `Name`, `Icon`, `Color` | ユーザーごとのカテゴリマスタ。アイコン(FontAwesome)とカラーを任意設定可。`CategoriesController` で CRUD。Events から FK 参照。 |
-| `OutlookCalendarConnection` (`Models/OutlookCalendarConnection.cs`) | `Id`, `UserId`, `Provider="Outlook"`, `AccountEmail`, `AccessTokenEncrypted`, `RefreshTokenEncrypted?`, `ExpiresAtUtc?`, `Scope?`, `LastSyncedAtUtc?`, `CreatedAtUtc`, `UpdatedAtUtc` | Outlook カレンダー用の認可コードフローで取得したトークンをサーバー側が保持。将来暗号化を前提としたプレーン保存。ユーザーは手入力しない。 |
-| `GoogleCalendarConnection` (`Models/GoogleCalendarConnection.cs`) | `Id`, `UserId`, `Provider="Google"`, `AccountEmail`, `AccessTokenEncrypted`, `RefreshTokenEncrypted?`, `ExpiresAtUtc?`, `Scope?`, `LastSyncedAtUtc?`, `CreatedAtUtc`, `UpdatedAtUtc` | Google Calendar 用トークンストア。Outlook と同様に OAuth 認可コードフローでサーバーが保存し、リフレッシュ/同期状態を管理。 |
+| `OutlookCalendarConnection` (`Models/OutlookCalendarConnection.cs`) | `Id`, `UserId`, `Provider="Outlook"`, `AccountEmail`, `AccessTokenEncrypted`, `RefreshTokenEncrypted?`, `ExpiresAtUtc?`, `Scope?`, `LastSyncedAtUtc?`, `CreatedAtUtc`, `UpdatedAtUtc` | Outlook カレンダー用の認可コードフローで取得したトークンをサーバー側が保持。UserId にユニークインデックスがあり 1:1。列名は Encrypted だが現状は TODO でプレーン保存のため、公開前に暗号化と鍵管理を実装する。ユーザーは手入力しない。 |
+| `GoogleCalendarConnection` (`Models/GoogleCalendarConnection.cs`) | `Id`, `UserId`, `Provider="Google"`, `AccountEmail`, `AccessTokenEncrypted`, `RefreshTokenEncrypted?`, `ExpiresAtUtc?`, `Scope?`, `LastSyncedAtUtc?`, `CreatedAtUtc`, `UpdatedAtUtc` | Google Calendar 用トークンストア。UserId にユニークインデックスがあり 1:1。Outlook と同様に OAuth 認可コードフローでサーバーが保持し、リフレッシュ/同期状態を管理（暗号化は TODO）。 |
 | `ExternalCalendarAccount` (`Models/ExternalCalendarAccount.cs`) | (legacy) `Id`, `UserId`, `Provider`, `AccountEmail`, `AccessToken`, `RefreshToken?`, `ExpiresAt?`, `Scope?`, `CreatedAt`, `UpdatedAt` | 旧テーブル。トークン手貼り付け用の暫定実装として残置。新設の接続テーブルへ段階的に移行する。 |
 | `ICloudSetting` (`Models/ICloudSetting.cs`) | `Id`(GUID文字列), `UserId`, `Username`, `Password` | iCloud 認証情報。現在は平文保存のため暗号化対応が今後の課題。 |
 | `ICCard` (`Models/ICCard.cs`) | `Id`, `UserId`, `Uid` | IC カード UID とユーザーの紐付け用。現状 UI からは未使用。 |
@@ -49,7 +49,8 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 ## 7. サービスと外部連携
 - **CloudCalDavService (`Services/CloudCalDavService.cs`):**
   - `/.well-known/caldav` → `calendar-home-set` → `REPORT` の順で CalDAV から予定を取得し、IcalParserService で ICS を解析後 `Events` に保存。
-  - 新規 UID のみ保存（既存レコードの更新/削除は未反映）。処理件数 (scanned/saved) を返却。60 秒に 1 回のレート制限は `IMemoryCache` で実装。
+  - `GetAllEventsAsync` は新規 UID のみ DB へ保存（取り込み側の更新/削除反映は今後の課題）。処理件数 (scanned/saved) を返却。60 秒に 1 回のレート制限は `IMemoryCache` で実装。
+  - `UpsertEventAsync` / `DeleteEventAsync` を追加。CalDAV 上で UID を検索し、存在すれば ETag を取得して `If-Match` 条件付き PUT/DELETE、無ければ `<uid>.ics` を新規作成（`If-None-Match: *`）する。更新時は `LAST-MODIFIED`/`DTSTAMP`/`SEQUENCE`（UnixTime秒ベースで増加）を付与し、CRLF 区切りで送信。`If-Match` 不一致は1回だけ条件なし PUT でフォールバック。
   - `/Events/Sync` 呼び出し時は CSRF 対策ヘッダー `RequestVerificationToken` を必須化。
 - **IcalParserService (`Services/IcalParserService.cs`):**
   - Ical.Net を用いて ICS 文字列を `Event` リストへ変換。UID 重複排除、終日判定、最終更新日時を付与。取り込み時の `Source`/`Category`/`Priority`/`Location` などの拡張メタは設定していない（UI ではデフォルト値で表示）。
@@ -68,8 +69,8 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 ## 8. コントローラーと機能
 ### 8.1 `EventsController`
 - `Index`: ログインユーザーの予定一覧。FullCalendar 用 JSON (`GetEvents`) と CalDAV 同期 (`Sync`: 60 秒クールダウン、結果 JSON) を提供。JSON は拡張メタ（ソース/カテゴリ/優先度など）を extendedProps として返す。カテゴリはマスタ参照で名前/色/アイコンを含めて返却。
-- `Sync`: CalDAV から新規 UID だけを追加（更新/削除は未対応）。戻り値は { saved, scanned, durationMs }。
-- `Create` / `Edit` / `Delete` / `Details`: GUID ID による CRUD。`Create` は `startDate`/`endDate` をクエリで受け取り初期値をセット。`Edit` は同時更新例外をハンドリング。
+- `Sync`: CalDAV から新規 UID だけを追加（取り込み側の更新/削除は未対応）。戻り値は { saved, scanned, durationMs }。
+- `Create` / `Edit` / `Delete` / `Details`: GUID ID による CRUD。`Create` は `startDate`/`endDate` をクエリで受け取り初期値をセット。`Edit` は同時更新例外をハンドリング。`Source=ICloud` または `UID` 保持時は保存後に `ICloudCalDavService.UpsertEventAsync` / `DeleteEventAsync` で iCloud へ書き戻し、PUT/DELETE 成否に応じて UID を保存またはステータスメッセージを表示する。
 ### 8.2 `CategoriesController`
 - カテゴリマスタの CRUD（ユーザー単位）。初回アクセスでデフォルトカテゴリ（仕事/会議/プライベート/締切/学習）をシード（UserId を付与）。FontAwesome アイコンとカラーコードを選択可。削除時、使用中カテゴリは削除不可（イベント再割当てが必要）。
 ### 8.3 `AuthController`
@@ -129,7 +130,7 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - 基点は Identity の `AspNetUsers`。`Events` は 1 対多、`ICloudSettings` と `ICCards` は 1 対 1 想定（ICCards は Unique 未設定のため要検討）。
 - モデルは `Event` / `ICloudSetting` / `ICCard` を ApplicationDbContext に登録済み。`BalanceSheetEntry` や `Personal` は削除済み。
 - 予定同期 UI は `EventsController` + `Views/Events/Index.cshtml` + `wwwroot/js/events-integrated.js`（FullCalendar 使用）。ソース/カテゴリ/検索/統計/直近予定/現在時刻インジケーターを備える。IC カードは現状 UI 未連携。
-- CalDAV 同期は iCloud の新規 UID 挿入のみ。UID が既存でも更新/削除は未対応。取り込み時の拡張メタはデフォルト値のまま。
-- 外部カレンダー連携は Outlook/Google の OAuth 認可コードフローを追加。トークンはユーザー入力不要で `*_CalendarConnection` テーブルにサーバー保存し、リフレッシュ処理をサービス層に分離。旧 `ExternalCalendarAccount` はレガシーとして残置。
-- セキュリティ想定: `ICloudSettings` は暗号化ストア前提（平文保存しない）。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。本番前に管理系 `[Authorize]` を有効化。
+- CalDAV 取り込みは iCloud の新規 UID 挿入のみ（更新/削除の取り込みは未対応）。アプリ側で `Source=ICloud` のイベントを作成・更新・削除した場合は CalDAV へ PUT/DELETE で書き戻す。
+- 外部カレンダー連携は Outlook/Google の OAuth 認可コードフローを追加。トークンはユーザー入力不要で `*_CalendarConnection` テーブル（UserId ユニークで 1:1）にサーバー保存し、リフレッシュ処理をサービス層に分離。Encrypted 列だが現状は平文保存のため暗号化 TODO。旧 `ExternalCalendarAccount` はレガシーとして残置。
+- セキュリティ想定: `ICloudSettings` の Password は平文列のため KeyVault などへの移行が必須。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。Outlook/Google のトークンは公開前に暗号化実装と鍵管理を整備し、管理系 `[Authorize]` を有効化。
 - 運用: スキーマ変更時は `docs/db-3nf.txt` と本仕様書を同じコミットで更新する。公開前は現行 RDB を軸に内容を維持・更新する。

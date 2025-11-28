@@ -28,6 +28,7 @@ namespace Pit2Hi022052.Data;
     public virtual DbSet<ExternalCalendarAccount>? ExternalCalendarAccounts { get; set; }
     public virtual DbSet<OutlookCalendarConnection> OutlookCalendarConnections { get; set; } = default!;
     public virtual DbSet<GoogleCalendarConnection> GoogleCalendarConnections { get; set; } = default!;
+    public DbSet<UserAccessLog> UserAccessLogs { get; set; } = default!;
 
     //--------
     // icouldプロパティ
@@ -36,6 +37,10 @@ namespace Pit2Hi022052.Data;
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.Entity<UserAccessLog>(entity =>
+        {
+            entity.HasIndex(x => new { x.UserId, x.AccessedAtUtc });
+        });
     }
 
     //--------

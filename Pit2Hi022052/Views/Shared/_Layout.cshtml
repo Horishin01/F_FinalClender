@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Views/Shared/_Layout.cshtml.css" asp-append-version="true" />
 
     @RenderSection("Styles", required: false)
 </head>
@@ -37,14 +36,10 @@
                     <ul class="app-menu">
                         <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
                         <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
-                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
-                        {
-                            <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
-                            <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
-                        }
                         <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
                         @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
                         {
+                            <li><a asp-area="" asp-controller="Admin" asp-action="Index">管理者ポータル</a></li>
                             <li><a asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a></li>
                             <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
                             <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
@@ -63,6 +58,12 @@
 
     <div class="app-main container-xl">
         <main role="main" class="app-content">
+            @if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
+            {
+                <div class="alert alert-warning" role="alert" style="margin-bottom:16px;">
+                    <strong>連携メッセージ:</strong> @status
+                </div>
+            }
             @RenderBody()
         </main>
     </div>
@@ -89,14 +90,10 @@
         <ul class="mobile-menu-list">
             <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
             <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
-            @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
-            {
-                <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
-                <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
-            }
             <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
             @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
             {
+                <li><a asp-area="" asp-controller="Admin" asp-action="Index">管理者ポータル</a></li>
                 <li><a asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a></li>
                 <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
                 <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>

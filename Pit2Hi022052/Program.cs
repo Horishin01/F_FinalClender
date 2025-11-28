@@ -4,6 +4,8 @@ using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 using Pit2Hi022052.Extensions;
 using Pit2Hi022052.Services;
+using Pit2Hi022052.Middleware;
+using System.Linq;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -98,6 +100,23 @@ builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 //================ アプリ構築 ===============
 var app = builder.Build();
 
+//================ 起動時シード ===============
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        await SeedAdminUserAsync(userManager, roleManager);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Adminユーザーのシード中にエラーが発生しました。");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -115,6 +134,7 @@ app.UseStatusCodePages();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseUserAccessLogging();
 
 app.MapControllerRoute(
     name: "default",
@@ -122,3 +142,51 @@ app.MapControllerRoute(
 
 app.MapRazorPages();
 app.Run();
+
+// Adminユーザーを起動時に冪等作成する
+static async Task SeedAdminUserAsync(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+{
+    const string adminEmail = "admin@admin.admin";
+    const string adminPassword = "i2JvwXGn<>"; // 開発用の初期パスワード。本番では環境変数等に置き換える。
+    const string adminRoleName = "Admin";
+
+    var existing = await userManager.FindByEmailAsync(adminEmail);
+    if (existing == null)
+    {
+        var adminUser = new ApplicationUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            EmailConfirmed = true
+        };
+
+        var createUserResult = await userManager.CreateAsync(adminUser, adminPassword);
+        if (!createUserResult.Succeeded)
+        {
+            var errors = string.Join(", ", createUserResult.Errors.Select(e => e.Description));
+            throw new InvalidOperationException($"Adminユーザー作成に失敗しました: {errors}");
+        }
+
+        existing = adminUser;
+    }
+
+    if (!await roleManager.RoleExistsAsync(adminRoleName))
+    {
+        var roleResult = await roleManager.CreateAsync(new IdentityRole(adminRoleName));
+        if (!roleResult.Succeeded)
+        {
+            var errors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
+            throw new InvalidOperationException($"Adminロール作成に失敗しました: {errors}");
+        }
+    }
+
+    if (!await userManager.IsInRoleAsync(existing, adminRoleName))
+    {
+        var addRoleResult = await userManager.AddToRoleAsync(existing, adminRoleName);
+        if (!addRoleResult.Succeeded)
+        {
+            var errors = string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
+            throw new InvalidOperationException($"Adminロール付与に失敗しました: {errors}");
+        }
+    }
+}

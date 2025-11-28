@@ -3,6 +3,13 @@
     ViewData["BodyClass"] = "events-page";
 }
 
+@if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
+{
+    <div class="alert alert-warning" role="alert" style="margin:12px 0;">
+        <strong>連携メッセージ:</strong> @status
+    </div>
+}
+
 <div class="ic-root">
     <div class="ic-header">
         <div class="ic-brand">

@@ -1,0 +1,198 @@
+@using System.Text.Json
+@model Pit2Hi022052.ViewModels.UserAccessAnalyticsViewModel
+@{
+    ViewData["Title"] = "アクセス分析";
+    ViewData["BodyClass"] = "analytics-page";
+
+    var seed = new
+    {
+        metrics = new
+        {
+            totalUsers = Model.TotalUsers,
+            activeUsers = Model.ActiveUsersLast30Days,
+            totalLogs = Model.TotalLogs,
+            generatedAt = Model.GeneratedAt.ToString("yyyy/MM/dd HH:mm")
+        },
+        daily = Model.DailySeries,
+        hourly = Model.HourlySeries,
+        topUsers = Model.TopUsers.Select(u => new
+        {
+            u.UserId,
+            u.UserLabel,
+            u.AccessCount,
+            lastAccess = u.LastAccessAtUtc
+        }),
+        logs = Model.RecentLogs.Select(l => new
+        {
+            l.UserId,
+            l.UserLabel,
+            l.HttpMethod,
+            l.Path,
+            accessedAtUtc = l.AccessedAtUtc,
+            l.UserAgent,
+            l.RemoteIp,
+            l.StatusCode,
+            l.DurationMs,
+            l.IsError,
+            l.ErrorType,
+            l.ErrorHash
+        })
+    };
+}
+
+<div class="ic-root ua-root">
+    <header class="ua-header">
+        <p class="ua-eyebrow">Admin / Observation</p>
+        <h1 class="ua-title">ユーザーのアクセス時間と利用傾向</h1>
+        <p class="ua-sub">直近30日間のアクセスログを集計し、時間帯・ユーザー別の傾向を把握できます。生成時刻: <span id="uaGeneratedAt">@Model.GeneratedAt.ToString("yyyy/MM/dd HH:mm")</span></p>
+    </header>
+
+    <div class="ua-metrics">
+        <div class="ua-metric">
+            <p class="label">登録ユーザー</p>
+            <p class="value" id="uaTotalUsers">@Model.TotalUsers</p>
+            <span class="hint">アカウント総数</span>
+        </div>
+        <div class="ua-metric">
+            <p class="label">直近30日の稼働ユーザー</p>
+            <p class="value" id="uaActiveUsers">@Model.ActiveUsersLast30Days</p>
+            <span class="hint">Unique UserId</span>
+        </div>
+        <div class="ua-metric">
+            <p class="label">蓄積ログ</p>
+            <p class="value" id="uaTotalLogs">@Model.TotalLogs</p>
+            <span class="hint">UserAccessLogs 件数</span>
+        </div>
+    </div>
+
+    <div class="ua-layout">
+        <section class="ic-card ua-card">
+            <div class="ic-card-head">
+                <span class="ic-card-title">
+                    <span class="ic-card-title-icon icon-stats"><i class="fa-solid fa-chart-line"></i></span>
+                    日別アクセス
+                </span>
+            </div>
+            <div class="ic-card-body">
+                <div id="uaDailyChart" class="ua-chart" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <section class="ic-card ua-card">
+            <div class="ic-card-head">
+                <span class="ic-card-title">
+                    <span class="ic-card-title-icon icon-upcoming"><i class="fa-solid fa-clock"></i></span>
+                    時間帯ヒート
+                </span>
+            </div>
+            <div class="ic-card-body">
+                <div id="uaHourlyChart" class="ua-chart" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <section class="ic-card ua-card ua-top-card">
+            <div class="ic-card-head">
+                <span class="ic-card-title">
+                    <span class="ic-card-title-icon icon-search"><i class="fa-solid fa-users"></i></span>
+                    多くアクセスしているユーザー
+                </span>
+            </div>
+            <div class="ic-card-body">
+                <ul id="uaTopUsers" class="ua-top-users">
+                    @foreach (var user in Model.TopUsers)
+                    {
+                        <li>
+                            <div class="ua-top-user-name">@user.UserLabel (@user.UserId)</div>
+                            <div class="ua-top-user-meta">
+                                <span class="ua-chip">@user.AccessCount 回</span>
+                                @if (user.LastAccessAtUtc.HasValue)
+                                {
+                                    <span class="ua-chip secondary">最終 @user.LastAccessAtUtc.Value.ToLocalTime().ToString("MM/dd HH:mm")</span>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <section class="ic-card ua-card ua-log-card">
+        <div class="ic-card-head">
+            <span class="ic-card-title">
+                <span class="ic-card-title-icon icon-stats"><i class="fa-solid fa-list-check"></i></span>
+                最新アクセスログ
+            </span>
+            <div class="ua-log-controls">
+                <span class="ua-small">最大80件 / 直近30日</span>
+                <div class="ua-filter" role="group" aria-label="ログの表示切り替え">
+                    <button type="button" class="ua-filter-btn active" data-filter="all" aria-pressed="true">すべて</button>
+                    <button type="button" class="ua-filter-btn" data-filter="ok" aria-pressed="false">OK</button>
+                    <button type="button" class="ua-filter-btn" data-filter="error" aria-pressed="false">エラー</button>
+                </div>
+            </div>
+        </div>
+        <div class="ic-card-body">
+            <div class="table-responsive">
+                <table class="table ua-log-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">時刻</th>
+                            <th scope="col">ユーザー</th>
+                            <th scope="col">Method</th>
+                            <th scope="col">パス</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Error</th>
+                            <th scope="col">処理時間(ms)</th>
+                            <th scope="col">Agent / IP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="uaLogTbody">
+                        @foreach (var log in Model.RecentLogs)
+                        {
+                            var local = log.AccessedAtUtc.ToLocalTime();
+                            <tr>
+                                <td>@local.ToString("MM/dd HH:mm:ss")</td>
+                                <td>
+                                    <div class="ua-user-label">@log.UserLabel</div>
+                                    <div class="ua-user-id">@log.UserId</div>
+                                </td>
+                                <td>@log.HttpMethod</td>
+                                <td class="ua-path-cell">@log.Path</td>
+                                <td>@log.StatusCode</td>
+                                <td>
+                                    @if (log.IsError)
+                                    {
+                                        <span class="ua-chip error">@(log.ErrorType ?? "Error")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ua-chip ok">OK</span>
+                                    }
+                                </td>
+                                <td>@(log.DurationMs?.ToString() ?? "-")</td>
+                                <td>
+                                    <div class="ua-agent" title="@log.UserAgent">@log.UserAgent</div>
+                                    <div class="ua-ip">@log.RemoteIp</div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script type="application/json" id="userAnalytics-data">
+@Html.Raw(JsonSerializer.Serialize(seed))
+</script>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/events-integrated.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/userAnalytics.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/userAnalytics.js" asp-append-version="true"></script>
+}
