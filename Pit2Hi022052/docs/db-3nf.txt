@@ -62,6 +62,11 @@ Table: UserAccessLogs
 - Columns: UserId (FK -> AspNetUsers.Id), AccessedAtUtc, HttpMethod, Path (クエリ除去), UserAgent, RemoteIp (匿名化: IPv4は/24切り捨て), StatusCode, DurationMs, IsError (bool), ErrorType (例: 4xx/5xx/例外型), ErrorHash (例外メッセージのSHA-256ハッシュのみ)
 - 備考: 認証済みリクエストをミドルウェアで追記。個人情報（氏名/メール/フルIP/クエリ文字列/例外メッセージ本文）は保存しない。UserId+AccessedAtUtc に複合インデックスを付与。時間帯別分析とエラー頻度把握の元データ。
 
+Table: AppNotices
+- PK: Id (string, Guid文字列)
+- Columns: Kind (enum: Update/Incident), Version (nullable), Title, Description (nullable), Highlights (nullable, 改行区切り箇条書き), OccurredAt, ResolvedAt (nullable), Status (nullable), CreatedAtUtc
+- 備考: プライバシーポリシーに表示する更新/障害告知。UserIdは持たず全体告知用。Kind+OccurredAtにインデックス。
+
 Note: Personalモデルは削除された（DbContext未登録）
 
 ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユーザーを上に配置）
@@ -78,7 +83,7 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
 │Settings││Cards││         ││UserRoles││ (CalendarCategory)││ (UserId unique)    ││ (UserId unique)    │
 └──────┘└───┘└─────────┘└────────┘└────────────────┘└─────────────────────┘└─────────────────────┘
 
-外部/監査: ExternalCalendarAccounts (0..* per user, legacy token store), UserAccessLogs (0..* per user, UserId+AccessedAtUtc index) も UserId で AspNetUsers と紐付く。
+外部/監査/告知: ExternalCalendarAccounts (0..* per user, legacy token store)、UserAccessLogs (0..* per user, UserId+AccessedAtUtc index)、AppNotices (全体告知。ユーザーに非依存)。
 
 セキュリティ前提メモ（公開時想定）
 - ICloudSettings: Password 列は平文カラム。公開前に暗号化ストア/Key Vault 等へ移行するか、保存自体を最小化（可能ならトークンのみ保存）する。

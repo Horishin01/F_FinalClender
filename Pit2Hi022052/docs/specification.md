@@ -33,6 +33,7 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - `ApplicationUser` (`Models/ApplicationUser.cs`) は `IdentityUser` を継承し、各エンティティで外部キーとして参照。
 - ロール (`IdentityRole`) とユーザー/ロール紐付け (`IdentityUserRole`) は専用コントローラーで CRUD 操作可能。
 - 管理系コントローラーの多くは `[Authorize]` がコメントアウトされているため、本番前に役割ごとのガードを復活させること。
+- アカウント設定の「個人データの削除」はユーザー削除完了後に `ApplicationDbContext.Database.EnsureDeletedAsync()` を実行し、データベースごと削除する。
 
 ## 6. ドメインモデル概要
 | エンティティ | 主なフィールド | 目的 / メモ |
@@ -44,6 +45,7 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 | `ExternalCalendarAccount` (`Models/ExternalCalendarAccount.cs`) | (legacy) `Id`, `UserId`, `Provider`, `AccountEmail`, `AccessToken`, `RefreshToken?`, `ExpiresAt?`, `Scope?`, `CreatedAt`, `UpdatedAt` | 旧テーブル。トークン手貼り付け用の暫定実装として残置。新設の接続テーブルへ段階的に移行する。 |
 | `ICloudSetting` (`Models/ICloudSetting.cs`) | `Id`(GUID文字列), `UserId`, `Username`, `Password` | iCloud 認証情報。現在は平文保存のため暗号化対応が今後の課題。 |
 | `ICCard` (`Models/ICCard.cs`) | `Id`, `UserId`, `Uid` | IC カード UID とユーザーの紐付け用。現状 UI からは未使用。 |
+| `AppNotice` (`Models/AppNotice.cs`) | `Id`, `Kind(Update/Incident)`, `Version?`, `Title`, `Description?`, `Highlights?`, `OccurredAt`, `ResolvedAt?`, `Status?`, `CreatedAtUtc` | プライバシーポリシーに表示するアップデート/障害情報。Admin ロールが `/AppNotices` から CRUD できる。 |
 | Identity テーブル | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles` など | マイグレーション (`Migrations/*`) で生成。 |
 
 ## 7. サービスと外部連携
@@ -85,6 +87,10 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - `UserRolesController`: `IdentityUserRole<string>` の追加・更新・削除 (`UserManager.AddToRoleAsync` / `RemoveFromRoleAsync`)。
 ### 8.6 `HomeController`
 - `Index`, `Privacy`, `Error` を提供。認証後のデフォルト遷移先。
+- `Privacy` は `AppNotice` テーブルからアップデート/障害情報を取得して表示する（未登録の場合は空メッセージ）。
+### 8.7 `AppNoticesController`
+- Admin ロール向けにプライバシーポリシーの告知（アップデート/障害）を CRUD 管理する。
+- `/AppNotices/Index` で一覧、`Create`/`Edit`/`Delete` を提供。バージョンは任意、箇条書きは改行区切りで保存。
 
 ## 9. UI / UX 指針
 - **レイアウト (`Views/Shared/_Layout.cshtml` + `wwwroot/css/site.css`):**

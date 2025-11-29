@@ -56,9 +56,29 @@ namespace Pit2Hi022052.Controllers
             return View(model);
         }
 
-        public IActionResult Privacy()
+        public async Task<IActionResult> Privacy()
         {
-            return View();
+            var updates = await _db.AppNotices
+                .AsNoTracking()
+                .Where(n => n.Kind == NoticeKind.Update)
+                .OrderByDescending(n => n.OccurredAt)
+                .ThenByDescending(n => n.CreatedAtUtc)
+                .ToListAsync();
+
+            var incidents = await _db.AppNotices
+                .AsNoTracking()
+                .Where(n => n.Kind == NoticeKind.Incident)
+                .OrderByDescending(n => n.OccurredAt)
+                .ThenByDescending(n => n.CreatedAtUtc)
+                .ToListAsync();
+
+            var model = new PrivacyViewModel
+            {
+                Updates = updates,
+                Incidents = incidents
+            };
+
+            return View(model);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

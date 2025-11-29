@@ -18,3 +18,4 @@
 - 2026-03-13 Codex: Outlook/Google 連携を本番向け OAuth 認可コードフローに刷新（`OutlookCalendarConnection`/`GoogleCalendarConnection` 追加、`AuthController` で connect/callback、Manage ページを状態表示+連携/解除ボタン化、トークン手入力廃止）。`docs/specification.md` と `docs/db-3nf.txt` を更新。
 - 2025-11-27 Codex: iCloud CalDAV に対して PUT/DELETE で書き戻す機能を `CloudCalDavService` と `EventsController` に追加（Source=ICloud あるいは UID 付きイベントの作成/更新/削除時に反映）。取り込み時は Source を iCloud に付与。`docs/specification.md` を書き戻し対応の記述に更新。
 - 2025-11-27 Codex: iCloud 書き戻し（PUT/DELETE）を無効化し、EventsController はローカルDB更新のみとする。理由: iCloud 側で書き込み権限がないカレンダーに対し 403 Forbidden が継続したため。関連コードは残置するが呼び出さない。仕様書は未更新。
+- 2026-03-15 Codex: プライバシーポリシーに表示するアップデート/障害情報を `AppNotice` テーブルとして追加し、Adminロール向けのCRUD UI（`/AppNotices`）を実装。ポリシーページはDBデータを動的表示。`docs/specification.md`、`docs/db-3nf.txt`、`docs/security-assessment.md`、`docs/新しい機能　検討.txt` を同期更新。

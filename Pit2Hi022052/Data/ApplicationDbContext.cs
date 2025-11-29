@@ -29,6 +29,7 @@ namespace Pit2Hi022052.Data;
     public virtual DbSet<OutlookCalendarConnection> OutlookCalendarConnections { get; set; } = default!;
     public virtual DbSet<GoogleCalendarConnection> GoogleCalendarConnections { get; set; } = default!;
     public DbSet<UserAccessLog> UserAccessLogs { get; set; } = default!;
+    public DbSet<AppNotice> AppNotices { get; set; } = default!;
 
     //--------
     // icouldプロパティ
@@ -40,6 +41,11 @@ namespace Pit2Hi022052.Data;
         builder.Entity<UserAccessLog>(entity =>
         {
             entity.HasIndex(x => new { x.UserId, x.AccessedAtUtc });
+        });
+
+        builder.Entity<AppNotice>(entity =>
+        {
+            entity.HasIndex(x => new { x.Kind, x.OccurredAt });
         });
     }
 
