@@ -153,14 +153,24 @@ namespace Pit2Hi022052.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             model.UserId = currentUser?.Id ?? string.Empty;
 
-            if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var parsedStart))
-                model.StartDate = parsedStart;
-            else
+            if (!string.IsNullOrEmpty(startDate))
+            {
+                if (DateTimeOffset.TryParse(startDate, out var dtoStart))
+                    model.StartDate = dtoStart.LocalDateTime;
+                else if (DateTime.TryParse(startDate, out var parsedStart))
+                    model.StartDate = parsedStart;
+            }
+            if (model.StartDate == null)
                 model.StartDate = DateTime.Now;
 
-            if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var parsedEnd))
-                model.EndDate = parsedEnd;
-            else if (model.StartDate.HasValue)
+            if (!string.IsNullOrEmpty(endDate))
+            {
+                if (DateTimeOffset.TryParse(endDate, out var dtoEnd))
+                    model.EndDate = dtoEnd.LocalDateTime;
+                else if (DateTime.TryParse(endDate, out var parsedEnd))
+                    model.EndDate = parsedEnd;
+            }
+            if (model.EndDate == null && model.StartDate.HasValue)
                 model.EndDate = model.StartDate.Value.AddHours(1);
 
             await PopulateCategoriesAsync();

@@ -498,17 +498,42 @@
                 const prioLabel = { high: '高', normal: '通常', low: '低' }[prioKey] || '';
                 const prioTag = prioLabel ? `<span class="ev-prio-tag prio-${prioKey || 'normal'}"><span class="dot"></span>${prioLabel}</span>` : '';
                 const time = arg.timeText ? `<span class="ev-time">${arg.timeText}</span>` : '';
-                const source = props.source ? `<span class="ev-badge ev-source">${props.source}</span>` : '';
+                const srcKey = (props.source || '').toString().toLowerCase();
+                const srcIcons = {
+                    google: '<i class="fa-brands fa-google"></i>',
+                    icloud: '<i class="fa-solid fa-cloud"></i>',
+                    outlook: '<i class="fa-brands fa-microsoft"></i>',
+                    work: '<i class="fa-solid fa-building"></i>',
+                    local: '<i class="fa-solid fa-database"></i>'
+                };
+                const source = props.source ? `<span class="ev-badge ev-source">${srcIcons[srcKey] ?? ''}</span>` : '';
                 return { html: `<div class="ev-row wrap">${prioTag}${time}<span class="ev-title">${arg.event.title}</span>${source}</div>` };
             },
             datesSet(info) { if (period) period.textContent = info.view.title; },
             dateClick(info) {
-                const start = info.dateStr;
-                const end = new Date(info.date.getTime() + 60 * 60 * 1000).toISOString();
+                let startDate;
+                let endDate;
+                if (info.view.type === 'dayGridMonth') {
+                    const now = new Date();
+                    startDate = new Date(info.date);
+                    startDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+                    endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+                } else {
+                    startDate = new Date(info.date);
+                    endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+                }
+                const start = startDate.toISOString();
+                const end = endDate.toISOString();
                 window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
             },
             eventClick(info) {
                 if (info.event.id) window.location.href = `/Events/Details?id=${encodeURIComponent(info.event.id)}`;
+            },
+            selectable: true,
+            select(info) {
+                const start = info.startStr;
+                const end = info.endStr;
+                window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
             }
         });
         calendar.render();

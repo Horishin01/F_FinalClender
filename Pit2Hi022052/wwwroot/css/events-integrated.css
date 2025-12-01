@@ -924,6 +924,17 @@ body.app-body.events-page .ic-root {
 .prio-normal .ev-prio-tag { background: #2563eb; }
 .prio-low .ev-prio-tag { background: #64748b; }
 
+.ev-source {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    padding: 0;
+    font-size: 0.9rem;
+}
+
 .ic-upcoming .date { font-size: 0.85rem; color: #6b7280; }
 .ic-upcoming .ttl { font-weight: 800; color: #111827; }
 

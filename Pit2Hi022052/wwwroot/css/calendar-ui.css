@@ -326,6 +326,14 @@
 
 .ev-source {
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    padding: 0;
+    font-size: 0.9rem;
 }
 
 .ev-location {
