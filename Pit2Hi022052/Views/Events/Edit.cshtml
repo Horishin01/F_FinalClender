@@ -2,6 +2,20 @@
 @{
     if (Model is null) { throw new NullReferenceException(); }
     ViewData["Title"] = "イベント編集";
+    string PriorityLabel(EventPriority p) => p switch
+    {
+        EventPriority.High => "高",
+        EventPriority.Low => "低",
+        _ => "通常"
+    };
+    string PriorityClass(EventPriority p) => p switch
+    {
+        EventPriority.High => "prio-high",
+        EventPriority.Low => "prio-low",
+        _ => "prio-normal"
+    };
+    var priorityLabel = PriorityLabel(Model.Priority);
+    var priorityClass = PriorityClass(Model.Priority);
 }
 <link rel="stylesheet" href="~/css/event-forms.css" asp-append-version="true" />
 
@@ -27,7 +41,7 @@
             <div class="ev-meta-chips">
                 <span class="meta-chip"><i class="fa-solid fa-layer-group"></i> @Model.Source</span>
                 <span class="meta-chip"><i class="fa-solid fa-shapes"></i> @(Model.Category?.Name ?? "未設定")</span>
-                <span class="meta-chip"><i class="fa-solid fa-signal"></i> 優先度: @Model.Priority</span>
+                <span class="meta-chip priority @priorityClass"><span class="prio-dot"></span> <i class="fa-solid fa-signal"></i> 優先: @priorityLabel</span>
                 @if (Model.Recurrence != EventRecurrence.None)
                 {
                     <span class="meta-chip"><i class="fa-solid fa-arrows-rotate"></i> @Model.Recurrence</span>

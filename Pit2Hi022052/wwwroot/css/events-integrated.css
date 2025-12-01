@@ -902,6 +902,28 @@ body.app-body.events-page .ic-root {
     font-size: 0.9rem;
 }
 
+/* 優先度タグ */
+.ev-prio-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.08rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: #fff;
+    background: #6b7280;
+}
+.ev-prio-tag .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background: currentColor;
+}
+.prio-high .ev-prio-tag { background: #ff4d6d; }
+.prio-normal .ev-prio-tag { background: #2563eb; }
+.prio-low .ev-prio-tag { background: #64748b; }
+
 .ic-upcoming .date { font-size: 0.85rem; color: #6b7280; }
 .ic-upcoming .ttl { font-weight: 800; color: #111827; }
 

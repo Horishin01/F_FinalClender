@@ -41,7 +41,7 @@ namespace Pit2Hi022052.Models
         public virtual string UserId { get; set; } = string.Empty;       //ユーザと紐づけ
         
         [Display(Name = "UID")]
-        public string UID { get; set; } = string.Empty;                 // iCloud識別子
+        public string? UID { get; set; } = null;                 // iCloud識別子（空可）
         
         [Display(Name = "タイトル")]
         public virtual string Title { get; set; } = string.Empty;       // イベントのタイトル
@@ -56,7 +56,7 @@ namespace Pit2Hi022052.Models
         public DateTime? LastModified { get; set; } // 差分同期将来用途 // Nullableにする
 
         [Display(Name = "詳細")]
-        public virtual string Description { get; set; } = string.Empty;// イベントの説明
+        public virtual string? Description { get; set; } = string.Empty;// イベントの説明（空可）
 
         // 統合カレンダー: 拡張メタ
         [Display(Name = "ソース")]

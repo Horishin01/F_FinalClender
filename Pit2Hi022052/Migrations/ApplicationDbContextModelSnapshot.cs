@@ -313,7 +313,6 @@ namespace Pit2Hi022052.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("EndDate")
@@ -345,7 +344,6 @@ namespace Pit2Hi022052.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("UID")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("UserId")

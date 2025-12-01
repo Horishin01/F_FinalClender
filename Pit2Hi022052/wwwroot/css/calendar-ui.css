@@ -303,6 +303,27 @@
 .fc-event.prio-normal .ev-prio { background: var(--prio-normal); }
 .fc-event.prio-low .ev-prio { background: var(--prio-low); }
 
+.ev-prio-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.08rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    color: #fff;
+    background: #64748b;
+}
+.ev-prio-tag .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background: currentColor;
+}
+.prio-high .ev-prio-tag { background: var(--prio-high); }
+.prio-normal .ev-prio-tag { background: var(--prio-normal); }
+.prio-low .ev-prio-tag { background: var(--prio-low); }
+
 .ev-source {
     font-weight: 700;
 }

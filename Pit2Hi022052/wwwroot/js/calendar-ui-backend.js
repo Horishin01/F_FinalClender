@@ -49,13 +49,15 @@
             },
             eventContent: function (arg) {
                 const props = arg.event.extendedProps || {};
+                const prioKey = (props.priority || '').toString().toLowerCase();
+                const prioLabel = { high: '高', normal: '通常', low: '低' }[prioKey] || props.priority || '';
+                const prioTag = prioLabel ? `<span class="ev-prio-tag"><span class="dot"></span>${prioLabel}</span>` : '';
                 const time = arg.timeText ? `<span class="ev-time">${arg.timeText}</span>` : '';
                 const source = props.source ? `<span class="ev-badge ev-source">${props.source}</span>` : '';
-                const prio = props.priority ? `<span class="ev-badge ev-prio">${props.priority}</span>` : '';
                 return {
                     html: `
                         <div class="ev-row wrap">
-                            ${time}<span class="ev-title">${arg.event.title}</span>${source}${prio}
+                            ${prioTag}${time}<span class="ev-title">${arg.event.title}</span>${source}
                         </div>
                     `
                 };

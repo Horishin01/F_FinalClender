@@ -12,8 +12,8 @@ using Pit2Hi022052.Data;
 namespace Pit2Hi022052.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251129025341_AddAppNotices")]
-    partial class AddAppNotices
+    [Migration("20251201062720_AdminReasarch")]
+    partial class AdminReasarch
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -316,7 +316,6 @@ namespace Pit2Hi022052.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("EndDate")
@@ -348,7 +347,6 @@ namespace Pit2Hi022052.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("UID")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("UserId")

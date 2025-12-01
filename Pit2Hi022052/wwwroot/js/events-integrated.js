@@ -481,6 +481,26 @@
             dayMaxEvents: true,
             initialView,
             events: mapToFc(state.filtered),
+            eventClassNames(arg) {
+                const props = arg.event.extendedProps || {};
+                const prio = (props.priority || '').toString().toLowerCase();
+                const classes = [];
+                if (prio) classes.push(`prio-${prio}`);
+                const src = (props.source || '').toString().toLowerCase();
+                if (src) classes.push(`src-${src}`);
+                const cat = (props.type || '').toString().toLowerCase();
+                if (cat) classes.push(`cat-${cat}`);
+                return classes;
+            },
+            eventContent(arg) {
+                const props = arg.event.extendedProps || {};
+                const prioKey = (props.priority || '').toString().toLowerCase();
+                const prioLabel = { high: '高', normal: '通常', low: '低' }[prioKey] || '';
+                const prioTag = prioLabel ? `<span class="ev-prio-tag prio-${prioKey || 'normal'}"><span class="dot"></span>${prioLabel}</span>` : '';
+                const time = arg.timeText ? `<span class="ev-time">${arg.timeText}</span>` : '';
+                const source = props.source ? `<span class="ev-badge ev-source">${props.source}</span>` : '';
+                return { html: `<div class="ev-row wrap">${prioTag}${time}<span class="ev-title">${arg.event.title}</span>${source}</div>` };
+            },
             datesSet(info) { if (period) period.textContent = info.view.title; },
             dateClick(info) {
                 const start = info.dateStr;

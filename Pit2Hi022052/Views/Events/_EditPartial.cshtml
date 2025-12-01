@@ -19,7 +19,7 @@
             <span class="ev-label-icon"><i class="fa-solid fa-flag"></i></span>
             <span>開始日時 *</span>
         </label>
-        <input asp-for="StartDate" class="form-control" required />
+        <input asp-for="StartDate" class="form-control" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" required />
         <span asp-validation-for="StartDate" class="text-danger"></span>
     </div>
     <div class="ev-field">
@@ -27,7 +27,7 @@
             <span class="ev-label-icon"><i class="fa-solid fa-hourglass-end"></i></span>
             <span>終了日時</span>
         </label>
-        <input asp-for="EndDate" class="form-control" />
+        <input asp-for="EndDate" class="form-control" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" />
         <small class="hint">未入力の場合は開始のみがタイムラインに表示されます。</small>
         <span asp-validation-for="EndDate" class="text-danger"></span>
     </div>

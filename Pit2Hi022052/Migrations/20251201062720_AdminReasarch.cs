@@ -7,11 +7,31 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Pit2Hi022052.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class AdminReasarch : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "AppNotices",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    Kind = table.Column<int>(type: "integer", nullable: false),
+                    Version = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
+                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Highlights = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    OccurredAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    ResolvedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    Status = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppNotices", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -331,12 +351,12 @@ namespace Pit2Hi022052.Migrations
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     UserId = table.Column<string>(type: "text", nullable: false),
-                    UID = table.Column<string>(type: "text", nullable: false),
+                    UID = table.Column<string>(type: "text", nullable: true),
                     Title = table.Column<string>(type: "text", nullable: false),
                     StartDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     EndDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     LastModified = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
-                    Description = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
                     Source = table.Column<int>(type: "integer", nullable: false),
                     CategoryId = table.Column<string>(type: "text", nullable: true),
                     Priority = table.Column<int>(type: "integer", nullable: false),
@@ -361,6 +381,11 @@ namespace Pit2Hi022052.Migrations
                         principalTable: "Categories",
                         principalColumn: "Id");
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AppNotices_Kind_OccurredAt",
+                table: "AppNotices",
+                columns: new[] { "Kind", "OccurredAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -450,6 +475,9 @@ namespace Pit2Hi022052.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AppNotices");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 

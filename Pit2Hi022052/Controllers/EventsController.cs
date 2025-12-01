@@ -155,9 +155,13 @@ namespace Pit2Hi022052.Controllers
 
             if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var parsedStart))
                 model.StartDate = parsedStart;
+            else
+                model.StartDate = DateTime.Now;
 
             if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var parsedEnd))
                 model.EndDate = parsedEnd;
+            else if (model.StartDate.HasValue)
+                model.EndDate = model.StartDate.Value.AddHours(1);
 
             await PopulateCategoriesAsync();
             return View(model);
@@ -171,6 +175,8 @@ namespace Pit2Hi022052.Controllers
             {
                 if (string.IsNullOrEmpty(model.Id))
                     model.Id = Guid.NewGuid().ToString("N");
+                if (model.Source == EventSource.Local && string.IsNullOrWhiteSpace(model.UID))
+                    model.UID = null;
 
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser == null) return Unauthorized();
@@ -182,6 +188,10 @@ namespace Pit2Hi022052.Controllers
 
                 return RedirectToAction(nameof(Index));
             }
+            // モデルエラー時も時間フィールドが空にならないよう初期値を補完
+            if (!model.StartDate.HasValue) model.StartDate = DateTime.Now;
+            if (!model.EndDate.HasValue && model.StartDate.HasValue) model.EndDate = model.StartDate.Value.AddHours(1);
+            LogModelStateErrors();
             await PopulateCategoriesAsync(model.CategoryId);
             return View(model);
         }
@@ -225,6 +235,10 @@ namespace Pit2Hi022052.Controllers
                 existing.Recurrence = model.Recurrence;
                 existing.ReminderMinutesBefore = model.ReminderMinutesBefore;
                 existing.Source = model.Source;
+                if (existing.Source == EventSource.Local && string.IsNullOrWhiteSpace(model.UID))
+                {
+                    existing.UID = null;
+                }
                 existing.LastModified = DateTime.UtcNow;
 
                 // UID を保持しつつ、UID があればソースを iCloud に寄せる
@@ -247,6 +261,7 @@ namespace Pit2Hi022052.Controllers
                     else throw;
                 }
             }
+            LogModelStateErrors();
             await PopulateCategoriesAsync(model.CategoryId);
             return View(model);
         }
@@ -323,6 +338,15 @@ namespace Pit2Hi022052.Controllers
                 Value = c.Id,
                 Selected = !string.IsNullOrEmpty(selectedId) && c.Id == selectedId
             }).ToList();
+        }
+
+        private void LogModelStateErrors()
+        {
+            if (ModelState.IsValid) return;
+            var errors = ModelState
+                .Where(kvp => kvp.Value?.Errors?.Count > 0)
+                .Select(kvp => $"{kvp.Key}: {string.Join(", ", kvp.Value!.Errors.Select(e => e.ErrorMessage))}");
+            _logger.LogWarning("ModelState invalid: {Errors}", string.Join(" | ", errors));
         }
     }
 }
