@@ -197,6 +197,14 @@
     border-color: #eef1f8;
 }
 
+.fc-theme-standard {
+    --fc-border-color: #e5e7eb;
+    --fc-neutral-bg-color: #f8fafc;
+    --fc-event-text-color: #0f172a;
+    --fc-event-bg-color: #eef2ff;
+    --fc-event-border-color: #d9e2f1;
+}
+
 .fc .fc-col-header-cell {
     background: var(--ui-navy);
     color: #fff;
@@ -227,19 +235,35 @@
 }
 
 .fc .fc-event {
-    border: none;
+    color: #0f172a;
+    background: var(--fc-event-bg-color);
+    border: 1px solid var(--fc-event-border-color);
     border-radius: 16px;
     padding: 0;
     font-weight: 600;
     overflow: hidden;
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
     backdrop-filter: blur(2px);
+    transition: box-shadow 0.15s ease, transform 0.12s ease;
+}
+
+.fc .fc-event .fc-event-main {
+    color: inherit;
+}
+
+.fc .fc-event:hover {
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.18);
 }
 
 .fc .fc-event .fc-event-main {
     padding: 0.35rem 0.75rem;
     display: grid;
     gap: 0.2rem;
+}
+
+.fc .fc-daygrid-event,
+.fc .fc-timegrid-event {
+    margin: 2px;
 }
 
 /* カテゴリカラー */
@@ -254,17 +278,18 @@
 .fc-event.prio-normal { box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18); }
 .fc-event.prio-low { box-shadow: 0 10px 20px rgba(100, 116, 139, 0.12); }
 
-.fc-event.src-google { background: var(--src-google); }
-.fc-event.src-icloud { background: var(--src-icloud); }
-.fc-event.src-outlook { background: var(--src-outlook); }
-.fc-event.src-work { background: var(--src-work); }
-.fc-event.src-local { background: var(--src-local); }
+.fc-event.src-google { background: var(--src-google); border-left: 6px solid #1a73e8; }
+.fc-event.src-icloud { background: var(--src-icloud); border-left: 6px solid #7f39fb; }
+.fc-event.src-outlook { background: var(--src-outlook); border-left: 6px solid #0a66c2; }
+.fc-event.src-work { background: var(--src-work); border-left: 6px solid #0f766e; }
+.fc-event.src-local { background: var(--src-local); border-left: 6px solid #0284c7; }
 
 .ev-row {
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    min-width: 0;
 }
 
 .ev-row.meta {
@@ -278,10 +303,14 @@
     padding: 0.08rem 0.55rem;
     font-size: 0.78rem;
     color: #0f172a;
+    flex-shrink: 0;
 }
 
 .ev-title {
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ev-badge {
@@ -324,6 +353,24 @@
 .prio-normal .ev-prio-tag { background: var(--prio-normal); }
 .prio-low .ev-prio-tag { background: var(--prio-low); }
 
+.ev-prio-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #64748b;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    box-shadow: 0 0 0 2px #fff;
+    flex-shrink: 0;
+}
+
+.ev-prio-dot.prio-high,
+.prio-high .ev-prio-dot { background: var(--prio-high); }
+.ev-prio-dot.prio-normal,
+.prio-normal .ev-prio-dot { background: var(--prio-normal); }
+.ev-prio-dot.prio-low,
+.prio-low .ev-prio-dot { background: var(--prio-low); }
+
 .ev-source {
     font-weight: 700;
     display: inline-flex;
@@ -347,6 +394,22 @@
 .fc .fc-daygrid-week-number,
 .fc .fc-daygrid-week-number span {
     color: var(--ui-muted);
+}
+
+.fc .fc-list-day-cushion {
+    background: #f1f5f9;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.fc .fc-list-event-time,
+.fc .fc-list-event-title {
+    color: inherit;
+    font-weight: 700;
+}
+
+.fc .fc-list-event:hover td {
+    background: #eef2ff;
 }
 
 .fab {

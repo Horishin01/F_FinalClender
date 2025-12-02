@@ -495,8 +495,8 @@
             eventContent(arg) {
                 const props = arg.event.extendedProps || {};
                 const prioKey = (props.priority || '').toString().toLowerCase();
-                const prioLabel = { high: '高', normal: '通常', low: '低' }[prioKey] || '';
-                const prioTag = prioLabel ? `<span class="ev-prio-tag prio-${prioKey || 'normal'}"><span class="dot"></span>${prioLabel}</span>` : '';
+                const prioLabel = { high: '高', normal: '通常', low: '低' }[prioKey] || '通常';
+                const prioTag = `<span class="ev-prio-dot prio-${prioKey || 'normal'}" title="優先度: ${prioLabel}" aria-label="優先度: ${prioLabel}"></span>`;
                 const time = arg.timeText ? `<span class="ev-time">${arg.timeText}</span>` : '';
                 const srcKey = (props.source || '').toString().toLowerCase();
                 const srcIcons = {
