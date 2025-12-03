@@ -1,4 +1,7 @@
-@* Views/Shared/_Layout.cshtml *@
+@* Views/Shared/_Layout.cshtml
+   目的: 全ページ共通のレイアウト（ヘッダー/ナビ/フッター/スクリプト差し込み）を提供。
+   主な構成: ナビ（ロール別リンク制御あり）、モバイルメニュー、RenderBody/RenderSection。
+   依存: Bootstrap, FontAwesome, site.css, 個別セクションの Styles/Scripts。 *@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 <!DOCTYPE html>
 <html lang="ja">
@@ -10,11 +13,14 @@
     <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Views/Shared/_Layout.cshtml.css" asp-append-version="true" />
 
     @RenderSection("Styles", required: false)
 </head>
-<body class="app-body">
+@{
+    var bodyClass = (ViewData["BodyClass"] as string)?.Trim();
+    var bodyClasses = string.IsNullOrWhiteSpace(bodyClass) ? "app-body" : $"app-body {bodyClass}";
+}
+<body class="@bodyClasses">
     <header class="app-header">
         <div class="container-xl">
             <nav class="app-nav" aria-label="グローバルナビゲーション">
@@ -22,16 +28,27 @@
                     <a asp-area="" asp-controller="Home" asp-action="Index">Pi12Hi022052</a>
                     <span class="brand-pill">Calendar</span>
                 </div>
-                <ul class="app-menu">
-                    <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
-                    <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
-                    <li><a asp-area="" asp-controller="UserRoles" asp-action="Index">UserRoles</a></li>
-                    <li><a asp-area="" asp-controller="Roles" asp-action="Index">Roles</a></li>
-                    <li><a asp-area="" asp-controller="Events" asp-action="Index">Events</a></li>
-                    <li><a asp-area="" asp-controller="BalanceSheet" asp-action="Index">BalanceSheet</a></li>
-                </ul>
-                <div class="app-login">
-                    <partial name="_LoginPartial" />
+                <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobileMenu">
+                    <i class="fa-solid fa-bars"></i>
+                    <span class="nav-toggle-text">メニュー</span>
+                </button>
+                <div class="app-nav-block" id="primaryNav">
+                    <ul class="app-menu">
+                        <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
+                        <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
+                        {
+                            <li><a asp-area="" asp-controller="Admin" asp-action="Index">管理者ポータル</a></li>
+                            <li><a asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a></li>
+                            <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
+                            <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
+                            <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
+                        }
+                    </ul>
+                    <div class="app-login">
+                        <partial name="_LoginPartial" />
+                    </div>
                 </div>
             </nav>
         </div>
@@ -41,6 +58,12 @@
 
     <div class="app-main container-xl">
         <main role="main" class="app-content">
+            @if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
+            {
+                <div class="alert alert-warning" role="alert" style="margin-bottom:16px;">
+                    <strong>連携メッセージ:</strong> @status
+                </div>
+            }
             @RenderBody()
         </main>
     </div>
@@ -56,5 +79,30 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     @RenderSection("Scripts", required: false)
+
+    <div id="mobileMenu" class="mobile-menu" aria-hidden="true" tabindex="-1">
+        <div class="mobile-menu-head">
+            <span class="mobile-brand">Pi12Hi022052</span>
+            <button type="button" class="nav-close" aria-label="メニューを閉じる">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <ul class="mobile-menu-list">
+            <li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+            <li><a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a></li>
+            <li><a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a></li>
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
+            {
+                <li><a asp-area="" asp-controller="Admin" asp-action="Index">管理者ポータル</a></li>
+                <li><a asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a></li>
+                <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
+                <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
+                <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
+            }
+        </ul>
+        <div class="mobile-login">
+            <partial name="_LoginPartial" />
+        </div>
+    </div>
 </body>
 </html>

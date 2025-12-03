@@ -1,0 +1,133 @@
+@model Pit2Hi022052.ViewModels.AdminPortalViewModel
+@{
+    ViewData["Title"] = "管理者ポータル";
+    ViewData["BodyClass"] = "admin-portal";
+}
+
+<div class="admin-portal-root container-xl">
+    <header class="admin-hero">
+        <p class="hero-eyebrow">Admin Portal</p>
+        <h1 class="hero-title">運用と統計をまとめた総合ポータル</h1>
+        <p class="hero-sub">ユーザー/ロール/カレンダー/外部連携/ログの主要操作と指標をここから辿れます。</p>
+        <div class="hero-actions">
+            <a class="btn btn-primary" asp-area="" asp-controller="Analytics" asp-action="UserAccess">
+                <i class="fa-solid fa-chart-line"></i> アクセス分析へ
+            </a>
+            <a class="btn btn-outline-light" asp-area="" asp-controller="Events" asp-action="Index">
+                <i class="fa-regular fa-calendar"></i> カレンダー管理
+            </a>
+        </div>
+    </header>
+
+    <section class="portal-grid">
+        <div class="portal-card metric-card">
+            <div class="metric">
+                <span class="metric-label">ユーザー</span>
+                <span class="metric-value">@Model.TotalUsers</span>
+                <span class="metric-hint">登録アカウント</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">ロール</span>
+                <span class="metric-value">@Model.TotalRoles</span>
+                <span class="metric-hint">Role 定義数</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">イベント</span>
+                <span class="metric-value">@Model.EventsLast30Days</span>
+                <span class="metric-hint">直近30日の予定</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">カテゴリ</span>
+                <span class="metric-value">@Model.Categories</span>
+                <span class="metric-hint">カテゴリマスタ</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">アクセスログ</span>
+                <span class="metric-value">@Model.AccessLogsLast7Days</span>
+                <span class="metric-hint">直近7日の記録</span>
+            </div>
+        </div>
+
+        <div class="portal-card link-card">
+            <div class="card-head">
+                <div>
+                    <p class="card-eyebrow">ユーザー / 権限</p>
+                    <h2 class="card-title">アカウントとロール</h2>
+                </div>
+                <i class="fa-solid fa-user-shield card-icon"></i>
+            </div>
+            <p class="card-body-text">ユーザー作成・ロール付与・ロール定義をまとめて管理します。</p>
+            <div class="card-links">
+                <a class="link-chip" asp-area="" asp-controller="Users" asp-action="Index">ユーザー一覧</a>
+                <a class="link-chip" asp-area="" asp-controller="Roles" asp-action="Index">ロール設定</a>
+                <a class="link-chip" asp-area="" asp-controller="UserRoles" asp-action="Index">ユーザーとロール</a>
+            </div>
+        </div>
+
+        <div class="portal-card link-card">
+            <div class="card-head">
+                <div>
+                    <p class="card-eyebrow">カレンダー</p>
+                    <h2 class="card-title">イベントとカテゴリ</h2>
+                </div>
+                <i class="fa-regular fa-calendar-check card-icon"></i>
+            </div>
+            <p class="card-body-text">予定の一覧とカテゴリマスタを確認し、色やアイコンを調整できます。</p>
+            <div class="card-links">
+                <a class="link-chip" asp-area="" asp-controller="Events" asp-action="Index">イベント一覧</a>
+                <a class="link-chip" asp-area="" asp-controller="Categories" asp-action="Index">カテゴリ管理</a>
+            </div>
+        </div>
+
+        <div class="portal-card link-card">
+            <div class="card-head">
+                <div>
+                    <p class="card-eyebrow">外部連携</p>
+                    <h2 class="card-title">Outlook / Google / Legacy</h2>
+                </div>
+                <i class="fa-solid fa-plug card-icon"></i>
+            </div>
+            <p class="card-body-text">連携状態を確認し、必要に応じて接続や再認可を行います。</p>
+            <div class="card-links">
+                <a class="link-chip" asp-area="" asp-controller="Auth" asp-action="OutlookConnect">Outlook 連携</a>
+                <a class="link-chip" asp-area="" asp-controller="Auth" asp-action="GoogleCalendarConnect">Google 連携</a>
+                <span class="link-chip muted">Legacy Accounts: @Model.ExternalLegacyAccounts</span>
+                <span class="link-chip muted">Outlook: @Model.OutlookConnections / Google: @Model.GoogleConnections</span>
+            </div>
+        </div>
+
+        <div class="portal-card link-card">
+            <div class="card-head">
+                <div>
+                    <p class="card-eyebrow">お知らせ</p>
+                    <h2 class="card-title">アップデート / 障害</h2>
+                </div>
+                <i class="fa-solid fa-bullhorn card-icon"></i>
+            </div>
+            <p class="card-body-text">プライバシーポリシーに表示される更新情報・障害情報を管理します。</p>
+            <div class="card-links">
+                <a class="link-chip" asp-area="" asp-controller="AppNotices" asp-action="Index">告知を管理</a>
+            </div>
+        </div>
+
+        <div class="portal-card link-card">
+            <div class="card-head">
+                <div>
+                    <p class="card-eyebrow">監査 / ログ</p>
+                    <h2 class="card-title">アクセス可視化</h2>
+                </div>
+                <i class="fa-solid fa-chart-simple card-icon"></i>
+            </div>
+            <p class="card-body-text">エラー/正常のログをフィルタし、時間帯やユーザー別の傾向を把握します。</p>
+            <div class="card-links">
+                <a class="link-chip" asp-area="" asp-controller="Analytics" asp-action="UserAccess">アクセス分析</a>
+                <a class="link-chip" asp-area="" asp-controller="Flow" asp-action="Index">フロー / 確認用ページ</a>
+                <a class="link-chip" asp-area="" asp-controller="Tools" asp-action="TimeInsight">Time Insight</a>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-portal.css" asp-append-version="true" />
+}

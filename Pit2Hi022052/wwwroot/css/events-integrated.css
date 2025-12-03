@@ -1,23 +1,48 @@
-/* 統合カレンダー風UI (既存Events/Index用) */
+/* 統合カレンダー風UI (既存 Events/Index 用) */
 
+/* 全体コンテナ */
 .ic-root {
-    /* 背景は現行のグラデーションを優先 */
     background: linear-gradient(135deg, #667eea, #764ba2);
-    padding: 1.5rem 1.75rem;
-    border-radius: 18px;
+    padding: 0.8rem 0.6rem 1.2rem;
+    border-radius: 20px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-    width: 160%;
-    max-width: 1700px;
+
+    /* 全体幅をやや拡大しつつ中央カレンダーを強調 */
+    width: 100%;
+    max-width: 2150px;
     margin: 0 auto;
     min-height: 80vh;
     box-sizing: border-box;
 }
 
+/* Full-bleed body adjustments when events page requests it */
+body.app-body.events-page .app-main.container-xl {
+    max-width: 100%;
+    width: 100%;
+    padding-left: clamp(0.5rem, 3vw, 1.5rem);
+    padding-right: clamp(0.5rem, 3vw, 1.5rem);
+}
+
+body.app-body.events-page .app-content {
+    padding: 0;
+}
+
+body.app-body.events-page .ic-root {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ヘッダー行（タイトル＋アクション） */
 .ic-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+
+    /* レイアウト本体と同じ幅でセンタリング */
+    max-width: 2000px;
+    margin: 0 auto 1rem;
+    padding: 0 4px;
+
     color: #fff;
 }
 
@@ -37,27 +62,55 @@
     align-items: center;
 }
 
+/* 3カラムレイアウト
+ * 左右サイドバー: min 240px
+ * 中央: 4fr、サイド: 1fr ずつ  →  おおよそ 1 : 4.5 : 1 の感覚
+ */
 .ic-layout {
-    /* 3カラム：左サイド 320px / 中央可変 / 右サイド 320px */
     display: grid;
-    grid-template-columns: 320px minmax(880px, 1fr) 320px;
-    gap: 20px;
+    grid-template-columns: minmax(260px, 1.2fr) minmax(0, 5.5fr) minmax(260px, 1.2fr);
+    gap: clamp(22px, 2vw, 32px);
     width: 100%;
-    max-width: 1600px;
+    max-width: 2000px;
     margin: 0 auto;
-    align-items: start;
+    align-items: stretch;  /* サイドと中央の縦位置を揃える */
 }
 
-.calendar-sidebar-left {
-    width: 100%;
+.ic-sidebar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.7rem;
+    border-radius: 22px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    align-self: stretch;
+    height: 100%;
 }
-.calendar-main {
-    width: 100%;
+
+.ic-sidebar-right-wrapper {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.7rem;
+    border-radius: 22px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
+
+/* 大画面時のみ“光学センタリング”を少しだけ補正 */
+@media (min-width: 1400px) {
+    .ic-layout {
+        position: relative;
+        left: 0;
+    }
+}
+
+/* 3カラムそれぞれの箱 */
+.calendar-sidebar-left,
+.calendar-main,
 .calendar-sidebar-right {
     width: 100%;
 }
 
+/* 共通カードスタイル */
 .ic-card {
     background: #fff;
     border-radius: 18px;
@@ -72,15 +125,68 @@
     font-weight: 800;
     color: #1f2937;
     border-bottom: 1px solid #e8ecf5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.ic-head-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.ic-card-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.ic-card-title-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.ic-card-title-icon.icon-search {
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+}
+
+.ic-card-title-icon.icon-stats {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.ic-card-title-icon.icon-upcoming {
+    background: linear-gradient(135deg, #f97316, #ef4444);
 }
 
 .ic-card-body {
     padding: 0.9rem 1.1rem 1.2rem;
 }
 
+/* 左カラムのリスト（カレンダーソース／カテゴリ） */
 .ic-list {
     display: grid;
     gap: 0.5rem;
+}
+
+.mobile-quick-actions {
+    display: none;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin: 0.6rem 0 0.8rem;
+}
+
+.mobile-quick-actions .ic-btn {
+    flex: 1 1 auto;
+    justify-content: center;
 }
 
 .ic-list-item {
@@ -89,13 +195,371 @@
     background: #f8fafc;
     color: #111827;
     border-radius: 12px;
-    padding: 0.65rem 0.75rem;
+    padding: 0.55rem 0.65rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.15s ease;
+}
+
+.ic-list-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.9rem;
+}
+
+.ic-list-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    background: #e5e7eb;
+    color: #111827;
+    flex-shrink: 0;
+}
+
+/* -- Extensions area (ICカード / Life assistant) -- */
+.ic-extensions {
+    max-width: 1900px;
+    margin: 2rem auto 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: clamp(20px, 2vw, 32px);
+}
+
+.ic-extension-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 26px;
+    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.12);
+    padding: clamp(1.3rem, 2vw, 1.8rem);
+    color: #0f172a;
+}
+
+.ic-card-iccard {
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.9), rgba(191, 219, 254, 0.9));
+}
+
+.ic-card-life {
+    background: linear-gradient(135deg, rgba(247, 233, 255, 0.92), rgba(255, 247, 237, 0.92));
+}
+
+.extension-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.2rem;
+}
+
+.extension-head h3 {
+    margin: 0.1rem 0;
+    font-size: 1.4rem;
+}
+
+.extension-head .sub {
+    margin: 0.2rem 0 0;
+    color: #475569;
+    max-width: 420px;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.15);
+    color: #0f766e;
+    font-weight: 700;
+}
+
+.iccard-linker label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.iccard-linker .field {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.iccard-linker input {
+    flex: 1 1 auto;
+    border-radius: 16px;
+    border: 1.5px solid rgba(15, 23, 42, 0.1);
+    padding: 0.65rem 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+}
+
+.ic-btn.primary.ghost {
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.15);
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f172a;
+    padding: 0.55rem 1.1rem;
+    font-weight: 700;
+}
+
+.iccard-preview {
+    margin-top: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    padding: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.preview-chip {
+    display: inline-flex;
+    flex-direction: column;
+    margin-bottom: 0.8rem;
+}
+
+.preview-chip .label {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.preview-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.preview-list li {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.preview-list .time {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.preview-list .map {
+    color: #0d9488;
+    font-weight: 600;
+}
+
+.iccard-meta {
+    margin-top: 1.1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.8rem;
+}
+
+.iccard-meta .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+}
+
+.iccard-meta .value {
+    display: block;
+    font-weight: 700;
+}
+
+.assist-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.ic-btn.primary.mini,
+.ic-btn.ghost.mini {
+    padding: 0.4rem 0.85rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.ic-btn.primary.mini {
+    background: linear-gradient(120deg, #7b68ee, #34d399);
+    color: #fff;
+    border: none;
+}
+
+.ic-btn.ghost.mini {
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.8);
+    color: #0f172a;
+}
+
+.life-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.life-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    padding: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+
+.life-card .label {
+    font-size: 0.85rem;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.6rem;
+}
+
+.streaks-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(32px, 1fr));
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+}
+
+.streaks-grid .dot {
+    display: grid;
+    place-items: center;
+    padding: 0.35rem 0;
+    border-radius: 12px;
+    background: rgba(148, 163, 184, 0.25);
+    font-weight: 700;
+    color: #475569;
+}
+
+.streaks-grid .dot.done {
+    background: #10b981;
+    color: #fff;
+}
+
+.quick-memos .memo {
+    background: rgba(59, 130, 246, 0.08);
+    border-radius: 12px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.7rem;
+}
+
+.quick-memos .memo:last-child {
+    margin-bottom: 0;
+}
+
+.quick-memos .tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+    color: #1d4ed8;
+}
+
+.quick-memos .tag.alt {
+    color: #d97706;
+}
+
+.helper .tips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.helper .tips li {
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+    .preview-list li {
+        grid-template-columns: 60px 1fr;
+    }
+
+    .preview-list .map {
+        grid-column: 2 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    .ic-extensions {
+        grid-template-columns: 1fr;
+    }
+
+    .iccard-linker .field {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .assist-actions {
+        width: 100%;
+    }
+}
+
+.ic-list-icon.icon-all {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+}
+
+.ic-list-icon.icon-google {
+    background: linear-gradient(135deg, #4285f4, #34a853);
+    color: #fff;
+    font-weight: 700;
+}
+
+.ic-list-icon.icon-icloud {
+    background: linear-gradient(135deg, #53a0fd, #147efb);
+    color: #fff;
+}
+
+.ic-list-icon.icon-outlook {
+    background: linear-gradient(135deg, #0078d4, #00bcf2);
+    color: #fff;
+}
+
+.ic-list-icon.icon-work {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: #fff;
+}
+
+.ic-list-icon.icon-local {
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+    color: #fff;
+}
+
+.ic-list-icon.icon-meeting {
+    background: linear-gradient(135deg, #facc15, #f97316);
+    color: #111827;
+}
+
+.ic-list-icon.icon-personal {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: #fff;
+}
+
+.ic-list-icon.icon-deadline {
+    background: linear-gradient(135deg, #f6ad55, #ed8936);
+    color: #fff;
+}
+
+.ic-list-icon.icon-study {
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    color: #fff;
 }
 
 .ic-list-item .count {
@@ -110,16 +574,21 @@
     background: linear-gradient(135deg, rgba(102,126,234,0.15), rgba(118,75,162,0.15));
 }
 
+/* 中央：カレンダー本体カード */
 .ic-main {
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 10px 35px rgba(0,0,0,0.1);
-    padding: 1rem;
+
+    /* カレンダー領域を最大化するためパディングをさらに抑制 */
+    padding: 0.6rem 0.2rem 0.75rem;
+    box-sizing: border-box;
 }
 
+/* カレンダー上部のヘッダー（ナビ／表示切替／ボタン） */
 .ic-main-head {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto auto auto;
     gap: 0.75rem;
     align-items: center;
     margin-bottom: 0.75rem;
@@ -167,19 +636,56 @@
     color: #fff;
 }
 
-.ic-main-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
+.ic-now {
+    display: inline-flex;
     align-items: center;
+    gap: 0.35rem;
+    background: rgba(99, 102, 241, 0.12);
+    color: #0f172a;
+    border-radius: 14px;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    min-width: 0;
 }
 
+.ic-now .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.18);
+}
+
+.ic-now .label {
+    font-weight: 800;
+    font-size: 0.88rem;
+}
+
+.ic-now .time {
+    font-weight: 900;
+    letter-spacing: 0.02em;
+}
+
+/* 右端の「今日・同期・新規追加」エリア */
+.ic-main-actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    align-items: center;
+
+    flex-wrap: nowrap;   /* デスクトップでは折り返さない */
+    min-width: 0;
+}
+
+/* ボタン類 */
 .ic-btn {
     border: none;
     border-radius: 12px;
-    padding: 0.55rem 0.9rem;
+    padding: 0.55rem 0.95rem;
     font-weight: 700;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .ic-btn.primary {
@@ -193,7 +699,7 @@
     box-shadow: 0 10px 25px rgba(17,153,142,0.25);
     border: none;
     border-radius: 12px;
-    padding: 0.55rem 1rem;
+    padding: 0.55rem 1.05rem;
     font-weight: 800;
 }
 
@@ -206,22 +712,133 @@
     margin-right: 0.25rem;
 }
 
+.ic-btn.is-loading i {
+    animation: sync-spin 0.9s linear infinite;
+}
+
+.sync-visual {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(15, 23, 42, 0.05);
+    border-radius: 14px;
+    padding: 0.5rem 0.7rem;
+    min-width: 0;
+    color: #0f172a;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+}
+
+.sync-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #22d3ee, #6366f1);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+}
+
+.sync-status {
+    font-weight: 800;
+    color: #0f172a;
+    white-space: nowrap;
+}
+
+.sync-status:empty {
+    display: none;
+}
+
+.sync-meter {
+    position: relative;
+    width: min(180px, 30vw);
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+    flex: 1 1 auto;
+}
+
+.sync-meter-fill {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #34d399, #60a5fa, #34d399);
+    background-size: 200% 100%;
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 0.25s ease;
+}
+
+.sync-visual[data-state="running"] .sync-meter-fill {
+    animation: sync-meter 1.4s linear infinite;
+    transform: scaleX(1);
+}
+
+.sync-visual[data-state="done"] .sync-meter-fill {
+    animation: none;
+    transform: scaleX(1);
+    background-position: 100% 50%;
+}
+
+.sync-visual[data-state="error"] .sync-meter-fill {
+    animation: sync-error 0.18s ease-in-out 0s 3 alternate;
+    background: linear-gradient(90deg, #f97316, #ef4444);
+    transform: scaleX(1);
+}
+
+.sync-visual[data-state="running"] .sync-icon i {
+    animation: sync-spin 1s linear infinite;
+}
+
+@keyframes sync-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes sync-meter {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+@keyframes sync-error {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0.6); }
+}
+
+/* FullCalendar 埋め込み用ラッパー */
 .ic-calendar-wrap {
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     overflow: hidden;
     background: #fff;
-    min-height: 680px;
+    box-sizing: border-box;
+    padding: 0; /* 余白をなくす */
+}
+
+.fc .fc-timegrid-now-indicator-line {
+    border-color: #ff5d73;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+    border-top-color: #ff5d73;
 }
 
 .calendar-main-card {
-    min-height: 680px;
+    min-height: 820px;
     background: #fff;
+    padding: 0.15rem; /* FullCalendarエリアを枠いっぱいに寄せる */
 }
 
+/* 右サイドバー（検索／統計／直近予定） */
 .ic-sidebar-right {
     display: grid;
     gap: 0.8rem;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.7rem;
+    border-radius: 22px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    align-self: start;
+    height: auto;
 }
 
 .ic-input {
@@ -242,10 +859,62 @@
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 0.6rem 0.7rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.ic-stat:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 10px 18px rgba(99, 102, 241, 0.12);
+}
+
+.ic-stat.active {
+    border-color: #818cf8;
+    box-shadow: 0 12px 22px rgba(99, 102, 241, 0.18);
+    transform: translateY(-1px);
+}
+
+.ic-stat-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
 }
 
 .ic-stat .label { font-size: 0.9rem; color: #6b7280; }
 .ic-stat .value { font-weight: 900; font-size: 1.2rem; color: #111827; }
+
+.ic-stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    color: #fff;
+}
+
+.ic-stat-icon.icon-total {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.ic-stat-icon.icon-today {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.ic-stat-icon.icon-week {
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+}
+
+.ic-stat-icon.icon-conflict {
+    background: linear-gradient(135deg, #f97316, #ef4444);
+}
 
 .ic-upcoming {
     list-style: none;
@@ -262,12 +931,217 @@
     padding: 0.6rem 0.7rem;
 }
 
+.ic-upcoming-empty {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+/* 優先度タグ */
+.ev-prio-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.08rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: #fff;
+    background: #6b7280;
+}
+.ev-prio-tag .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background: currentColor;
+}
+.prio-high .ev-prio-tag { background: #ff4d6d; }
+.prio-normal .ev-prio-tag { background: #2563eb; }
+.prio-low .ev-prio-tag { background: #64748b; }
+
+.ev-source {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    padding: 0;
+    font-size: 0.9rem;
+}
+
 .ic-upcoming .date { font-size: 0.85rem; color: #6b7280; }
 .ic-upcoming .ttl { font-weight: 800; color: #111827; }
 
-/* 幅が狭い場合は縦並びに切り替え */
+/* 幅が狭い場合は縦並びに切り替え（モバイル用） */
 @media (max-width: 1200px) {
-    .ic-layout { grid-template-columns: 1fr; }
-    .ic-main-head { grid-template-columns: 1fr; }
-    .ic-main-actions { justify-content: flex-start; }
+    .ic-layout {
+        grid-template-columns: 1fr;
+        position: static;
+        left: 0;
+    }
+    .ic-main-head {
+        grid-template-columns: 1fr;
+        row-gap: 0.5rem;
+    }
+    .ic-main-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+    .sync-visual {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .sync-meter {
+        width: 100%;
+    }
+    .ic-sidebar-left {
+        flex-direction: column;
+    }
+    .ic-sidebar-right {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .ic-root {
+        padding: 0.7rem 0.55rem 0.95rem;
+    }
+    .ic-sidebar-left {
+        padding: 0.5rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .ic-sidebar-right {
+        padding: 0.5rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .ic-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.7rem;
+    }
+    .ic-brand {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    .ic-head-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+    .ic-card {
+        border-radius: 16px;
+    }
+    .ic-card-body {
+        padding: 0.85rem 1rem;
+    }
+    .ic-main {
+        padding: 0.85rem 0.4rem 0.95rem;
+    }
+    .ic-month-nav {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .ic-main-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .ic-views {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .mobile-quick-actions { display: flex; }
+    .ic-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .ic-main {
+        order: 1;
+        padding: 0.8rem 0.35rem 0.9rem;
+    }
+    .ic-sidebar-left { order: 2; }
+    .ic-sidebar-right { order: 3; }
+    .ic-sidebar-left,
+    .ic-sidebar-right {
+        gap: 0.75rem;
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
+    }
+    .ic-card {
+        width: 100%;
+    }
+    .ic-calendar-wrap {
+        min-height: 620px;
+    }
+    .mobile-collapsible {
+        display: none;
+    }
+    #icSidebarLeft.is-open {
+        display: flex;
+    }
+    #icSidebarRight.is-open {
+        display: grid;
+    }
+}
+
+@media (max-width: 640px) {
+    .ic-header {
+        flex-direction: column;
+        gap: 0.8rem;
+        text-align: center;
+    }
+    .ic-main-head {
+        grid-template-columns: 1fr;
+    }
+    .ic-month-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.35rem;
+    }
+    .ic-main-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .sync-visual {
+        width: 100%;
+        justify-content: center;
+    }
+    .ic-views {
+        flex-wrap: wrap;
+    }
+    .ic-list-item {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+    .ic-card-body {
+        padding: 0.75rem 0.85rem;
+    }
+    .ic-card-title {
+        width: 100%;
+        justify-content: center;
+    }
+    .ic-sidebar-right {
+        grid-template-columns: 1fr;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    .ic-sidebar-left {
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    .ic-head-actions {
+        justify-content: center;
+    }
 }

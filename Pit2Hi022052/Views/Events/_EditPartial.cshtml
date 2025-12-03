@@ -2,99 +2,144 @@
 
 <input type="hidden" asp-for="Id" />
 <input type="hidden" asp-for="UserId" />
+<input type="hidden" asp-for="UID" />
 
-<div class="form-group">
-    <label asp-for="Title">タイトル *</label>
+<div class="ev-field">
+    <label asp-for="Title" class="ev-label">
+        <span class="ev-label-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+        <span>タイトル *</span>
+    </label>
     <input asp-for="Title" class="form-control" placeholder="例: 面談練習" required />
     <span asp-validation-for="Title" class="text-danger"></span>
 </div>
 
-<div class="form-group">
-    <label asp-for="StartDate">開始日時 *</label>
-    <input asp-for="StartDate" class="form-control" required />
-    <span asp-validation-for="StartDate" class="text-danger"></span>
+<div class="ev-field-row">
+    <div class="ev-field">
+        <label asp-for="StartDate" class="ev-label">
+            <span class="ev-label-icon"><i class="fa-solid fa-flag"></i></span>
+            <span>開始日時 *</span>
+        </label>
+        <input asp-for="StartDate" class="form-control" type="datetime-local" value='@Model.StartDate?.ToString("yyyy-MM-ddTHH:mm")' required />
+        <span asp-validation-for="StartDate" class="text-danger"></span>
+    </div>
+    <div class="ev-field">
+        <label asp-for="EndDate" class="ev-label">
+            <span class="ev-label-icon"><i class="fa-solid fa-hourglass-end"></i></span>
+            <span>終了日時</span>
+        </label>
+        <input asp-for="EndDate" class="form-control" type="datetime-local" value='@Model.EndDate?.ToString("yyyy-MM-ddTHH:mm")' />
+        <small class="hint">未入力の場合は開始のみがタイムラインに表示されます。</small>
+        <span asp-validation-for="EndDate" class="text-danger"></span>
+    </div>
 </div>
 
-<div class="form-group">
-    <label asp-for="EndDate">終了日時</label>
-    <input asp-for="EndDate" class="form-control" />
-    <small class="hint">未入力の場合は開始日時のみ表示されます。</small>
-    <span asp-validation-for="EndDate" class="text-danger"></span>
-</div>
-
-<div class="form-group">
-    <label asp-for="Description">詳細</label>
+<div class="ev-field">
+    <label asp-for="Description" class="ev-label">
+        <span class="ev-label-icon"><i class="fa-solid fa-align-left"></i></span>
+        <span>詳細</span>
+    </label>
     <textarea asp-for="Description" class="form-control" rows="4" placeholder="メモやオンライン会議URLなどを記入してください。"></textarea>
     <span asp-validation-for="Description" class="text-danger"></span>
 </div>
 
-<div class="form-group form-check">
+<div class="ev-toggle">
     <input asp-for="AllDay" class="form-check-input" />
-    <label asp-for="AllDay" class="form-check-label">終日イベントとして扱う</label>
+    <label asp-for="AllDay" class="form-check-label">
+        <span class="ev-label-icon subtle"><i class="fa-solid fa-infinity"></i></span>
+        終日イベントとして扱う
+    </label>
 </div>
 
-<div class="form-group">
-    <label asp-for="Source">ソース</label>
-    <select asp-for="Source" class="form-control">
-        <option value="Local">Local</option>
-        <option value="Google">Google</option>
-        <option value="ICloud">ICloud</option>
-        <option value="Outlook">Outlook</option>
-        <option value="Work">Work</option>
-    </select>
-    <span asp-validation-for="Source" class="text-danger"></span>
-    <small class="hint">取り込み元や手動登録の区別に利用します。</small>
+<div class="ev-field-row">
+    <div class="ev-field">
+        <label asp-for="Source" class="ev-label">
+            <span class="ev-label-icon"><i class="fa-solid fa-layer-group"></i></span>
+            <span>ソース</span>
+        </label>
+        <select asp-for="Source" class="form-control">
+            <option value="Local">Local</option>
+            <option value="Google">Google</option>
+            <option value="ICloud">ICloud</option>
+            <option value="Outlook">Outlook</option>
+            <option value="Work">Work</option>
+        </select>
+        <span asp-validation-for="Source" class="text-danger"></span>
+        <small class="hint">取り込み元や手動登録の区別に利用します。</small>
+    </div>
+    <div class="ev-field">
+        <label asp-for="CategoryId" class="ev-label">
+            <span class="ev-label-icon"><i class="fa-solid fa-shapes"></i></span>
+            <span>カテゴリ</span>
+        </label>
+        <select asp-for="CategoryId" class="form-control">
+            <option value="">（未選択）</option>
+            @if (ViewBag.CategoryOptions is IEnumerable<SelectListItem> categoryOptions)
+            {
+                foreach (var opt in categoryOptions)
+                {
+                    <option value="@opt.Value" selected="@(opt.Selected ? "selected" : null)">@opt.Text</option>
+                }
+            }
+        </select>
+        <span asp-validation-for="CategoryId" class="text-danger"></span>
+        <small class="hint">カテゴリは DB 管理のリストから選択します。Categories 画面で追加・編集できます。</small>
+    </div>
 </div>
 
-<div class="form-group">
-    <label asp-for="Category">カテゴリ</label>
-    <select asp-for="Category" class="form-control">
-        <option value="Work">仕事・業務</option>
-        <option value="Meeting">会議・打ち合わせ</option>
-        <option value="Personal">プライベート</option>
-        <option value="Deadline">締切・期限</option>
-        <option value="Study">学習・勉強</option>
-    </select>
-    <span asp-validation-for="Category" class="text-danger"></span>
+<div class="ev-field-row">
+    <div class="ev-field">
+        <label asp-for="Priority" class="ev-label">
+            <span class="ev-label-icon"><i class="fa-solid fa-signal"></i></span>
+            <span>優先度</span>
+        </label>
+        <select asp-for="Priority" class="form-control">
+            <option value="High">高</option>
+            <option value="Normal">通常</option>
+            <option value="Low">低</option>
+        </select>
+        <span asp-validation-for="Priority" class="text-danger"></span>
+    </div>
+    <div class="ev-field">
+        <label asp-for="Recurrence" class="ev-label">
+            <span class="ev-label-icon"><i class="fa-solid fa-arrows-rotate"></i></span>
+            <span>繰り返し</span>
+        </label>
+        <select asp-for="Recurrence" class="form-control">
+            <option value="None">なし</option>
+            <option value="Daily">毎日</option>
+            <option value="Weekly">毎週</option>
+            <option value="Biweekly">隔週</option>
+            <option value="Monthly">毎月</option>
+        </select>
+        <span asp-validation-for="Recurrence" class="text-danger"></span>
+    </div>
 </div>
 
-<div class="form-group">
-    <label asp-for="Priority">優先度</label>
-    <select asp-for="Priority" class="form-control">
-        <option value="High">高</option>
-        <option value="Normal">通常</option>
-        <option value="Low">低</option>
-    </select>
-    <span asp-validation-for="Priority" class="text-danger"></span>
+<div class="ev-field-row">
+    <div class="ev-field">
+        <label asp-for="Location" class="ev-label">
+            <span class="ev-label-icon"><i class="fa-solid fa-location-dot"></i></span>
+            <span>場所</span>
+        </label>
+        <input asp-for="Location" class="form-control" placeholder="会議室やオンラインURLなど" />
+        <span asp-validation-for="Location" class="text-danger"></span>
+    </div>
+    <div class="ev-field">
+        <label asp-for="ReminderMinutesBefore" class="ev-label">
+            <span class="ev-label-icon"><i class="fa-solid fa-bell"></i></span>
+            <span>リマインダー（分前）</span>
+        </label>
+        <input asp-for="ReminderMinutesBefore" class="form-control" type="number" min="0" step="5" />
+        <span asp-validation-for="ReminderMinutesBefore" class="text-danger"></span>
+        <small class="hint">0以上の値を設定すると通知計算の目安になります（現在は保存のみ）。</small>
+    </div>
 </div>
 
-<div class="form-group">
-    <label asp-for="Location">場所</label>
-    <input asp-for="Location" class="form-control" placeholder="会議室やオンラインURLなど" />
-    <span asp-validation-for="Location" class="text-danger"></span>
-</div>
-
-<div class="form-group">
-    <label asp-for="AttendeesCsv">参加者（カンマ区切り）</label>
+<div class="ev-field">
+    <label asp-for="AttendeesCsv" class="ev-label">
+        <span class="ev-label-icon"><i class="fa-solid fa-user-group"></i></span>
+        <span>参加者（カンマ区切り）</span>
+    </label>
     <input asp-for="AttendeesCsv" class="form-control" placeholder="tanaka@example.com, yamada@example.jp" />
     <span asp-validation-for="AttendeesCsv" class="text-danger"></span>
-</div>
-
-<div class="form-group">
-    <label asp-for="Recurrence">繰り返し</label>
-    <select asp-for="Recurrence" class="form-control">
-        <option value="None">なし</option>
-        <option value="Daily">毎日</option>
-        <option value="Weekly">毎週</option>
-        <option value="Biweekly">隔週</option>
-        <option value="Monthly">毎月</option>
-    </select>
-    <span asp-validation-for="Recurrence" class="text-danger"></span>
-</div>
-
-<div class="form-group">
-    <label asp-for="ReminderMinutesBefore">リマインダー（分前）</label>
-    <input asp-for="ReminderMinutesBefore" class="form-control" type="number" min="0" step="5" />
-    <span asp-validation-for="ReminderMinutesBefore" class="text-danger"></span>
-    <small class="hint">0以上の値を設定すると通知計算の目安になります（現在は保存のみ）。</small>
 </div>

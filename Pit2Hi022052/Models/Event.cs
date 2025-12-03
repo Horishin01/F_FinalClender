@@ -15,15 +15,6 @@ namespace Pit2Hi022052.Models
         Work
     }
 
-    public enum EventCategory
-    {
-        Work,
-        Meeting,
-        Personal,
-        Deadline,
-        Study
-    }
-
     public enum EventPriority
     {
         Low,
@@ -50,7 +41,7 @@ namespace Pit2Hi022052.Models
         public virtual string UserId { get; set; } = string.Empty;       //ユーザと紐づけ
         
         [Display(Name = "UID")]
-        public string UID { get; set; } = string.Empty;                 // iCloud識別子
+        public string? UID { get; set; } = null;                 // iCloud識別子（空可）
         
         [Display(Name = "タイトル")]
         public virtual string Title { get; set; } = string.Empty;       // イベントのタイトル
@@ -65,14 +56,14 @@ namespace Pit2Hi022052.Models
         public DateTime? LastModified { get; set; } // 差分同期将来用途 // Nullableにする
 
         [Display(Name = "詳細")]
-        public virtual string Description { get; set; } = string.Empty;// イベントの説明
+        public virtual string? Description { get; set; } = string.Empty;// イベントの説明（空可）
 
         // 統合カレンダー: 拡張メタ
         [Display(Name = "ソース")]
         public EventSource Source { get; set; } = EventSource.Local;
 
         [Display(Name = "カテゴリ")]
-        public EventCategory Category { get; set; } = EventCategory.Personal;
+        public string? CategoryId { get; set; }
 
         [Display(Name = "優先度")]
         public EventPriority Priority { get; set; } = EventPriority.Normal;
@@ -100,6 +91,9 @@ namespace Pit2Hi022052.Models
 
         [ForeignKey(nameof(UserId))] 
         public virtual ApplicationUser? User { get; set; }
+
+        [ForeignKey(nameof(CategoryId))]
+        public virtual CalendarCategory? Category { get; set; }
     }
     
 }

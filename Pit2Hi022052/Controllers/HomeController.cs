@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 using Pit2Hi022052.ViewModels;
-using Pit2Hi022052.Services;
 using System.Diagnostics;
 using System.Linq;
 
@@ -52,20 +50,35 @@ namespace Pit2Hi022052.Controllers
                     End = e.EndDate,
                     Description = e.Description,
                     AllDay = e.AllDay
-                }).ToList(),
-                BalanceSheetSeed = BalanceSheetSampleProvider.GetSeed()
+                }).ToList()
             };
 
             return View(model);
         }
 
-        public IActionResult Privacy()
+        public async Task<IActionResult> Privacy()
         {
-            return View(new HomeIndexViewModel
+            var updates = await _db.AppNotices
+                .AsNoTracking()
+                .Where(n => n.Kind == NoticeKind.Update)
+                .OrderByDescending(n => n.OccurredAt)
+                .ThenByDescending(n => n.CreatedAtUtc)
+                .ToListAsync();
+
+            var incidents = await _db.AppNotices
+                .AsNoTracking()
+                .Where(n => n.Kind == NoticeKind.Incident)
+                .OrderByDescending(n => n.OccurredAt)
+                .ThenByDescending(n => n.CreatedAtUtc)
+                .ToListAsync();
+
+            var model = new PrivacyViewModel
             {
-                IsAuthenticated = false,
-                BalanceSheetSeed = BalanceSheetSampleProvider.GetSeed()
-            });
+                Updates = updates,
+                Incidents = incidents
+            };
+
+            return View(model);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

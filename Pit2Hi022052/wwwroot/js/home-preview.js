@@ -2,6 +2,16 @@
     const STORAGE_KEY = 'pit2hi-preview-events';
     const STORAGE_CARD_KEY = 'pit2hi-preview-card';
     const LAYOUT_STORAGE_KEY = 'pit2hi-preview-layout';
+    const FLOW_STORAGE_KEY = 'pit2hi-preview-flow';
+    const FLOW_SUGGESTIONS = [
+        { text: 'スマホ開く前に深呼吸', context: 'プライベート' },
+        { text: '水を飲む', context: '健康' },
+        { text: 'ベッドメイキング', context: 'プライベート' },
+        { text: '歯磨き', context: '健康' },
+        { text: 'カーテンを開ける', context: 'プライベート' },
+        { text: '今から集中タイム開始', context: '仕事' },
+        { text: '1on1 の準備メモを書く', context: '仕事' }
+    ];
     const LEGACY_SAMPLE_TITLES = new Set([
         'スプリントレビュー',
         '歩いてランチ',
@@ -35,7 +45,6 @@
         if (!calendarEl) return;
 
         const boot = readBootEvents();
-        const bsSeed = readBalanceSeed();
         const elements = {
             calendarPeriod: document.getElementById('calendarPeriod'),
             filterButtons: document.querySelectorAll('#calendarFilters .chip'),
@@ -84,7 +93,16 @@
             cardRegisterBtn: document.getElementById('btnCardRegister'),
             cardRemoveBtn: document.getElementById('btnCardRemove'),
             cardTemplates: document.querySelectorAll('[data-card-template]'),
-            tapHistoryList: document.getElementById('tapHistory')
+            tapHistoryList: document.getElementById('tapHistory'),
+            flowInput: document.getElementById('flowInput'),
+            flowContext: document.getElementById('flowContext'),
+            flowAddButton: document.getElementById('btnAddFlow'),
+            flowList: document.getElementById('flowList'),
+            flowSuggestionChips: document.getElementById('flowSuggestionChips'),
+            flowCountToday: document.getElementById('flowCountToday'),
+            flowCountWeek: document.getElementById('flowCountWeek'),
+            flowStreak: document.getElementById('flowStreak'),
+            flowFilterButtons: document.querySelectorAll('[data-flow-filter]')
         };
 
         const state = {
@@ -93,6 +111,8 @@
             filter: 'all',
             showFocusBlocks: true,
             showCommuteBlocks: true,
+            flowEntries: loadFlowEntries(),
+            flowFilter: 'today',
             cardProfile: loadCardProfile(),
             layoutEditing: false,
             focusTimer: {
@@ -171,19 +191,11 @@
         bindFocusControls(state, elements, calendar);
         bindActions(elements, state, calendar);
         bindCardControls(state, elements, calendar);
+        bindFlowFeature(state, elements);
         initLayoutEditor(state, elements);
         if (elements.serverState) {
             elements.serverState.textContent = boot.signedIn ? '最新' : 'サインインすると予定を表示できます';
             elements.serverState.classList.toggle('error', !boot.signedIn);
-        }
-
-        const bsRoot = document.querySelector('[data-balance-sheet]');
-        if (bsRoot && typeof BalanceSheetWidget !== 'undefined') {
-            BalanceSheetWidget.init({
-                root: bsRoot,
-                seed: bsSeed,
-                storageKey: bsRoot.dataset.storageKey || 'home-bs-state'
-            });
         }
 
         function bindFilters(buttons, currentState, cal) {
@@ -406,6 +418,7 @@
             updateTravelAssistant(allEvents, els);
             updateWellness(metrics, els);
             updateCardUi(currentState, els);
+            renderFlowList(currentState, els);
             updateFocusState(currentState, els);
         }
     });
@@ -457,17 +470,6 @@
         }
     }
 
-    function readBalanceSeed() {
-        const el = document.getElementById('balance-sheet-json');
-        if (!el) return [];
-        try {
-            const parsed = JSON.parse(el.textContent || '[]');
-            return Array.isArray(parsed) ? parsed : [];
-        } catch {
-            return [];
-        }
-    }
-
     function stripLegacySamples(list) {
         if (!Array.isArray(list) || !list.length) return [];
         const filtered = list.filter(ev => {
@@ -489,6 +491,31 @@
     function persistEvents(events) {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+        } catch {
+            /* noop */
+        }
+    }
+
+    function loadFlowEntries() {
+        try {
+            const raw = localStorage.getItem(FLOW_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return parsed;
+            }
+        } catch (err) {
+            console.warn('preview: flow storage unavailable', err);
+        }
+        const now = new Date().toISOString();
+        return [
+            { id: 'flow-sample-1', text: 'スマホ開く前に深呼吸', context: 'プライベート', createdAt: now },
+            { id: 'flow-sample-2', text: '水を飲んで再集中', context: '健康', createdAt: now }
+        ];
+    }
+
+    function persistFlowEntries(entries) {
+        try {
+            localStorage.setItem(FLOW_STORAGE_KEY, JSON.stringify(entries));
         } catch {
             /* noop */
         }
@@ -517,6 +544,134 @@
         const d = new Date(date);
         d.setHours(0, 0, 0, 0);
         return d;
+    }
+
+    function dateKey(value) {
+        const d = startOfDay(value);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function bindFlowFeature(currentState, els) {
+        if (!els.flowList) return;
+
+        const addEntry = (text, context) => {
+            if (!text) return;
+            currentState.flowEntries = Array.isArray(currentState.flowEntries) ? currentState.flowEntries : [];
+            currentState.flowEntries.unshift({
+                id: uid(),
+                text,
+                context: context || 'メモ',
+                createdAt: new Date().toISOString()
+            });
+            persistFlowEntries(currentState.flowEntries);
+            renderFlowList(currentState, els);
+        };
+
+        const handleAdd = () => {
+            const text = (els.flowInput?.value || '').trim();
+            if (!text) return;
+            addEntry(text, els.flowContext?.value || 'メモ');
+            if (els.flowInput) {
+                els.flowInput.value = '';
+                els.flowInput.focus();
+            }
+        };
+
+        els.flowAddButton?.addEventListener('click', handleAdd);
+        els.flowInput?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleAdd();
+            }
+        });
+
+        els.flowFilterButtons?.forEach(btn => {
+            btn.addEventListener('click', () => {
+                els.flowFilterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentState.flowFilter = btn.dataset.flowFilter || 'today';
+                renderFlowList(currentState, els);
+            });
+        });
+
+        renderFlowSuggestions(els, addEntry);
+        renderFlowList(currentState, els);
+    }
+
+    function renderFlowSuggestions(els, addEntry) {
+        const container = els.flowSuggestionChips;
+        if (!container) return;
+        container.innerHTML = '';
+        FLOW_SUGGESTIONS.forEach(item => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'idea-chip';
+            chip.textContent = `${item.text} (${item.context})`;
+            chip.addEventListener('click', () => addEntry(item.text, item.context));
+            container.appendChild(chip);
+        });
+    }
+
+    function renderFlowList(currentState, els) {
+        const listEl = els.flowList;
+        if (!listEl) return;
+        const entries = Array.isArray(currentState.flowEntries) ? currentState.flowEntries : [];
+        const today = dateKey(new Date());
+        const filtered = (currentState.flowFilter === 'all' ? entries : entries.filter(e => dateKey(e.createdAt) === today))
+            .slice()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        if (!filtered.length) {
+            listEl.innerHTML = '<li class="flow-empty">まだ記録がありません。思いついた瞬間に書き残してみてください。</li>';
+        } else {
+            listEl.innerHTML = filtered.map(entry => {
+                const createdRaw = new Date(entry.createdAt || Date.now());
+                const created = Number.isNaN(createdRaw.getTime()) ? new Date() : createdRaw;
+                const dayLabel = dateKey(created) === today ? '今日' : `${created.getMonth() + 1}/${created.getDate()}`;
+                return `
+                    <li>
+                        <div>
+                            <div class="flow-text">${entry.text}</div>
+                            <div class="flow-meta">
+                                <span class="flow-context">${entry.context}</span>
+                                <span>${dayLabel} ${formatTime(created)}</span>
+                            </div>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        const stats = summarizeFlows(entries);
+        if (els.flowCountToday) els.flowCountToday.textContent = stats.todayCount;
+        if (els.flowCountWeek) els.flowCountWeek.textContent = stats.weekCount;
+        if (els.flowStreak) els.flowStreak.textContent = stats.streak;
+    }
+
+    function summarizeFlows(entries) {
+        const todayKey = dateKey(new Date());
+        const weekAgo = startOfDay(new Date());
+        weekAgo.setDate(weekAgo.getDate() - 6);
+        const weekThreshold = weekAgo.getTime();
+        const todayCount = entries.filter(e => dateKey(e.createdAt) === todayKey).length;
+        const weekCount = entries.filter(e => startOfDay(e.createdAt).getTime() >= weekThreshold).length;
+        return {
+            todayCount,
+            weekCount,
+            streak: calcFlowStreak(entries)
+        };
+    }
+
+    function calcFlowStreak(entries) {
+        if (!Array.isArray(entries) || !entries.length) return 0;
+        const keys = new Set(entries.map(e => dateKey(e.createdAt)));
+        let streak = 0;
+        const cursor = startOfDay(new Date());
+        while (keys.has(dateKey(cursor))) {
+            streak += 1;
+            cursor.setDate(cursor.getDate() - 1);
+        }
+        return streak;
     }
 
     function toInputValue(date) {

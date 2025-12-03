@@ -7,26 +7,65 @@ Table: AspNetUsers (ApplicationUser)
 - Columns（Identity標準一式）: UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount
 - 備考: Identityの関連（AspNetUserRoles, AspNetRoles, 各種claims/logins/tokens）は標準。全ての属性はユーザーを表し、Idに従属。
 
+Table: AspNetRoles
+- PK: Id (string)
+- Columns: Name, NormalizedName, ConcurrencyStamp
+- 備考: ロール名のみを保持するマスタ。Id -> 全カラム。
+
+Table: AspNetUserRoles
+- PK: (UserId, RoleId)
+- Columns: UserId (FK -> AspNetUsers.Id), RoleId (FK -> AspNetRoles.Id)
+- 備考: ユーザーとロールの多対多対応表で、組の主キー以外に属性は持たない（完全従属）。
+
+Table: AspNetRoleClaims / AspNetUserClaims / AspNetUserLogins / AspNetUserTokens
+- PK: Identity標準の複合キー
+- 役割: 追加クレーム、外部ログイン、リフレッシュトークン等。全て主キーに従属。
+
 Table: Events
 - PK: Id (string)
-- Columns: UserId (FK -> AspNetUsers.Id), UID, Title, StartDate (null可), EndDate (null可), LastModified (null可), Description, AllDay (bool)
-- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。
+- Columns: UserId (FK -> AspNetUsers.Id), UID (nullable), Title, StartDate (null可), EndDate (null可), LastModified (null可), Description (nullable), AllDay (bool), Source (enum), CategoryId (FK -> Categories.Id), Priority (enum), Location (nullable), AttendeesCsv (nullable), Recurrence (enum), ReminderMinutesBefore (nullable int)
+- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。ローカル作成のイベントでは UID は空を許容。AllDay は bool 列で永続化し、`IsAllDay` は API 整合用の NotMapped エイリアス。CategoryId はカテゴリマスタ（Categories）への外部キー。
+- スケーリング: UserIdカーディナリティは高い。アクセス頻度が高い場合、UserId+StartDateに複合インデックス検討。
+
+Table: Categories (CalendarCategory)
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Name (カテゴリ名), Icon (FontAwesome等のキー), Color (カラーコード)
+- 備考: ユーザーごとに管理するカテゴリマスタ。アイコン/カラーを任意に設定可能。UserId -> Name/Icon/Color の完全従属。
+
+Table: ExternalCalendarAccounts
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Provider (enum: Outlook/Google), AccountEmail, AccessToken, RefreshToken (nullable), ExpiresAt (nullable), Scope (nullable), CreatedAt, UpdatedAt
+- 備考: 旧トークンストア（手貼り付け用レガシー）。UserId -> Provider/AccountEmail/Token/Scope/ExpiresAt/CreatedAt/UpdatedAt に従属。新しい OAuth 接続テーブルへ移行予定。
+
+Table: OutlookCalendarConnections
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Provider (varchar, "Outlook"), AccountEmail (nullable), AccessTokenEncrypted, RefreshTokenEncrypted (nullable), ExpiresAtUtc (nullable), Scope (nullable), LastSyncedAtUtc (nullable), CreatedAtUtc, UpdatedAtUtc
+- 備考: Outlook カレンダー用 OAuth 認可コードフローで取得したトークンを保存。UserId にユニークインデックス済みで 1:1。AccessTokenEncrypted/RefreshTokenEncrypted 列にトークンを保存（列名は encrypted だが現状は TODO で平文保存。公開前に暗号化処理が必要）。
+
+Table: GoogleCalendarConnections
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), Provider (varchar, "Google"), AccountEmail (nullable), AccessTokenEncrypted, RefreshTokenEncrypted (nullable), ExpiresAtUtc (nullable), Scope (nullable), LastSyncedAtUtc (nullable), CreatedAtUtc, UpdatedAtUtc
+- 備考: Google Calendar 用トークンストア。UserId にユニークインデックス済みで 1:1。リフレッシュトークンによる更新をサービス層で実装し、AccessTokenEncrypted/RefreshTokenEncrypted にトークンを保存（現状は暗号化 TODO）。
 
 Table: ICCards
 - PK: Id (string)
 - Columns: UserId (FK -> AspNetUsers.Id), Uid (ICカードUID)
 - 従属関係: Id -> 全カラム。Uidはカード固有値で他属性から決まらない。
 
-Table: BalanceSheetEntries
-- PK: Id (int, identity)
-- Columns: UserId (FK -> AspNetUsers.Id), AsOfDate (date), Type (enum), Name, Tag (nullable enum), Amount (decimal), IsDeleted (bool)
-- Index: (UserId, AsOfDate)
-- 従属関係: Id -> 全カラム。業務上の一意制（例: ユーザー×日付）はモデル上未強制だが必要なら追加可。
-
 Table: ICloudSettings
 - PK: Id (string, Guid文字列)
 - Columns: UserId (FK -> AspNetUsers.Id), Username (Apple IDメール), Password (アプリアクセス用パスワード)
-- 従属関係: Id -> 全カラム。資格情報はこの行のみに帰属。
+- 従属関係: Id -> 全カラム。資格情報はこの行のみに帰属（Password は平文列のため暗号化/移行が前提）。
+
+Table: UserAccessLogs
+- PK: Id (string, Guid文字列)
+- Columns: UserId (FK -> AspNetUsers.Id), AccessedAtUtc, HttpMethod, Path (クエリ除去), UserAgent, RemoteIp (匿名化: IPv4は/24切り捨て), StatusCode, DurationMs, IsError (bool), ErrorType (例: 4xx/5xx/例外型), ErrorHash (例外メッセージのSHA-256ハッシュのみ)
+- 備考: 認証済みリクエストをミドルウェアで追記。個人情報（氏名/メール/フルIP/クエリ文字列/例外メッセージ本文）は保存しない。UserId+AccessedAtUtc に複合インデックスを付与。時間帯別分析とエラー頻度把握の元データ。
+
+Table: AppNotices
+- PK: Id (string, Guid文字列)
+- Columns: Kind (enum: Update/Incident), Version (nullable), Title, Description (nullable), Highlights (nullable, 改行区切り箇条書き), OccurredAt, ResolvedAt (nullable), Status (nullable), CreatedAtUtc
+- 備考: プライバシーポリシーに表示する更新/障害告知。UserIdは持たず全体告知用。Kind+OccurredAtにインデックス。
 
 Note: Personalモデルは削除された（DbContext未登録）
 
@@ -36,24 +75,20 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
 │   AspNetUsers   │
 │   ● Id (PK)     │
 │   ...Identity...│
-└──────┬──────────┬──────────┬──────────┐
-       │0..1       │0..1       │0..*       │0..*
-       │           │           │           │
-┌──────▼─────┐ ┌──▼────────┐ ┌──────────▼─────────┐ ┌─────────▼──────┐
-│ICloudSettings│ │ ICCards   │   │ Events             │ │ BalanceSheetEntries│
-│○ UserId      │ │○ UserId   │   │○ UserId            │ │○ UserId            │
-│Username      │ │Uid        │   │UID                 │ │AsOfDate            │
-│Password      │ └───────────┘   │Title               │ │Type                │
-└──────────────┘ ※ICCardsは1対1  │StartDate          │ │Name                │
-（モデルにUnique未設定）           │EndDate            │ │Tag                 │
-                                 │LastModified       │ │Amount               │
-                                 │Description        │ │IsDeleted            │
-                                 │AllDay             │ └────────────────────┘
-                                 └───────────────────┘
+└─┬────┬────┬─────┬──────┬─────────┬─────────────────────┐
+  │0..1│0..1│0..* │0..*  │0..*     │0..1 (UQ)            │0..1 (UQ)
+  │    │    │     │      │         │                     │
+┌▼────┐┌▼──┐┌──▼──────┐┌▼───────┐┌▼───────────────┐┌▼────────────────────┐┌▼────────────────────┐
+│ICloud││IC ││ Events  ││AspNet- ││ Categories     ││OutlookCalendarConn  ││GoogleCalendarConn   │
+│Settings││Cards││         ││UserRoles││ (CalendarCategory)││ (UserId unique)    ││ (UserId unique)    │
+└──────┘└───┘└─────────┘└────────┘└────────────────┘└─────────────────────┘└─────────────────────┘
+
+外部/監査/告知: ExternalCalendarAccounts (0..* per user, legacy token store)、UserAccessLogs (0..* per user, UserId+AccessedAtUtc index)、AppNotices (全体告知。ユーザーに非依存)。
 
 セキュリティ前提メモ（公開時想定）
-- ICloudSettings: 認証情報は平文保存しない。暗号化ストア/Key Vault等を前提に設計し、可能なら保存自体を最小化（トークンのみ保存）する。
+- ICloudSettings: Password 列は平文カラム。公開前に暗号化ストア/Key Vault 等へ移行するか、保存自体を最小化（可能ならトークンのみ保存）する。
 - ICCards: 1対1を仕様にするならUserIdへUnique制約を付け、マイグレーションを適用する。
+- Outlook/Google 接続: UserId ユニークで 1:1。AccessTokenEncrypted/RefreshTokenEncrypted は暗号化列として扱うが現状は平文保存のため、公開前に暗号化処理と鍵管理を実装する。
 - 監査・削除: 機微情報にはアクセス監査ログと論理削除ポリシーを導入すること。
 - 文書運用: DBスキーマ更新時は本ファイルも必ず同期更新する（公開前は現行RDBを軸に記載）。
 
@@ -62,17 +97,12 @@ ER図（テキスト例）※AspNetUsers起点で1対1/1対多を明示（ユー
 │   AspNetUsers    │
 │   ● Id (PK)      │ 1
 │   ...Identity... │
-└──────┬───────────┬───────────┬────────────┐
-       │0..1(Unique)│0..1(Unique)│0..*        │0..*
-       │            │            │            │
-┌──────▼──────────┐┌──────────▼────────┐┌───────────▼─────────┐ ┌────────────▼──────────┐
-│ICloudSettings   ││     ICCards        ││       Events        ││   BalanceSheetEntries │
-│○ UserId (UQ)    ││ ○ UserId (UQ)      ││ ○ UserId            ││ ○ UserId              │
-│Username (secure)││ Uid (IC UID)       ││ UID (external sync) ││ AsOfDate (idx)        │
-│Password (secure)│└────────────────────┘│ Title               ││ Type                  │
-└─────────────────┘                      │ StartDate           ││ Name                  │
-                                         │ EndDate             ││ Tag                   │
-                                         │ LastModified        ││ Amount                │
-                                         │ Description         ││ IsDeleted             │
-                                         │ AllDay              │└───────────────────────┘
-                                         └─────────────────────┘
+└─┬────┬────┬─────┬──────┬─────────┬─────────────────────┐
+  │0..1│0..1│0..* │0..*  │0..*     │0..1 (UQ)            │0..1 (UQ)
+  │(UQ)│(UQ)│     │      │         │                     │
+┌▼────┐┌▼──┐┌──▼──────┐┌▼───────┐┌▼───────────────┐┌▼────────────────────┐┌▼────────────────────┐
+│ICloud││IC ││ Events  ││AspNet- ││ Categories     ││OutlookCalendarConn  ││GoogleCalendarConn   │
+│Settings││Cards││         ││UserRoles││ (CalendarCategory)││ (UserId unique)    ││ (UserId unique)    │
+└──────┘└───┘└─────────┘└────────┘└────────────────┘└─────────────────────┘└─────────────────────┘
+
+外部/監査: ExternalCalendarAccounts (0..* legacy, 段階的廃止予定) / UserAccessLogs (0..*, PII最小化 + 複合Index)。

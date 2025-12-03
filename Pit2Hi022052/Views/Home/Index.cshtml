@@ -14,7 +14,6 @@
             allDay = e.AllDay
         });
     var previewJson = JsonSerializer.Serialize(previewPayload);
-    var bsJson = JsonSerializer.Serialize(Model?.BalanceSheetSeed ?? Array.Empty<Pit2Hi022052.Models.BalanceSheetItem>());
 }
 
 <section class="preview-hero glass">
@@ -143,104 +142,6 @@
         <p class="annotation preview-note-live">※ 表示されている予定は DB 上の実データです。イベントをクリックすると Events ページの詳細画面に移動します。</p>
     </article>
 
-    <article class="panel bs-panel glass" data-panel-id="balance" data-panel-span="2">
-        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
-            <i class="fa-solid fa-grip-vertical"></i>
-        </button>
-        <header class="panel-head">
-            <div>
-                <p class="eyebrow">資産形成プレビュー</p>
-                <h2>バランスシート</h2>
-                <p class="sub">個人資産 / 負債をブラウザー内でシミュレーション。DBには保存されません。</p>
-            </div>
-            <div class="status-links">
-                <button class="btn ghost small" data-role="scenario" data-scenario="cash">現金 +5%</button>
-                <button class="btn ghost small" data-role="scenario" data-scenario="debt">負債 -5%</button>
-            </div>
-        </header>
-        <div class="bs-widget" data-balance-sheet data-storage-key="home-bs-state">
-            <div class="bs-summary">
-                <div>
-                    <p>資産総額</p>
-                    <strong data-role="summary-assets">--</strong>
-                </div>
-                <div>
-                    <p>負債総額</p>
-                    <strong data-role="summary-liabilities">--</strong>
-                </div>
-                <div>
-                    <p>純資産</p>
-                    <strong data-role="summary-net">--</strong>
-                </div>
-                <div>
-                    <p>負債比率</p>
-                    <strong data-role="summary-ratio">--</strong>
-                </div>
-            </div>
-            <div class="bs-progress">
-                <div>
-                    <small>資産配分</small>
-                    <div class="bar">
-                        <span class="fill" data-role="progress-assets"></span>
-                    </div>
-                </div>
-                <div>
-                    <small>負債比率</small>
-                    <div class="bar negative">
-                        <span class="fill" data-role="progress-liabilities"></span>
-                    </div>
-                </div>
-            </div>
-            <div class="bs-chart">
-                <canvas data-role="bs-chart" width="320" height="220" aria-label="資産構成チャート"></canvas>
-                <button type="button" class="btn ghost small chart-download" data-role="download-chart">
-                    <i class="fa-solid fa-download"></i>
-                    PNGで保存
-                </button>
-            </div>
-            <div class="bs-grid">
-                <section>
-                    <header>
-                        <div>
-                            <p class="eyebrow">資産</p>
-                            <h3>Assets</h3>
-                        </div>
-                    </header>
-                    <table class="bs-table">
-                        <thead>
-                            <tr>
-                                <th>科目</th>
-                                <th>区分</th>
-                                <th class="text-end">金額</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody data-table="assets"></tbody>
-                    </table>
-                </section>
-                <section>
-                    <header>
-                        <div>
-                            <p class="eyebrow">負債</p>
-                            <h3>Liabilities</h3>
-                        </div>
-                    </header>
-                    <table class="bs-table">
-                        <thead>
-                            <tr>
-                                <th>科目</th>
-                                <th>区分</th>
-                                <th class="text-end">金額</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody data-table="liabilities"></tbody>
-                    </table>
-                </section>
-            </div>
-        </div>
-    </article>
-
     <aside class="panel composer-panel glass" aria-labelledby="panel-compose-title" data-panel-id="composer" data-panel-span="1">
         <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
             <i class="fa-solid fa-grip-vertical"></i>
@@ -339,6 +240,65 @@
             </div>
         </div>
     </aside>
+
+    <article class="panel flow-panel glass" aria-labelledby="panel-flow-title" data-panel-id="flow" data-panel-span="1">
+        <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+        </button>
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">習慣ハック</p>
+                <h2 id="panel-flow-title">Flowリスト（やったことログ）</h2>
+                <p class="sub">ToDoを溜めず「今やった／今やる」ことだけを書く、持ち越さないリスト。</p>
+            </div>
+            <div class="flow-badges">
+                <span class="badge ghost">持ち越さない</span>
+                <span class="badge ghost">フロントのみ</span>
+            </div>
+        </header>
+
+        <div class="flow-form">
+            <input type="text" id="flowInput" placeholder="今やったことを書く (例: スマホ開く前に深呼吸)" maxlength="80">
+            <div class="flow-inline">
+                <select id="flowContext" aria-label="カテゴリ">
+                    <option value="仕事">仕事</option>
+                    <option value="プライベート">プライベート</option>
+                    <option value="健康">健康</option>
+                </select>
+                <button type="button" class="btn primary" id="btnAddFlow">記録する</button>
+            </div>
+        </div>
+        <p class="annotation">docs/新しい機能　検討.txt のコンセプトをフロントだけで体験できるモックです。</p>
+
+        <div class="suggestion-chips" id="flowSuggestionChips"></div>
+
+        <div class="flow-stats-grid">
+            <div class="flow-stat">
+                <p>今日</p>
+                <strong id="flowCountToday">0</strong>
+                <small>件記録</small>
+            </div>
+            <div class="flow-stat">
+                <p>今週</p>
+                <strong id="flowCountWeek">0</strong>
+                <small>件積み上げ</small>
+            </div>
+            <div class="flow-stat">
+                <p>連続日数</p>
+                <strong id="flowStreak">0</strong>
+                <small>日継続</small>
+            </div>
+        </div>
+
+        <div class="pill-group tiny flow-filter" role="group" aria-label="表示切替">
+            <button type="button" class="pill active" data-flow-filter="today">今日</button>
+            <button type="button" class="pill" data-flow-filter="all">全期間</button>
+        </div>
+
+        <ul id="flowList" class="flow-log" aria-live="polite">
+            <li class="flow-empty">まだ記録がありません。</li>
+        </ul>
+    </article>
 
     <article class="panel card-panel glass" aria-labelledby="panel-card-title" data-panel-id="card" data-panel-span="2">
         <button type="button" class="drag-handle" aria-label="ドラッグして並び替え" tabindex="-1">
@@ -551,13 +511,8 @@
 <script id="home-events-json" type="application/json" data-signed-in="@(Model?.IsAuthenticated == true ? "true" : "false")">
     @Html.Raw(previewJson)
 </script>
-<script id="balance-sheet-json" type="application/json">
-    @Html.Raw(bsJson)
-</script>
-
 @section Scripts {
     <script src="~/lib/fullcalendar/index.global.min.js"></script>
     <script src="~/js/locales-all.min.js"></script>
-    <script src="~/js/balance-sheet-widget.js" asp-append-version="true"></script>
     <script src="~/js/home-preview.js" asp-append-version="true"></script>
 }
