@@ -57,4 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
     mq.addEventListener('change', (e) => {
         if (e.matches) closeNav();
     });
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(() => {
+                // 登録失敗時もアプリ動作を止めない
+            });
+        });
+    }
 });
