@@ -1,0 +1,78 @@
+@model TimeLedger.Models.CalendarCategory
+@{
+    ViewData["Title"] = "カテゴリ作成";
+    var icons = ViewBag.AvailableIcons as IEnumerable<string> ?? Array.Empty<string>();
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h1 class="h4 mb-0">新規カテゴリ</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" asp-controller="Events" asp-action="Index">
+                <i class="fa-solid fa-calendar-days"></i> カレンダーに戻る
+            </a>
+            <a class="btn btn-outline-secondary" asp-action="Index">カテゴリ一覧</a>
+        </div>
+    </div>
+
+    <form asp-action="Create" method="post" class="card p-3 shadow-sm">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">名称</label>
+            <input asp-for="Name" class="form-control" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Icon" class="form-label">アイコン</label>
+            <select asp-for="Icon" class="form-select d-none" id="iconSelect">
+                @foreach (var icon in icons)
+                {
+                    <option value="@icon">@icon</option>
+                }
+            </select>
+            <div class="d-flex flex-wrap gap-2" id="iconPicker" aria-label="アイコンを選択">
+                @foreach (var icon in icons)
+                {
+                    <button type="button" class="btn btn-outline-secondary btn-sm icon-pill" data-icon="@icon">
+                        <i class="fa-solid @icon"></i> @icon
+                    </button>
+                }
+            </div>
+            <span class="form-text">クリックで選択できます。テキストは送信時にクラス名として保存されます。</span>
+            <span asp-validation-for="Icon" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Color" class="form-label">カラー</label>
+            <input asp-for="Color" type="color" class="form-control form-control-color" />
+            <span asp-validation-for="Color" class="text-danger"></span>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const select = document.getElementById('iconSelect');
+            const pills = document.querySelectorAll('.icon-pill');
+            pills.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const icon = btn.dataset.icon;
+                    if (select) select.value = icon;
+                    pills.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+            // 初期選択を反映
+            const current = select?.value;
+            if (current) {
+                pills.forEach(b => {
+                    if (b.dataset.icon === current) b.classList.add('active');
+                });
+            }
+        })();
+    </script>
+}

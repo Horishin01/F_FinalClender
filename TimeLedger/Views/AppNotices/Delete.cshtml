@@ -1,0 +1,26 @@
+@model TimeLedger.Models.AppNotice
+@{
+    ViewData["Title"] = "アップデート / 障害の削除";
+    ViewData["BodyClass"] = "admin-portal";
+}
+
+<div class="container-xl">
+    <h1 class="hero-title mb-3 text-danger">削除確認</h1>
+    <div class="card p-3 shadow-sm">
+        <p>このエントリを削除しますか？</p>
+        <dl class="row">
+            <dt class="col-sm-3">種別</dt>
+            <dd class="col-sm-9">@Model.Kind</dd>
+            <dt class="col-sm-3">タイトル</dt>
+            <dd class="col-sm-9">@Model.Title</dd>
+            <dt class="col-sm-3">発生日</dt>
+            <dd class="col-sm-9">@Model.OccurredAt.ToString("yyyy-MM-dd")</dd>
+        </dl>
+        <form asp-action="Delete" method="post" class="d-flex justify-content-between">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <a class="btn btn-outline-secondary" asp-action="Index">キャンセル</a>
+            <button type="submit" class="btn btn-danger">削除する</button>
+        </form>
+    </div>
+</div>

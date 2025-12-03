@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <!--
+        TimeLedger αテスト案内ページ
+        目的: αテスト募集/注意事項の静的告知ページ。コピー＆デプロイのみで動作 (サーバー処理なし)。
+        主な内容:
+          - ヒーローセクション: アプリ概要とバッジ表示
+          - 主な機能: マルチカレンダー、カテゴリ、フローリストの紹介
+          - αテスト案内: 募集枠 (最大6名/抽選)、進行ステップ、注意点
+          - 利用規約・注意事項: 個人運営・第三者提供なし、匿名化データ収集、免責
+          - CTA: 連絡フォームへのリンク (調整中)
+        依存: Google Fonts (Noto Sans JP / Poppins), ローカルの style.css
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeLedger αテストのご案内</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="page-header">
+        <div class="container">
+            <h1 class="app-name">TimeLedger</h1>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero">
+            <div class="container">
+                <h2>すべてのカレンダーを、ひとつの体験に。</h2>
+                <p class="hero-description">
+                    iCloud、Google、Outlookなどに散らばった予定を、美しく直感的なUIでまとめて管理。<br>
+                    TimeLedgerは私一人で開発しているカレンダーアプリで、時間の使い方をより豊かに、よりシンプルにすることを目指しています。
+                </p>
+                <div class="badge-row">
+                    <span class="status-badge">α版告知</span>
+                    <span class="status-badge">個人開発</span>
+                    <span class="status-badge">公開時期未定</span>
+                    <span class="status-badge">フロントエンド試作のみ</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="features">
+            <div class="container">
+                <h3>主な機能</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📅 マルチカレンダー同期</h4>
+                        <p>iCloud (CalDAV)、Google Calendar、Outlook Calendarに対応。複数アカウントの予定を一つの画面でシームレスに確認・編集できます。</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🎨 自由なカテゴリ設定</h4>
+                        <p>「仕事」や「プライベート」はもちろん、自分だけのカテゴリを自由に追加。アイコンと色をカスタマイズして、予定を自分らしく整理できます。</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🌊 新発想「フローリスト」機能</h4>
+                        <p>「ToDo(やること)」ではなく、「Done(やったこと)」を記録する新しい習慣。今日達成したことを書き留めて、自己効力感を高め、次の一歩に繋げます。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="alpha-test">
+            <div class="container">
+                <h3>αテストの予定について</h3>
+                <div class="test-notice">
+                    <h4>【開発状況とご注意】</h4>
+                    <p>
+                        現在は初期検証段階のため、仕様や機能は随時変更される可能性があります。<br>
+                        αテストを外部に公開するかどうか、またテスターを募集するかどうかは現時点では未定です。決まり次第、本ページとフォーム経由でお知らせします。
+                    </p>
+                    <p>
+                        参加枠は最大 6 名を想定しています。応募が上限を超えた場合は抽選とし、対象の方にのみご連絡を差し上げます。
+                    </p>
+                </div>
+                <p>
+                    TimeLedgerは私一人で開発している個人プロジェクトです。<br>
+                    将来αテストを実施する際には、いただいたフィードバックをもとに改善を重ねていく予定です。
+                </p>
+                <div class="alpha-progress">
+                    <div class="alpha-card">
+                        <span class="alpha-step">Step 1</span>
+                        <h4>初期検証・UI磨き</h4>
+                        <p>フロントエンドのモックでUXを確認中。フィードバックを集めながらUIを研磨します。</p>
+                    </div>
+                    <div class="alpha-card">
+                        <span class="alpha-step">Step 2</span>
+                        <h4>限定テスト検討</h4>
+                        <p>公開範囲と募集方法を検討。実施する場合はフォームから順次ご連絡予定です。</p>
+                    </div>
+                    <div class="alpha-card">
+                        <span class="alpha-step">Step 3</span>
+                        <h4>機能拡充・安定化</h4>
+                        <p>フローリスト、カテゴリ、マルチカレンダー連携を中心に改善。安定後に次フェーズを判断します。</p>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>テスト対象（予定）:</strong> 主な機能（カレンダー連携、イベントCRUD、カテゴリ管理、フローリスト）</li>
+                    <li><strong>目的（予定）:</strong> 使い心地の確認、バグの発見、新機能へのアイデア収集</li>
+                    <li><strong>謝礼:</strong> 現時点では謝礼の予定はありません。</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="terms">
+            <div class="container">
+                <h3>利用規約・注意事項</h3>
+                <ul>
+                    <li>本α版は機能検証を目的とした先行公開です。予告なく仕様変更・停止・データ初期化が発生する場合があります。</li>
+                    <li>テスト参加には開発側からの招待が必要です。上限6名を想定し、超過時は抽選のうえ対象者にのみ連絡します。</li>
+                    <li>運営・共有は開発者個人の範囲で行い、許可なく第三者へ提供することはありません。</li>
+                    <li>利用状況やフィードバックを匿名化・統計化したうえで収集・分析する場合があります。詳細は別途プライバシーポリシーを提示します。</li>
+                    <li>バグ報告・フィードバックは任意ですが、いただいた内容を改善に反映するため記録・共有する場合があります。</li>
+                    <li>α版の利用による損失や不具合について、開発者は責任を負いかねます。重要データの入力はお控えください。</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="cta">
+            <div class="container">
+                <p>テスト募集や公開の時期が決まり次第、ご案内します。</p>
+                <a href="#" class="cta-button" target="_blank" rel="noopener noreferrer">調整中</a>
+                <p class="cta-note">※ 現在募集時期は未定です。フォームは今後のご連絡用としてお使いください。</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        <div class="container">
+            <p>&copy; 2025 TimeLedger Project. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+    // このページは静的な案内ページとしてコピー＆ペーストで動作します。
+    </script>
+
+</body>
+</html>

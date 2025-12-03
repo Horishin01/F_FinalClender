@@ -1,0 +1,110 @@
+@* 外部カレンダー未連携時のエラー表示ビュー
+   目的: Outlook/Google 連携なしで同期が実行された際の案内と再リンク導線を提示する。
+   主な構成: 連携不足メッセージ、連携ボタン（Auth への導線）、Events への戻り、連携設定ページへのリンク。
+   依存: events-integrated.css（軽微なスタイル調整用）。 *@
+@model TimeLedger.Models.ExternalCalendarProvider
+@{
+    ViewData["Title"] = "外部カレンダー連携エラー";
+    ViewData["BodyClass"] = "events-page";
+
+    var providerName = Model == TimeLedger.Models.ExternalCalendarProvider.Outlook ? "Outlook" : "Google カレンダー";
+    var providerBadge = Model == TimeLedger.Models.ExternalCalendarProvider.Outlook ? "📧" : "G";
+    var connectUrl = Model == TimeLedger.Models.ExternalCalendarProvider.Outlook
+        ? Url.Action("OutlookConnect", "Auth", new { returnUrl = Url.Action("Index", "Events") })
+        : Url.Action("GoogleConnect", "Auth", new { returnUrl = Url.Action("Index", "Events") });
+    var managePage = Model == TimeLedger.Models.ExternalCalendarProvider.Outlook
+        ? Url.Page("/Account/Manage/ExternalCalendarsOutlook", null, new { area = "Identity" })
+        : Url.Page("/Account/Manage/ExternalCalendarsGoogle", null, new { area = "Identity" });
+}
+
+<section class="container-xl link-required">
+    <div class="link-card glass">
+        <div class="link-icon">@providerBadge</div>
+        <p class="eyebrow">外部カレンダー連携が必要です</p>
+        <h1>@providerName とまだ連携されていません</h1>
+        <p class="lede">
+            同期ボタンを押しましたが、@providerName の連携設定が見つかりませんでした。
+            先に連携を済ませてから、もう一度同期を実行してください。
+        </p>
+
+        <div class="link-actions">
+            <a class="ic-btn primary" href="@connectUrl"><i class="fa-solid fa-link"></i> @providerName と連携する</a>
+            <a class="ic-btn ghost" href="@Url.Action("Index", "Events")"><i class="fa-solid fa-calendar-day"></i> イベントに戻る</a>
+        </div>
+
+        <ul class="link-hints">
+            <li>アカウント管理画面からトークンが保存されているか確認できます。</li>
+            <li>連携後は再びこのページに戻って同期ボタンを押してください。</li>
+            <li>別のブラウザでログインした場合は、再度認可が必要なことがあります。</li>
+        </ul>
+
+        <div class="link-manage">
+            <a class="ic-btn ghost" href="@managePage">
+                <i class="fa-solid fa-gear"></i>
+                連携設定を開く
+            </a>
+        </div>
+    </div>
+</section>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/events-integrated.css" asp-append-version="true" />
+    <style>
+        .link-required {
+            margin: 3rem auto 4rem;
+            max-width: 880px;
+        }
+        .link-card {
+            padding: 2.5rem;
+            border-radius: 24px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+        .link-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: #0f172a;
+            color: #f8fafc;
+            display: grid;
+            place-items: center;
+            font-size: 32px;
+            margin-bottom: 1rem;
+        }
+        .link-card h1 {
+            margin: 0 0 0.75rem;
+            font-size: clamp(1.6rem, 2vw, 2rem);
+        }
+        .link-card .lede {
+            color: #475467;
+            line-height: 1.6;
+            margin-bottom: 1.25rem;
+        }
+        .link-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .link-hints {
+            margin: 0 0 1.25rem 1.2rem;
+            color: #475467;
+        }
+        .link-hints li + li {
+            margin-top: 0.25rem;
+        }
+        .link-manage {
+            display: flex;
+            justify-content: flex-start;
+        }
+        @@media (max-width: 640px) {
+            .link-card {
+                padding: 1.6rem;
+            }
+            .link-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+}

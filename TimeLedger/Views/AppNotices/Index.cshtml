@@ -1,0 +1,56 @@
+@model IEnumerable<TimeLedger.Models.AppNotice>
+@{
+    ViewData["Title"] = "アップデート / 障害情報";
+    ViewData["BodyClass"] = "admin-portal";
+}
+
+<div class="container-xl">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <p class="hero-eyebrow">Admin</p>
+            <h1 class="hero-title">アップデート / 障害情報</h1>
+            <p class="hero-sub">プライバシーポリシーの告知エリアに表示されます。箇条書きは改行区切りで入力してください。</p>
+        </div>
+        <a class="btn btn-primary" asp-action="Create"><i class="fa-solid fa-plus"></i> 新規追加</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>種別</th>
+                    <th>バージョン</th>
+                    <th>タイトル</th>
+                    <th>発生日</th>
+                    <th>ステータス</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@(item.Kind == TimeLedger.Models.NoticeKind.Update ? "アップデート" : "障害")</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.Version) ? "-" : item.Version)</td>
+                            <td>@item.Title</td>
+                            <td>@item.OccurredAt.ToString("yyyy-MM-dd")</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.Status) ? "-" : item.Status)</td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.Id">編集</a>
+                                <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@item.Id">削除</a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">まだ登録がありません。</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

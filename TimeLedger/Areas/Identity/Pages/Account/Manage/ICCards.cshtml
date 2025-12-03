@@ -1,0 +1,37 @@
+@page
+@model TimeLedger.Areas.Identity.Pages.Account.Manage.ICCardsModel
+@using TimeLedger.Areas.Identity.Pages.Account.Manage
+@{
+    ViewData["Title"] = "ICカード";
+    ViewData["ActivePage"] = ManageNavPages.ICCards;
+}
+
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">ICカードを読み取ることで本人確認や開錠処理に利用できます。</p>
+
+    <partial name="_StatusMessage" for="StatusMessage" />
+
+    <div class="form-actions">
+        <form method="post" asp-page-handler="Read">
+            <button type="submit" class="btn-primary-modern">カードを読み取って登録／更新</button>
+        </form>
+    </div>
+
+    @if (Model.Card is not null)
+    {
+        <div class="form-field mt-4">
+            <label>登録済み UID</label>
+            <code class="fs-5 text-danger">@Model.Card.Uid</code>
+            <div class="form-actions mt-3">
+                <form method="post" asp-page-handler="Delete">
+                    <button type="submit" class="btn-outline">登録を削除</button>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="hint-text mt-3">登録済みの IC カードはありません。カードをリーダーにタッチして登録してください。</p>
+    }
+</div>
