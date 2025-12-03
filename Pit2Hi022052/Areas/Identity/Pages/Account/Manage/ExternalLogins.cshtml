@@ -1,53 +1,65 @@
-﻿@page
+@page
 @model ExternalLoginsModel
 @{
-    ViewData["Title"] = "Manage your external logins";
+    ViewData["Title"] = "連携中のログイン";
     ViewData["ActivePage"] = ManageNavPages.ExternalLogins;
 }
 
-<partial name="_StatusMessage" for="StatusMessage" />
-@if (Model.CurrentLogins?.Count > 0)
-{
-    <h3>Registered Logins</h3>
-    <table class="table">
-        <tbody>
-            @foreach (var login in Model.CurrentLogins)
-            {
-                <tr>
-                    <td id="@($"login-provider-{login.LoginProvider}")">@login.ProviderDisplayName</td>
-                    <td>
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">外部サービスのアカウントを追加・削除して、より簡単にサインインできるようにします。</p>
+
+    <partial name="_StatusMessage" for="StatusMessage" />
+
+    @if (Model.CurrentLogins?.Count > 0)
+    {
+        <div class="form-field">
+            <label>登録済みプロバイダー</label>
+            <ul class="list-unstyled m-0">
+                @foreach (var login in Model.CurrentLogins)
+                {
+                    <li class="d-flex justify-content-between align-items-center py-2">
+                        <span>@login.ProviderDisplayName</span>
                         @if (Model.ShowRemoveButton)
                         {
-                            <form id="@($"remove-login-{login.LoginProvider}")" asp-page-handler="RemoveLogin" method="post">
-                                <div>
-                                    <input asp-for="@login.LoginProvider" name="LoginProvider" type="hidden" />
-                                    <input asp-for="@login.ProviderKey" name="ProviderKey" type="hidden" />
-                                    <button type="submit" class="btn btn-primary" title="Remove this @login.ProviderDisplayName login from your account">Remove</button>
-                                </div>
+                            <form asp-page-handler="RemoveLogin" method="post">
+                                <input asp-for="@login.LoginProvider" name="LoginProvider" type="hidden" />
+                                <input asp-for="@login.ProviderKey" name="ProviderKey" type="hidden" />
+                                <button type="submit" class="btn-outline">解除</button>
                             </form>
                         }
-                        else
-                        {
-                            @: &nbsp;
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-@if (Model.OtherLogins?.Count > 0)
-{
-    <h4>Add another service to log in.</h4>
-    <hr />
-    <form id="link-login-form" asp-page-handler="LinkLogin" method="post" class="form-horizontal">
-        <div id="socialLoginList">
-            <p>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+    else
+    {
+        <p class="settings-description">現在登録されている外部ログインはありません。</p>
+    }
+
+    @if (Model.OtherLogins?.Count > 0)
+    {
+        <div class="form-field">
+            <label>追加できるプロバイダー</label>
+            <div class="form-actions">
                 @foreach (var provider in Model.OtherLogins)
                 {
-                    <button id="@($"link-login-button-{provider.Name}")" type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                    <form asp-page-handler="LinkLogin" method="post" class="d-inline">
+                        <button id="@($"link-login-button-{provider.Name}")"
+                                type="submit"
+                                class="btn-primary-modern"
+                                name="provider"
+                                value="@provider.Name">
+                            @provider.DisplayName を追加
+                        </button>
+                    </form>
                 }
-            </p>
+            </div>
         </div>
-    </form>
-}
+    }
+    else
+    {
+        <p class="hint-text">追加可能な外部プロバイダーはありません。</p>
+    }
+</div>

@@ -1,25 +1,26 @@
-﻿@page
+@page
 @model ShowRecoveryCodesModel
 @{
-    ViewData["Title"] = "Recovery codes";
-    ViewData["ActivePage"] = "TwoFactorAuthentication";
+    ViewData["Title"] = "バックアップコード";
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
 }
 
-<partial name="_StatusMessage" for="StatusMessage" />
-<h3>@ViewData["Title"]</h3>
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>Put these codes in a safe place.</strong>
-    </p>
-    <p>
-        If you lose your device and don't have the recovery codes you will lose access to your account.
-    </p>
-</div>
-<div class="row">
-    <div class="col-md-12">
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">下記のコードは一度だけ表示されます。紙やパスワードマネージャーに保管してください。</p>
+
+    <partial name="_StatusMessage" for="StatusMessage" />
+
+    <div class="danger-zone mb-3">
+        <p><strong>デバイスを紛失し、コードも手元にない場合はアカウントへアクセスできなくなります。</strong></p>
+    </div>
+
+    <div class="form-field">
         @for (var row = 0; row < Model.RecoveryCodes.Length; row += 2)
         {
-            <code class="recovery-code">@Model.RecoveryCodes[row]</code><text>&nbsp;</text><code class="recovery-code">@Model.RecoveryCodes[row + 1]</code><br />
+            <code class="me-3">@Model.RecoveryCodes[row]</code>
+            <code>@Model.RecoveryCodes[row + 1]</code>
+            <br />
         }
     </div>
 </div>

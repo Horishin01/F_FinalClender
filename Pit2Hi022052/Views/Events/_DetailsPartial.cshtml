@@ -1,50 +1,120 @@
-﻿@model Event
-
+@using System.Linq
+@model Event
 @{
-    if (!(Model is not null)) { throw new NullReferenceException(); }
+    if (Model is null) { throw new NullReferenceException(); }
+    string FormatDate(DateTime? dt) => dt?.ToString("yyyy-MM-dd HH:mm") ?? "--";
+    string FormatText(string? value) => string.IsNullOrWhiteSpace(value) ? "（未入力）" : value!;
+    var attendees = string.IsNullOrWhiteSpace(Model.AttendeesCsv)
+        ? Array.Empty<string>()
+        : Model.AttendeesCsv
+            .Split(',', System.StringSplitOptions.RemoveEmptyEntries)
+            .Select(a => a.Trim())
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .ToArray();
 }
 
-   <dl class="row">
-        <dt class = "col-sm-2">
-        @Html.DisplayNameFor(model => model.Id)
-        </dt>
-        <dd class = "col-sm-10">
-        @Html.DisplayFor(model => model.Id)
-        </dd>
+<div class="ev-detail-grid">
+    <section class="detail-card detail-timeline-card">
+        <div class="detail-card-head">
+            <span class="detail-icon"><i class="fa-solid fa-clock"></i></span>
+            <div>
+                <p class="eyebrow">Schedule</p>
+                <h3>タイムライン</h3>
+            </div>
+        </div>
+        <ul class="detail-timeline">
+            <li>
+                <span class="node start"></span>
+                <div>
+                    <p class="label">開始</p>
+                    <p class="value">@FormatDate(Model.StartDate)</p>
+                </div>
+            </li>
+            <li>
+                <span class="node end"></span>
+                <div>
+                    <p class="label">終了</p>
+                    <p class="value">@FormatDate(Model.EndDate)</p>
+                    @if (!Model.EndDate.HasValue)
+                    {
+                        <p class="note">終了未設定 (開始のみ)</p>
+                    }
+                </div>
+            </li>
+        </ul>
+        <div class="detail-timeline-tags">
+            <span class="meta-chip"><i class="fa-solid fa-infinity"></i> @(Model.AllDay ? "終日イベント" : "時間指定")</span>
+            <span class="meta-chip"><i class="fa-solid fa-bell"></i> リマインダー: @(Model.ReminderMinutesBefore?.ToString() ?? "なし")</span>
+            <span class="meta-chip"><i class="fa-solid fa-arrows-rotate"></i> 繰り返し: @(Model.Recurrence == EventRecurrence.None ? "なし" : Model.Recurrence.ToString())</span>
+        </div>
+    </section>
 
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.UserId)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.UserId)
-    </dd>
+    <section class="detail-card detail-description-card">
+        <div class="detail-card-head">
+            <span class="detail-icon"><i class="fa-solid fa-align-left"></i></span>
+            <div>
+                <p class="eyebrow">Notes</p>
+                <h3>詳細メモ</h3>
+            </div>
+        </div>
+        <p class="detail-description">@FormatText(Model.Description)</p>
+    </section>
 
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.Title)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.Title)
-    </dd>
-
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.StartDate)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.StartDate)
-    </dd>
-
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.EndDate)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.EndDate)
-    </dd>
-
-    <dt class="col-sm-2">
-        @Html.DisplayNameFor(model => model.Description)
-    </dt>
-    <dd class="col-sm-10">
-        @Html.DisplayFor(model => model.Description)
-    </dd>
-</dl>
-
+    <section class="detail-card detail-meta-card">
+        <div class="detail-card-head">
+            <span class="detail-icon"><i class="fa-solid fa-layer-group"></i></span>
+            <div>
+                <p class="eyebrow">Meta</p>
+                <h3>プロパティ</h3>
+            </div>
+        </div>
+        <div class="detail-meta-grid">
+            <div>
+                <span class="label">ソース</span>
+                <span class="value">@Model.Source</span>
+            </div>
+            <div>
+                <span class="label">カテゴリ</span>
+                <span class="value">@Model.Category?.Name ?? "未設定"</span>
+            </div>
+            <div>
+                <span class="label">優先度</span>
+                <span class="value">@Model.Priority</span>
+            </div>
+            <div>
+                <span class="label">場所</span>
+                <span class="value">@FormatText(Model.Location)</span>
+            </div>
+            <div>
+                <span class="label">参加者</span>
+                <span class="value">
+                    @if (attendees.Length == 0)
+                    {
+                        @:（未入力）
+                    }
+                    else
+                    {
+                        <span>@attendees.Length 名</span>
+                    }
+                </span>
+            </div>
+            <div>
+                <span class="label">UID</span>
+                <span class="value">@(!string.IsNullOrWhiteSpace(Model.UID) ? Model.UID : "未登録")</span>
+            </div>
+            <div>
+                <span class="label">ユーザーID</span>
+                <span class="value">@Model.UserId</span>
+            </div>
+        </div>
+        @if (attendees.Length > 0)
+        {
+            <div class="attendee-chips">
+                @foreach (var attendee in attendees)
+                {
+                    <span class="meta-chip muted"><i class="fa-solid fa-user"></i> @attendee</span>
+                }
+            </div>
+        }
+    </section>
+</div>

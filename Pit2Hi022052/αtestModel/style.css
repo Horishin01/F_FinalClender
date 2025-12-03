@@ -1,0 +1,463 @@
+/* 
+   TimeLedger αテスト案内ページのスタイル
+   - 目的: αテストの告知・注意事項をビジュアルにまとめる
+   - ポイント: グラデ背景、カード風セクション、レスポンシブ対応
+   - 依存: Google Fonts (Noto Sans JP, Poppins) を index.html で読み込み
+*/
+
+:root {
+    --bg-gradient-start: #6a11cb;
+    --bg-gradient-end: #2575fc;
+    --card-bg-color: rgba(255, 255, 255, 0.1);
+    --card-border-color: rgba(255, 255, 255, 0.2);
+    --text-color: #ffffff;
+    --heading-color: #ffffff;
+    --accent-color: #fdd835;
+    --button-gradient-start: #ff4081;
+    --button-gradient-end: #f50057;
+}
+
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    color: var(--text-color);
+    line-height: 1.8;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.page-header, .page-footer {
+    text-align: center;
+    padding: 2rem 0;
+}
+.app-name {
+    font-family: 'Poppins', sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    margin: 0;
+}
+.app-tagline {
+    font-size: 1.2rem;
+    font-weight: 600;
+    opacity: 0.9;
+}
+.page-footer {
+    padding-top: 3rem;
+    opacity: 0.7;
+}
+
+main section {
+    padding: 4rem 0;
+    text-align: center;
+}
+
+main section:not(#hero) {
+    margin-top: 2rem;
+    background: var(--card-bg-color);
+    border: 1px solid var(--card-border-color);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+}
+
+#hero h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.hero-description {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.2rem;
+    justify-content: center;
+}
+
+.status-badge {
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+}
+
+.section-lead {
+    margin: -0.5rem auto 2rem;
+    opacity: 0.9;
+}
+
+h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    color: var(--heading-color);
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    text-align: left;
+}
+
+.feature-card {
+    background: rgba(0, 0, 0, 0.15);
+    padding: 2rem;
+    border-radius: 15px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+}
+
+.feature-card h4 {
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--accent-color);
+}
+
+#alpha-test ul {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+    max-width: 600px;
+    margin: 2rem auto;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    border-radius: 10px;
+}
+
+#alpha-test li {
+    margin-bottom: 1rem;
+}
+
+#alpha-test li strong {
+    color: var(--accent-color);
+    margin-right: 0.5em;
+}
+
+.test-notice {
+    background: rgba(253, 216, 53, 0.1);
+    border: 1px solid var(--accent-color);
+    border-radius: 10px;
+    padding: 1rem 2rem;
+    margin: 2rem auto;
+    max-width: 700px;
+    text-align: left;
+}
+
+.test-notice h4 {
+    color: var(--accent-color);
+    font-size: 1.2rem;
+    text-align: center;
+    margin-top: 0;
+}
+
+.test-notice p {
+    margin-bottom: 0;
+}
+
+#cta p {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 1rem 3rem;
+    margin-top: 1rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: white;
+    text-decoration: none;
+    background: linear-gradient(45deg, var(--button-gradient-start), var(--button-gradient-end));
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.cta-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(245, 0, 87, 0.4);
+}
+
+.cta-note {
+    margin-top: 1rem;
+    font-size: 0.9rem !important;
+    opacity: 0.8;
+}
+
+.demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    text-align: left;
+}
+
+.demo-card {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.demo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.demo-sub {
+    margin-top: 0.5rem;
+    opacity: 0.85;
+    font-size: 0.95rem;
+}
+
+.pill-button {
+    background: linear-gradient(45deg, var(--button-gradient-start), var(--button-gradient-end));
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.pill-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pill-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.account-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+}
+
+.pill-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.pill-checkbox input {
+    accent-color: var(--accent-color);
+}
+
+.event-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.event-controls select, .form-row select, .form-row input[type="text"] {
+    padding: 0.55rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1.2fr 0.6fr 0.6fr auto;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.category-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--accent-color);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+
+.event-list, .flow-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+}
+
+.event-item {
+    border-left: 4px solid var(--accent-color);
+    padding: 0.8rem 0.9rem;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+}
+
+.event-title {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.event-meta {
+    display: flex;
+    gap: 0.8rem;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+.event-category {
+    margin-top: 0.25rem;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.sync-status {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.flow-stats {
+    margin: 0.5rem 0;
+    font-weight: 700;
+}
+
+.flow-hint {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin: 0.4rem 0 0.6rem;
+}
+
+.suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.6rem 0 0.8rem;
+}
+
+.idea-chip {
+    padding: 0.4rem 0.8rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    color: #fff;
+    outline: none;
+}
+
+.idea-chip:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent-color);
+}
+
+.flow-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 0.8rem;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.6rem;
+}
+
+.flow-meta {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.alpha-progress {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.alpha-card {
+    background: rgba(0, 0, 0, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    text-align: left;
+}
+
+.alpha-card h4 {
+    margin: 0.3rem 0 0.4rem;
+}
+
+.alpha-step {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .app-name {
+        font-size: 2.5rem;
+    }
+    #hero h2 {
+        font-size: 2rem;
+    }
+    h3 {
+        font-size: 1.8rem;
+    }
+    .demo-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}

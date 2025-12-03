@@ -1,30 +1,33 @@
-﻿@page
+@page
 @model DeletePersonalDataModel
 @{
-    ViewData["Title"] = "Delete Personal Data";
+    ViewData["Title"] = "アカウントの削除";
     ViewData["ActivePage"] = ManageNavPages.PersonalData;
 }
 
-<h3>@ViewData["Title"]</h3>
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">アカウントとすべての個人データを完全に削除します。この操作は元に戻せません。</p>
 
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-    </p>
-</div>
+    <div class="danger-zone mb-3">
+        <p><strong>削除後はサインインできなくなり、データベースも削除されます。すべてのデータは復旧できません。</strong></p>
+    </div>
 
-<div>
-    <form id="delete-user" method="post">
+    <form id="delete-user" method="post" class="form-grid">
         <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
         @if (Model.RequirePassword)
         {
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Please enter your password." />
-                <label asp-for="Input.Password" class="form-label"></label>
+            <div class="form-field">
+                <label asp-for="Input.Password">パスワード</label>
+                <input asp-for="Input.Password" autocomplete="current-password" aria-required="true" />
                 <span asp-validation-for="Input.Password" class="text-danger"></span>
             </div>
         }
-        <button class="w-100 btn btn-lg btn-danger" type="submit">Delete data and close my account</button>
+
+        <div class="form-actions">
+            <button class="btn-primary-modern" type="submit">データを削除して退会する</button>
+        </div>
     </form>
 </div>
 

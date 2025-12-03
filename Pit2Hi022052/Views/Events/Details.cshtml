@@ -1,29 +1,69 @@
-﻿@model Event
-
+@model Event
 @{
-    if (!(Model is not null)) { throw new NullReferenceException(); }
-    ViewData["Title"] = "Details";
+    if (Model is null) { throw new NullReferenceException(); }
+    ViewData["Title"] = "イベント詳細";
+    string FormatDateTime(DateTime? dt) => dt?.ToString("yyyy/MM/dd HH:mm") ?? "--";
+    var scheduleSummary = Model.EndDate.HasValue
+        ? $"{FormatDateTime(Model.StartDate)} 〜 {FormatDateTime(Model.EndDate)}"
+        : FormatDateTime(Model.StartDate);
+    string PriorityLabel(EventPriority p) => p switch
+    {
+        EventPriority.High => "高",
+        EventPriority.Low => "低",
+        _ => "通常"
+    };
+    string PriorityClass(EventPriority p) => p switch
+    {
+        EventPriority.High => "prio-high",
+        EventPriority.Low => "prio-low",
+        _ => "prio-normal"
+    };
+    var priorityLabel = PriorityLabel(Model.Priority);
+    var priorityClass = PriorityClass(Model.Priority);
 }
+<link rel="stylesheet" href="~/css/event-forms.css" asp-append-version="true" />
 
-<h1>Details</h1>
+<div class="page-wrap">
+    <div class="ev-shell ev-detail-shell">
+        <div class="ev-shell-inner">
+            <header class="ev-hero">
+                <div>
+                    <p class="ev-tag">Event Intelligence</p>
+                    <h1>@Model.Title</h1>
+                    <p class="ev-sub">@scheduleSummary</p>
+                </div>
+                <div class="ev-hero-actions">
+                    <a asp-action="Index" class="btn btn-secondary ghost">
+                        <i class="fa-solid fa-arrow-left"></i> 一覧へ戻る
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                        <i class="fa-solid fa-pen-to-square"></i> 編集
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                        <i class="fa-solid fa-trash-alt"></i> 削除
+                    </a>
+                </div>
+            </header>
 
-<div>
-    <h4>Author</h4>
-    <hr />
+            <div class="ev-meta-chips">
+                <span class="meta-chip"><i class="fa-solid fa-layer-group"></i> @Model.Source</span>
+                <span class="meta-chip"><i class="fa-solid fa-shapes"></i> @(Model.Category?.Name ?? "未設定")</span>
+                <span class="meta-chip priority @priorityClass"><span class="prio-dot"></span> <i class="fa-solid fa-signal"></i> 優先: @priorityLabel</span>
+                @if (Model.AllDay)
+                {
+                    <span class="meta-chip muted"><i class="fa-solid fa-infinity"></i> 終日</span>
+                }
+                @if (Model.Recurrence != EventRecurrence.None)
+                {
+                    <span class="meta-chip"><i class="fa-solid fa-arrows-rotate"></i> 繰り返し: @Model.Recurrence</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Location))
+                {
+                    <span class="meta-chip"><i class="fa-solid fa-location-dot"></i> @Model.Location</span>
+                }
+            </div>
 
-    <partial name="_DetailsPartial.cshtml" />
-</div>
-
-<dt class="col-sm-2">
-    @Html.DisplayNameFor(model => model.AllDay)
-</dt>
-<dd class="col-sm-10">
-    @Html.DisplayFor(model => model.AllDay)
-</dd>
-
-
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Delete" asp-route-id="@Model?.Id">Delete</a>|
-    <a asp-action="Index">Back to List</a>
+            <partial name="_DetailsPartial.cshtml" model="Model" />
+        </div>
+    </div>
 </div>

@@ -1,51 +1,322 @@
-﻿
-@model IEnumerable<Event>
-
 @{
-    ViewData["Title"] = "Calendars";
+    ViewData["Title"] = "統合カレンダー管理";
+    ViewData["BodyClass"] = "events-page";
 }
 
-<div id="calendar"></div>
+@if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
+{
+    <div class="alert alert-warning" role="alert" style="margin:12px 0;">
+        <strong>連携メッセージ:</strong> @status
+    </div>
+}
+
+<div class="ic-root">
+    <div class="ic-header">
+        <div class="ic-brand">
+            <span class="ic-logo">📅</span>
+            <div>
+                <div class="ic-eyebrow">統合カレンダー管理</div>
+                <div class="ic-title">イベントカレンダー</div>
+            </div>
+        </div>
+        <div class="ic-head-actions"></div>
+    </div>
+
+    <div class="mobile-quick-actions" aria-label="モバイル用のショートカット">
+        <button type="button" class="ic-btn ghost mini" data-action="scroll-calendar">
+            <i class="fa-solid fa-calendar-day"></i> カレンダーへ
+        </button>
+        <button type="button" class="ic-btn primary mini" data-action="toggle-filters">
+            <i class="fa-solid fa-sliders"></i> フィルター表示
+        </button>
+        <button type="button" class="ic-btn ghost mini" data-action="toggle-insights">
+            <i class="fa-solid fa-chart-column"></i> 統計/予定
+        </button>
+    </div>
+
+    <div class="ic-layout">
+        <div class="ic-sidebar-left mobile-collapsible" id="icSidebarLeft">
+            <div class="ic-card">
+                <div class="ic-card-head">カレンダーソース</div>
+                <div class="ic-card-body ic-list" id="icSourceList">
+                    <button class="ic-list-item active" data-source="all">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-all">📅</span>
+                            <span>すべて表示</span>
+                        </span>
+                        <span class="count" id="srcAll">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="Google">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-google">G</span>
+                            <span>Google Calendar</span>
+                        </span>
+                        <span class="count" id="srcGoogle">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="ICloud">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-icloud">☁️</span>
+                            <span>iCloud Calendar</span>
+                        </span>
+                        <span class="count" id="srcICloud">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="Outlook">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-outlook">📧</span>
+                            <span>Outlook Calendar</span>
+                        </span>
+                        <span class="count" id="srcOutlook">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="Work">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-work">💼</span>
+                            <span>会社カレンダー</span>
+                        </span>
+                        <span class="count" id="srcWork">0</span>
+                    </button>
+                    <button class="ic-list-item" data-source="Local">
+                        <span class="ic-list-label">
+                            <span class="ic-list-icon icon-local">💾</span>
+                            <span>ローカル</span>
+                        </span>
+                        <span class="count" id="srcLocal">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="ic-card">
+                <div class="ic-card-head">
+                    <span>カテゴリフィルター</span>
+                    <div class="ic-head-actions">
+                        <a class="ic-btn ghost mini" asp-controller="Categories" asp-action="Index">
+                            <i class="fa-solid fa-plus"></i> カテゴリ管理
+                        </a>
+                    </div>
+                </div>
+                <div class="ic-card-body ic-list" id="icCategoryList"></div>
+            </div>
+        </div>
+
+        <div class="ic-main" id="icMain">
+            <div class="ic-main-head">
+                <div class="ic-month-nav">
+                    <button id="calPrev" class="ic-nav-btn">◀</button>
+                    <div id="calPeriod" class="ic-month-label">----</div>
+                    <button id="calNext" class="ic-nav-btn">▶</button>
+                </div>
+                <div class="ic-views">
+                    <button id="viewMonth" class="view-btn active">月</button>
+                    <button id="viewWeek" class="view-btn">週</button>
+                    <button id="viewDay" class="view-btn">日</button>
+                </div>
+                <div class="ic-now" id="icNowClock" aria-live="polite">
+                    <span class="dot" aria-hidden="true"></span>
+                    <span class="label">現在</span>
+                    <span class="time">--:--</span>
+                </div>
+                <div class="ic-main-actions">
+                    <button id="calToday" class="ic-btn ghost"><i class="fa-solid fa-calendar-day"></i> 今日</button>
+                    <form id="syncForm" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="button" class="ic-btn sync" id="syncBtn"><i class="fa-solid fa-arrows-rotate"></i> すべて同期</button>
+                    </form>
+                    <form asp-controller="ExternalCalendars" asp-action="Sync" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="provider" value="Outlook" />
+                        <button type="submit" class="ic-btn ghost" data-sync-provider="Outlook"><i class="fa-brands fa-microsoft"></i> Outlook同期</button>
+                    </form>
+                    <form asp-controller="ExternalCalendars" asp-action="Sync" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="provider" value="Google" />
+                        <button type="submit" class="ic-btn ghost" data-sync-provider="Google"><i class="fa-brands fa-google"></i> Google同期</button>
+                    </form>
+                    <a class="ic-btn primary" asp-action="Create"><i class="fa-solid fa-plus"></i> 新規追加</a>
+                </div>
+            </div>
+            <div class="ic-calendar-wrap">
+                <div id="calendar"></div>
+            </div>
+        </div>
+
+        <div class="ic-sidebar-right mobile-collapsible" id="icSidebarRight">
+            <div class="ic-card">
+                <div class="ic-card-head">
+                    <span class="ic-card-title">
+                        <span class="ic-card-title-icon icon-search">🔍</span>
+                        <span>検索</span>
+                    </span>
+                </div>
+                <div class="ic-card-body">
+                    <input id="icSearch" type="search" class="ic-input" placeholder="イベントを検索..." />
+                </div>
+            </div>
+
+            <div class="ic-card">
+                <div class="ic-card-head">
+                    <span class="ic-card-title">
+                        <span class="ic-card-title-icon icon-stats">📊</span>
+                        <span>統計情報</span>
+                    </span>
+                </div>
+                <div class="ic-card-body ic-stats" id="icStats">
+                    <button type="button" class="ic-stat" data-stat="all">
+                        <div class="ic-stat-text">
+                            <div class="label">総イベント数</div>
+                            <div class="value" id="statTotal">0</div>
+                        </div>
+                        <span class="ic-stat-icon icon-total">📅</span>
+                    </button>
+                    <button type="button" class="ic-stat" data-stat="today">
+                        <div class="ic-stat-text">
+                            <div class="label">今日</div>
+                            <div class="value" id="statToday">0</div>
+                        </div>
+                        <span class="ic-stat-icon icon-today">📆</span>
+                    </button>
+                    <button type="button" class="ic-stat" data-stat="week">
+                        <div class="ic-stat-text">
+                            <div class="label">今週</div>
+                            <div class="value" id="statWeek">0</div>
+                        </div>
+                        <span class="ic-stat-icon icon-week">🗓️</span>
+                    </button>
+                    <button type="button" class="ic-stat" data-stat="dup">
+                        <div class="ic-stat-text">
+                            <div class="label">重複推定</div>
+                            <div class="value" id="statDup">0</div>
+                        </div>
+                        <span class="ic-stat-icon icon-conflict">⚠️</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="ic-card">
+                <div class="ic-card-head">
+                    <span class="ic-card-title">
+                        <span class="ic-card-title-icon icon-upcoming">🗓️</span>
+                        <span>直近の予定</span>
+                    </span>
+                </div>
+                <div class="ic-card-body">
+                    <ul class="ic-upcoming" id="icUpcoming"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ic-extensions">
+        <section class="ic-extension-card ic-card-iccard">
+            <div class="extension-head">
+                <div>
+                    <p class="eyebrow">ICカード連携</p>
+                    <h3>ICカードライフログ</h3>
+                    <p class="sub">通勤・通学や買い物でのタッチをカレンダーに重ねて暮らしのリズムを可視化します。</p>
+                </div>
+                <span class="status-pill">
+                    <i class="fa-solid fa-wave-square"></i> 準備中
+                </span>
+            </div>
+            <div class="extension-body">
+                <div class="iccard-linker">
+                    <label for="icCardNumber">ICカードID</label>
+                    <div class="field">
+                        <input type="text" id="icCardNumber" placeholder="****-****-****" />
+                        <button type="button" class="ic-btn primary ghost">仮リンク</button>
+                    </div>
+                </div>
+                <div class="iccard-preview">
+                    <div class="preview-chip">
+                        <span class="label">次に反映予定</span>
+                        <strong>今日 23:00</strong>
+                    </div>
+                    <ul class="preview-list">
+                        <li>
+                            <span class="time">07:42</span>
+                            <span class="action">改札入場（自宅最寄り）</span>
+                            <span class="map">➡️ 「通勤」カレンダーへ</span>
+                        </li>
+                        <li>
+                            <span class="time">18:21</span>
+                            <span class="action">スーパー支払い</span>
+                            <span class="map">➡️ 「生活メモ」カレンダーへ</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="iccard-meta">
+                    <div>
+                        <span class="label">上限金額</span>
+                        <span class="value">¥10,000 / 日</span>
+                    </div>
+                    <div>
+                        <span class="label">共有カレンダー</span>
+                        <span class="value">暮らし / 家族</span>
+                    </div>
+                    <div>
+                        <span class="label">自動メモ</span>
+                        <span class="value">買い物詳細をメモに添付</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="ic-extension-card ic-card-life">
+            <div class="extension-head">
+                <div>
+                    <p class="eyebrow">暮らしのコンパニオン</p>
+                    <h3>デイリーアシスト</h3>
+                    <p class="sub">「忘れがちな用事」「セルフケア」「暮らしの達成感」を軽やかに記録できます。</p>
+                </div>
+                <div class="assist-actions">
+                    <button class="ic-btn primary mini"><i class="fa-solid fa-plus"></i> ノート追加</button>
+                    <button class="ic-btn ghost mini"><i class="fa-solid fa-sparkles"></i> テンプレ</button>
+                </div>
+            </div>
+            <div class="extension-body life-grid">
+                <div class="life-card streaks">
+                    <p class="label">週間セルフケア</p>
+                    <div class="streaks-grid">
+                        <span class="dot done">月</span>
+                        <span class="dot done">火</span>
+                        <span class="dot">水</span>
+                        <span class="dot done">木</span>
+                        <span class="dot">金</span>
+                        <span class="dot">土</span>
+                        <span class="dot">日</span>
+                    </div>
+                    <small>「30分散歩」「ストレッチ」などカレンダー外の習慣もここで管理。</small>
+                </div>
+                <div class="life-card quick-memos">
+                    <p class="label">クイックメモ</p>
+                    <div class="memo">
+                        <span class="tag">買い足し</span>
+                        <p>ハンドソープ、常備薬、冷凍野菜</p>
+                    </div>
+                    <div class="memo">
+                        <span class="tag alt">やること</span>
+                        <p>町内会費の支払い（今週末）</p>
+                    </div>
+                </div>
+                <div class="life-card helper">
+                    <p class="label">暮らしのヒント</p>
+                    <ul class="tips">
+                        <li><strong>雨雲注意</strong>：18時頃に雨予報。折りたたみ傘を玄関に。</li>
+                        <li><strong>ごみ収集</strong>：明日は資源ごみの日。</li>
+                        <li><strong>ありがとうメモ</strong>：お祝いのお礼メッセージを送る。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/lib/fullcalendar/main.min.css" />
+    <link rel="stylesheet" href="~/css/calendar-ui.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/events-integrated.css" asp-append-version="true" />
+}
 
 @section Scripts {
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
-    <script src="../js/locales-all.js"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var calendarEl = document.getElementById('calendar');
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek', // 週表示
-                events: '/Events/GetEvents', // イベントデータ取得用のAPIエンドポイント
-                headerToolbar: {
-                    start: 'today prev,next', // 左側に「今日」「前」「次」
-                    center: 'title',         // 中央にカレンダーのタイトル
-                    end: 'dayGridMonth,timeGridWeek,timeGridDay' // 右側にビュー切り替えボタン
-                },
-                timeZone: 'Asia/Tokyo', //東京に時間を指定
-                locale: 'ja',　　　//日本語化
-                selectable: true, // 日付範囲の選択を有効化
-                eventTimeFormat: { hour: 'numeric', minute: '2-digit' }, //時→h
-
-                select: function (info) {
-                    // ダブルクリックで入力画面にリダイレクト
-                    var startDate = info.startStr; // 選択された開始日時（ISOフォーマット）
-                    var endDate = info.endStr;     // 選択された終了日時（ISOフォーマット）
-                    window.location.href = '/Events/Create?startDate=' + startDate + '&endDate=' + endDate;
-                },    
-
-
-                eventClick: function (info) {
-                    // イベントがクリックされたときの処理
-                    var eventId = info.event.id; // イベントのIDを取得
-                    if (eventId) {
-                        // 詳細ページにリダイレクト
-                        window.location.href = '/Events/Details?id=' + eventId;
-                    }
-                }       
-            });
-            calendar.render();
-        });
-    </script>
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.5/main.min.css" rel="stylesheet" /> <!-- FullCalendarのスタイル -->
+    <script src="~/lib/fullcalendar/index.global.min.js"></script>
+    <script src="~/js/locales-all.min.js"></script>
+    <script src="~/js/events-integrated.js" asp-append-version="true"></script>
 }
