@@ -75,6 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isStandalone) {
         hideInstallButtons();
     }
+    else {
+        showInstallButtons();
+    }
 
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -89,7 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     installButtons.forEach(btn => {
         btn.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
+            if (!deferredPrompt) {
+                alert('ブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。');
+                return;
+            }
+
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             if (outcome === 'accepted') {

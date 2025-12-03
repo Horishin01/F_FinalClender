@@ -267,10 +267,6 @@ body.nav-open {
         justify-content: center;
     }
 
-    .app-install {
-        display: none;
-    }
-
     .app-login {
         width: auto;
         justify-content: flex-end;
@@ -335,10 +331,6 @@ body.nav-open {
         width: 100%;
         justify-content: flex-start;
         flex-wrap: wrap;
-    }
-
-    .nav-close {
-        display: inline-flex;
     }
 }
 
