@@ -1,0 +1,64 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "今日の持ち物チェック";
+    ViewData["BodyClass"] = "packlist-page";
+
+    var packlistSeed = new
+    {
+        today = DateTime.Now.ToString("yyyy-MM-dd"),
+        events = new[]
+        {
+            new { time = "09:00", title = "顧客オフィスで打ち合わせ", category = "Work" },
+            new { time = "12:30", title = "ランチ / リサーチメモ", category = "Study" },
+            new { time = "15:00", title = "内勤：資料アップデート", category = "Work" },
+            new { time = "18:30", title = "ジムトレーニング", category = "Health" },
+            new { time = "20:00", title = "買い物（食材・日用品）", category = "Errand" }
+        }
+    };
+}
+
+<div class="ic-root packlist-root">
+    <header class="packlist-header">
+        <p class="packlist-eyebrow">Today</p>
+        <h1 class="packlist-title">今日の予定に合わせて「持ち物」を用意</h1>
+        <p class="packlist-sub">将来的には FullCalendar / API から当日イベントを取得してカテゴリ連動させる想定です（いまはダミーデータ）。</p>
+    </header>
+
+    <div class="packlist-layout">
+        <section class="ic-card packlist-pane packlist-agenda">
+            <div class="ic-card-head">
+                <span class="ic-card-title">今日の予定</span>
+                <span class="packlist-date" id="packlistDateLabel"></span>
+            </div>
+            <div class="ic-card-body">
+                <ul class="packlist-event-list" id="packlistEventList" aria-live="polite"></ul>
+            </div>
+        </section>
+
+        <section class="ic-card packlist-pane packlist-checklist">
+            <div class="ic-card-head">
+                <span class="ic-card-title">カテゴリ別チェックリスト</span>
+                <div class="packlist-actions">
+                    <button type="button" class="packlist-chip" id="packlistResetDay">今日分をリセット</button>
+                </div>
+            </div>
+            <div class="ic-card-body">
+                <div id="packlistChecklist"></div>
+                <p class="packlist-note">チェック状態は「日付 + カテゴリ」単位で localStorage に保存されます。</p>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script type="application/json" id="packlist-data">
+@Html.Raw(JsonSerializer.Serialize(packlistSeed))
+</script>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/events-integrated.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/packlist.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/packlist.js" asp-append-version="true"></script>
+}

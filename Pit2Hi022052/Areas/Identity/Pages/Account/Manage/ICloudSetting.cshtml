@@ -1,0 +1,46 @@
+@page
+@model Pit2Hi022052.Areas.Identity.Pages.Account.Manage.ICloudSettingModel
+@using Pit2Hi022052.Areas.Identity.Pages.Account.Manage
+@{
+    ViewData["Title"] = "iCloud設定";
+    ViewData["ActivePage"] = ManageNavPages.ICloudSetting;
+}
+
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">iCloud カレンダーとの同期に使用する Apple ID を登録します。</p>
+
+    <partial name="_StatusMessage" for="StatusMessage" />
+
+    @if (Model.Setting is not null)
+    {
+        <div class="form-field">
+            <label>現在の設定</label>
+            <div class="hint-text">ユーザー名: @Model.Setting.Username / パスワード: ********</div>
+        </div>
+    }
+
+    <form method="post" asp-page-handler="Save" class="form-grid">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+        <div class="form-field">
+            <label asp-for="Input.Username">Apple ID（メールアドレス）</label>
+            <input asp-for="Input.Username" autocomplete="username" />
+            <span asp-validation-for="Input.Username" class="text-danger"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Password">アプリパスワード</label>
+            <input asp-for="Input.Password" type="password" autocomplete="new-password" />
+            <span class="hint-text">変更しない場合は空欄のままで構いません。</span>
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn-primary-modern" type="submit">設定を保存</button>
+            <button class="btn-outline" type="submit" formaction="?handler=Delete">設定を削除</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

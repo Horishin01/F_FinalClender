@@ -2,16 +2,69 @@
 @{
     var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
 }
-<ul class="nav nav-pills flex-column">
-    <li class="nav-item"><a class="nav-link @ManageNavPages.IndexNavClass(ViewContext)" id="profile" asp-page="./Index">Profile</a></li>
-    <li class="nav-item"><a class="nav-link @ManageNavPages.EmailNavClass(ViewContext)" id="email" asp-page="./Email">Email</a></li>
-    <li class="nav-item"><a class="nav-link @ManageNavPages.ChangePasswordNavClass(ViewContext)" id="change-password" asp-page="./ChangePassword">Password</a></li>
+
+<ul>
+    <li>
+        <a class="@ManageNavPages.IndexNavClass(ViewContext)" asp-page="./Index">
+            <span>基本情報</span>
+            プロフィール
+        </a>
+    </li>
+    <li>
+        <a class="@ManageNavPages.EmailNavClass(ViewContext)" asp-page="./Email">
+            <span>連絡先</span>
+            メール
+        </a>
+    </li>
+    <li>
+        <a class="@ManageNavPages.ChangePasswordNavClass(ViewContext)" asp-page="./ChangePassword">
+            <span>セキュリティ</span>
+            パスワード
+        </a>
+    </li>
     @if (hasExternalLogins)
     {
-        <li id="external-logins" class="nav-item"><a id="external-login" class="nav-link @ManageNavPages.ExternalLoginsNavClass(ViewContext)" asp-page="./ExternalLogins">External logins</a></li>
+        <li>
+            <a class="@ManageNavPages.ExternalLoginsNavClass(ViewContext)" asp-page="./ExternalLogins">
+                <span>連携</span>
+                外部ログイン
+            </a>
+        </li>
     }
-    <li class="nav-item"><a class="nav-link @ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext)" id="two-factor" asp-page="./TwoFactorAuthentication">Two-factor authentication</a></li>
-    <li class="nav-item"><a class="nav-link @ManageNavPages.PersonalDataNavClass(ViewContext)" id="personal-data" asp-page="./PersonalData">Personal data</a></li>
-    <li class="nav-item"><a class="nav-link"asp-area="" asp-controller="ICCards"asp-action="Index">ICCards</a></li>
-    <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="ICloudSetting" asp-action="Index">ICloudSetting</a></li>
+    <li>
+        <a class="@ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext)" asp-page="./TwoFactorAuthentication">
+            <span>追加保護</span>
+            2段階認証
+        </a>
+    </li>
+    <li>
+        <a class="@ManageNavPages.PersonalDataNavClass(ViewContext)" asp-page="./PersonalData">
+            <span>データ管理</span>
+            個人データ
+        </a>
+    </li>
+    <li>
+        <a class="@ManageNavPages.ICCardsNavClass(ViewContext)" asp-page="./ICCards">
+            <span>拡張機能</span>
+            ICカード
+        </a>
+    </li>
+    <li>
+        <a class="@ManageNavPages.ICloudSettingNavClass(ViewContext)" asp-page="./ICloudSetting">
+            <span>同期</span>
+            iCloud設定
+        </a>
+    </li>
+    <li>
+        <a class="@ManageNavPages.ExternalCalendarsOutlookNavClass(ViewContext)" asp-page="./ExternalCalendarsOutlook">
+            <span>同期</span>
+            Outlook
+        </a>
+    </li>
+    <li>
+        <a class="@ManageNavPages.ExternalCalendarsGoogleNavClass(ViewContext)" asp-page="./ExternalCalendarsGoogle">
+            <span>同期</span>
+            Google
+        </a>
+    </li>
 </ul>

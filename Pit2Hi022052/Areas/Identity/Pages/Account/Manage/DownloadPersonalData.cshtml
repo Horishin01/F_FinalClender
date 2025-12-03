@@ -1,11 +1,15 @@
-﻿@page
+@page
 @model DownloadPersonalDataModel
 @{
-    ViewData["Title"] = "Download Your Data";
+    ViewData["Title"] = "データをダウンロード";
     ViewData["ActivePage"] = ManageNavPages.PersonalData;
 }
 
-<h3>@ViewData["Title"]</h3>
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">要求された個人データを JSON ファイルとして準備しました。ブラウザーのダウンロードが開始されます。</p>
+    <p class="hint-text">ファイルは機密情報を含むため、共有端末では必ず削除してください。</p>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

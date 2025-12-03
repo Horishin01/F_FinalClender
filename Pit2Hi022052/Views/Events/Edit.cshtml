@@ -1,39 +1,126 @@
-﻿@model Event
-
+@model Event
 @{
-    if (!(Model is not null)) { throw new NullReferenceException(); }
-    ViewData["Title"] = "Edit";
+    if (Model is null) { throw new NullReferenceException(); }
+    ViewData["Title"] = "イベント編集";
+    string PriorityLabel(EventPriority p) => p switch
+    {
+        EventPriority.High => "高",
+        EventPriority.Low => "低",
+        _ => "通常"
+    };
+    string PriorityClass(EventPriority p) => p switch
+    {
+        EventPriority.High => "prio-high",
+        EventPriority.Low => "prio-low",
+        _ => "prio-normal"
+    };
+    var priorityLabel = PriorityLabel(Model.Priority);
+    var priorityClass = PriorityClass(Model.Priority);
 }
+<link rel="stylesheet" href="~/css/event-forms.css" asp-append-version="true" />
 
-<h1>Edit</h1>
+<div class="page-wrap">
+    <div class="ev-shell">
+        <div class="ev-shell-inner">
+            <header class="ev-hero">
+                <div>
+                    <p class="ev-tag">Unified Calendar Studio</p>
+                    <h1>イベント編集</h1>
+                    <p class="ev-sub">@Model.Title</p>
+                </div>
+                <div class="ev-hero-actions">
+                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary ghost">
+                        <i class="fa-solid fa-arrow-left"></i> 詳細へ戻る
+                    </a>
+                    <button form="eventEditForm" type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> 保存
+                    </button>
+                </div>
+            </header>
 
-<h4>Author</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-          
-            <div class="form-group">
-                <label asp-for="Id" class="control-label"></label>
-                <input asp-for="Id" class="form-control" disabled/>
-                <span asp-validation-for="Id" class="text-danger"></span>
+            <div class="ev-meta-chips">
+                <span class="meta-chip"><i class="fa-solid fa-layer-group"></i> @Model.Source</span>
+                <span class="meta-chip"><i class="fa-solid fa-shapes"></i> @(Model.Category?.Name ?? "未設定")</span>
+                <span class="meta-chip priority @priorityClass"><span class="prio-dot"></span> <i class="fa-solid fa-signal"></i> 優先: @priorityLabel</span>
+                @if (Model.Recurrence != EventRecurrence.None)
+                {
+                    <span class="meta-chip"><i class="fa-solid fa-arrows-rotate"></i> @Model.Recurrence</span>
+                }
+                @if (Model.AllDay)
+                {
+                    <span class="meta-chip muted"><i class="fa-solid fa-infinity"></i> 終日</span>
+                }
             </div>
 
+            <div class="ev-grid">
+                <section class="ev-panel">
+                    <div class="ev-panel-head">
+                        <div class="ev-panel-title">
+                            <span class="ev-panel-icon"><i class="fa-solid fa-pen-ruler"></i></span>
+                            <div>
+                                <p class="eyebrow">ライブ編集</p>
+                                <h2>イベント情報</h2>
+                            </div>
+                        </div>
+                        <div class="ev-panel-note">変更内容は保存時にデータベースへ反映されます。右側で視覚的に確認できます。</div>
+                    </div>
 
-            <partial name="_EditPartial.cshtml" />
+                    <div class="ev-panel-body">
+                        <form id="eventEditForm" asp-action="Edit" method="post">
+                            @Html.AntiForgeryToken()
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
+                            <partial name="_EditPartial.cshtml" model="Model" />
+                        </form>
+                    </div>
+                </section>
+
+                <aside class="ev-side">
+                    <div class="ev-side-card">
+                        <div class="ev-side-head">
+                            <div>
+                                <p class="eyebrow">プレビュー</p>
+                                <h3>現在の表示</h3>
+                            </div>
+                            <span class="badge">Live</span>
+                        </div>
+                        <div class="ev-preview">
+                            <div class="ev-preview-meta">
+                                <span class="ev-preview-dot" id="prevDot"></span>
+                                <span class="ev-preview-time" id="prevTime">--:--</span>
+                            </div>
+                            <div class="ev-preview-title" id="prevTitle">@Model.Title</div>
+                            <p class="ev-preview-sub">編集した内容が保存前にどのように見えるかを素早くチェックできます。</p>
+                        </div>
+                        <div class="hint">入力内容を更新すると表示もリアルタイムで反映されます。</div>
+                    </div>
+
+                    <div class="ev-side-card">
+                        <div class="ev-side-head">
+                            <div>
+                                <p class="eyebrow">アピアランス (UIのみ)</p>
+                                <h3>アクセントカラー</h3>
+                            </div>
+                        </div>
+                        <div class="ev-color-picker">
+                            <input id="evColor" type="color" value="#6d5dfc" class="color-picker" />
+                            <div class="swatches">
+                                <button type="button" class="sw" data-c="#ef4444" style="--c:#ef4444"></button>
+                                <button type="button" class="sw" data-c="#f97316" style="--c:#f97316"></button>
+                                <button type="button" class="sw" data-c="#10b981" style="--c:#10b981"></button>
+                                <button type="button" class="sw" data-c="#3b82f6" style="--c:#3b82f6"></button>
+                                <button type="button" class="sw" data-c="#8b5cf6" style="--c:#8b5cf6"></button>
+                                <button type="button" class="sw" data-c="#64748b" style="--c:#64748b"></button>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/event-forms.js" asp-append-version="true"></script>
 }

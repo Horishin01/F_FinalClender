@@ -1,10 +1,10 @@
-﻿@model string
+@model string
 
-@if (!String.IsNullOrEmpty(Model))
+@if (!string.IsNullOrEmpty(Model))
 {
-    var statusMessageClass = Model.StartsWith("Error") ? "danger" : "success";
-    <div class="alert alert-@statusMessageClass alert-dismissible" role="alert">
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        @Model
+    var statusMessageClass = Model.StartsWith("Error", StringComparison.OrdinalIgnoreCase) ? "danger" : "success";
+    <div class="status-toast @statusMessageClass" role="status">
+        <span>@Model</span>
+        <button type="button" aria-label="閉じる" onclick="this.closest('.status-toast')?.remove()">×</button>
     </div>
 }

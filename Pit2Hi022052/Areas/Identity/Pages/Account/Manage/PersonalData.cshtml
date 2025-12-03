@@ -1,25 +1,24 @@
-﻿@page
+@page
 @model PersonalDataModel
 @{
-    ViewData["Title"] = "Personal Data";
+    ViewData["Title"] = "個人データ";
     ViewData["ActivePage"] = ManageNavPages.PersonalData;
 }
 
-<h3>@ViewData["Title"]</h3>
+<div class="settings-card">
+    <h2>@ViewData["Title"]</h2>
+    <p class="settings-description">登録済みの個人データをダウンロードするか、アカウントを完全に削除できます。</p>
 
-<div class="row">
-    <div class="col-md-6">
-        <p>Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
-        <p>
-            <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-        </p>
-        <form id="download-data" asp-page="DownloadPersonalData" method="post">
-            <button class="btn btn-primary" type="submit">Download</button>
+    <div class="form-actions">
+        <form id="download-data" asp-page="DownloadPersonalData" method="post" class="d-inline">
+            <button class="btn-outline" type="submit">データをダウンロード</button>
         </form>
-        <p>
-            <a id="delete" asp-page="DeletePersonalData" class="btn btn-danger">Delete</a>
-        </p>
+        <a id="delete" asp-page="DeletePersonalData" class="btn-primary-modern">アカウントを削除</a>
     </div>
+
+    <p class="hint-text mt-3">
+        削除操作は取り消せません。エクスポートしたファイルにはメールアドレスなど、すべての登録データが含まれます。
+    </p>
 </div>
 
 @section Scripts {

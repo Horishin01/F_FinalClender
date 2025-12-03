@@ -30,13 +30,15 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
         public RegisterModel(
             UserManager<ApplicationUser> userManager,
             IUserStore<ApplicationUser> userStore,
             SignInManager<ApplicationUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -44,6 +46,7 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
+            _roleManager = roleManager;
         }
 
         /// <summary>
@@ -123,6 +126,16 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
+                    var roleResult = await EnsureDefaultRoleAsync(user);
+                    if (!roleResult.Succeeded)
+                    {
+                        foreach (var error in roleResult.Errors)
+                        {
+                            ModelState.AddModelError(string.Empty, error.Description);
+                        }
+                        return Page();
+                    }
+
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
@@ -167,6 +180,25 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account
                     $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor, or alternatively " +
                     $"override the register page in /Areas/Identity/Pages/Account/Register.cshtml");
             }
+        }
+
+        private async Task<IdentityResult> EnsureDefaultRoleAsync(ApplicationUser user)
+        {
+            if (!await _roleManager.RoleExistsAsync(RoleNames.User))
+            {
+                var createRoleResult = await _roleManager.CreateAsync(new IdentityRole(RoleNames.User));
+                if (!createRoleResult.Succeeded)
+                {
+                    return createRoleResult;
+                }
+            }
+
+            if (await _userManager.IsInRoleAsync(user, RoleNames.User))
+            {
+                return IdentityResult.Success;
+            }
+
+            return await _userManager.AddToRoleAsync(user, RoleNames.User);
         }
 
         private IUserEmailStore<ApplicationUser> GetEmailStore()

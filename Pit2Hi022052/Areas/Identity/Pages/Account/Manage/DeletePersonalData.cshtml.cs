@@ -8,7 +8,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Pit2Hi022052.Data;
 using Pit2Hi022052.Models;
 
 namespace Pit2Hi022052.Areas.Identity.Pages.Account.Manage
@@ -18,15 +20,18 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account.Manage
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<DeletePersonalDataModel> _logger;
+        private readonly ApplicationDbContext _db;
 
         public DeletePersonalDataModel(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ILogger<DeletePersonalDataModel> logger)
+            ILogger<DeletePersonalDataModel> logger,
+            ApplicationDbContext db)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _db = db;
         }
 
         /// <summary>
@@ -93,6 +98,9 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account.Manage
             {
                 throw new InvalidOperationException($"Unexpected error occurred deleting user.");
             }
+
+            var dbDeleted = await _db.Database.EnsureDeletedAsync();
+            _logger.LogInformation("Database deletion after user self-delete: {Deleted}", dbDeleted);
 
             await _signInManager.SignOutAsync();
 

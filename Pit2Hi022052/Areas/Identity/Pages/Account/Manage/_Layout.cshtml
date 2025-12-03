@@ -1,26 +1,28 @@
-﻿@{
-    if (ViewData.TryGetValue("ParentLayout", out var parentLayout) && parentLayout !=  null)
-    {
-        Layout = parentLayout.ToString();
-    }
-    else
-    {
-        Layout = "/Areas/Identity/Pages/_Layout.cshtml";
-    }
+@{
+    // アカウント管理領域は常に共有レイアウトを親にする
+    Layout = "/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Manage your account</h1>
+@section Styles {
+    <link rel="stylesheet" href="~/css/account-manage.css" asp-append-version="true" />
+    @RenderSection("ManageStyles", required: false)
+}
 
-<div>
-    <h2>Change your account settings</h2>
-    <hr />
-    <div class="row">
-        <div class="col-md-3">
+<div class="account-shell">
+    <div class="account-header">
+        <p class="eyebrow">アカウント設定</p>
+        <h1>プロフィールとセキュリティの管理</h1>
+        <p>メール、パスワード、2段階認証など、重要な情報をここでまとめて管理できます。</p>
+    </div>
+
+    <div class="account-panel">
+        <aside class="settings-nav">
             <partial name="_ManageNav" />
-        </div>
-        <div class="col-md-9">
+        </aside>
+
+        <section class="account-content">
             @RenderBody()
-        </div>
+        </section>
     </div>
 </div>
 

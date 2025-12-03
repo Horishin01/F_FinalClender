@@ -30,13 +30,15 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
         private readonly IEmailSender _emailSender;
         private readonly ILogger<ExternalLoginModel> _logger;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
         public ExternalLoginModel(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             IUserStore<ApplicationUser> userStore,
             ILogger<ExternalLoginModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            RoleManager<IdentityRole> roleManager)
         {
             _signInManager = signInManager;
             _userManager = userManager;
@@ -44,6 +46,7 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account
             _emailStore = GetEmailStore();
             _logger = logger;
             _emailSender = emailSender;
+            _roleManager = roleManager;
         }
 
         /// <summary>
@@ -160,6 +163,13 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account
                 var result = await _userManager.CreateAsync(user);
                 if (result.Succeeded)
                 {
+                    var roleResult = await EnsureDefaultRoleAsync(user);
+                    if (!roleResult.Succeeded)
+                    {
+                        AddErrors(roleResult);
+                        return Page();
+                    }
+
                     result = await _userManager.AddLoginAsync(user, info);
                     if (result.Succeeded)
                     {
@@ -209,6 +219,33 @@ namespace Pit2Hi022052.Areas.Identity.Pages.Account
                 throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
                     $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor, or alternatively " +
                     $"override the external login page in /Areas/Identity/Pages/Account/ExternalLogin.cshtml");
+            }
+        }
+
+        private async Task<IdentityResult> EnsureDefaultRoleAsync(ApplicationUser user)
+        {
+            if (!await _roleManager.RoleExistsAsync(RoleNames.User))
+            {
+                var createRoleResult = await _roleManager.CreateAsync(new IdentityRole(RoleNames.User));
+                if (!createRoleResult.Succeeded)
+                {
+                    return createRoleResult;
+                }
+            }
+
+            if (await _userManager.IsInRoleAsync(user, RoleNames.User))
+            {
+                return IdentityResult.Success;
+            }
+
+            return await _userManager.AddToRoleAsync(user, RoleNames.User);
+        }
+
+        private void AddErrors(IdentityResult result)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
             }
         }
 

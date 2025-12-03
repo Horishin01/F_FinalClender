@@ -1,0 +1,112 @@
+@* Flowリスト (フロントのみ) UI
+   目的: localStorage にのみ保存するフロントエンド専用の Flow リスト画面。
+   主な構成: ヒーロー（概要/カウンター）、入力フォーム＋提案チップ、統計表示、フィルタ、ログ表示。
+   依存: flow.css / flow.js（ローカル保存・フィルタ・連続日数など）。 *@
+@{
+    ViewData["Title"] = "Flowリスト (フロントのみ)";
+}
+
+<section class="flow-hero container-xl">
+    <div class="flow-hero-copy">
+        <p class="eyebrow">習慣ハック / フロントのみ</p>
+        <h1>持ち越さない「Flowリスト」で今を積み上げる</h1>
+        <p class="lede">
+            docs/新しい機能　検討.txt のメモをもとに、ToDoを溜めず「今やった／今やる」ことだけを書く専用ページをフロントエンドだけで実装しました。
+            記録はブラウザーの localStorage のみに保存されます。
+        </p>
+        <div class="hero-badges">
+            <span class="chip">持ち越さない</span>
+            <span class="chip">Doneログ</span>
+            <span class="chip">フロントのみ</span>
+        </div>
+    </div>
+    <div class="flow-hero-card glass">
+        <p class="eyebrow">今日の積み上げ</p>
+        <h2 id="flowHeroCount">0 件</h2>
+        <p id="flowHeroStreak" class="annotation">連続 0 日目</p>
+        <div class="hero-quote">
+            「昨日のメモを持ち越さなくていいし、明日のメモを書く必要もない」
+        </div>
+    </div>
+</section>
+
+<section class="flow-main container-xl">
+    <article class="flow-card glass">
+        <header class="flow-card-head">
+            <div>
+                <p class="eyebrow">記録する</p>
+                <h2>今やったことを書く</h2>
+            </div>
+            <span class="badge ghost">ローカル保存</span>
+        </header>
+
+        <div class="flow-form">
+            <input type="text" id="flowInput" placeholder="例: スマホ開く前に深呼吸した" maxlength="80" autocomplete="off">
+            <div class="flow-inline">
+                <select id="flowContext" aria-label="カテゴリ">
+                    <option value="仕事">仕事</option>
+                    <option value="プライベート">プライベート</option>
+                    <option value="健康">健康</option>
+                </select>
+                <button type="button" class="btn primary" id="btnAddFlow">記録する</button>
+            </div>
+        </div>
+
+        <p class="annotation">思いついた瞬間に書くのがコツ。未完了を持ち越さず「Done」を積み上げます。</p>
+
+        <div class="suggestion-chips" id="flowSuggestions"></div>
+
+        <div class="flow-stats-grid">
+            <div class="flow-stat">
+                <p>今日</p>
+                <strong id="flowCountToday">0</strong>
+                <small>件</small>
+            </div>
+            <div class="flow-stat">
+                <p>今週</p>
+                <strong id="flowCountWeek">0</strong>
+                <small>件</small>
+            </div>
+            <div class="flow-stat">
+                <p>連続</p>
+                <strong id="flowStreak">0</strong>
+                <small>日</small>
+            </div>
+        </div>
+
+        <div class="pill-group tiny flow-filter" role="group" aria-label="表示切替">
+            <button type="button" class="pill active" data-filter="today">今日</button>
+            <button type="button" class="pill" data-filter="all">全期間</button>
+        </div>
+
+        <div class="flow-log-container">
+            <ul id="flowList" class="flow-log" aria-live="polite">
+                <li class="flow-empty">まだ記録がありません。ワンタップの提案を押してみてください。</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="flow-notes glass">
+        <header class="flow-card-head">
+            <div>
+                <p class="eyebrow">コンセプト抜粋</p>
+                <h2>持ち越さない / ToDoとの差分</h2>
+            </div>
+        </header>
+        <ul class="idea-list">
+            <li><strong>持ち越さない理由:</strong> 過去も未来も書かない。「今」「自分が何をしたか」だけを記録。</li>
+            <li><strong>ToDoとの差分:</strong> 未完了を貯めず、完了ログを積む。やらなきゃより、やったを優先。</li>
+            <li><strong>書くタイミング:</strong> 今からやる時／やり終わった直後／一日の振り返り。</li>
+            <li><strong>具体例:</strong> スマホ開く前に深呼吸、モーニングルーティンをまとめて書く、水を飲む、と書いてから行動を切り替える。</li>
+        </ul>
+        <p class="annotation">フロントエンドのみのため、ページ再読み込み後も localStorage が残っている限りデータは保持されます。</p>
+    </article>
+</section>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/flow.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/flow.js" asp-append-version="true"></script>
+}
