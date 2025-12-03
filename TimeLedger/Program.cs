@@ -6,6 +6,7 @@ using TimeLedger.Extensions;
 using TimeLedger.Services;
 using TimeLedger.Middleware;
 using System.Linq;
+using Microsoft.AspNetCore.StaticFiles;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -119,6 +120,9 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+var contentTypeProvider = new FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".webmanifest"] = "application/manifest+json";
+
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -130,7 +134,10 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = contentTypeProvider
+});
 app.UseStatusCodePages();
 
 app.UseRouting();

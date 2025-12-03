@@ -164,6 +164,15 @@ body.nav-open {
     font-weight: 700;
 }
 
+.mobile-install {
+    margin-top: 0.5rem;
+}
+
+.mobile-install .install-btn {
+    width: 100%;
+    justify-content: center;
+}
+
 .mobile-login {
     margin-top: 1rem;
 }
@@ -204,6 +213,17 @@ body.nav-open {
 .app-nav .app-menu {
     flex: 1 1 auto;
     justify-content: center;
+}
+
+.app-install {
+    flex: 0 0 auto;
+}
+
+.install-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
 }
 
 .app-menu a {
@@ -247,6 +267,10 @@ body.nav-open {
         justify-content: center;
     }
 
+    .app-install {
+        display: none;
+    }
+
     .app-login {
         width: auto;
         justify-content: flex-end;
@@ -275,6 +299,10 @@ body.nav-open {
     }
 
     .app-menu {
+        display: none;
+    }
+
+    .app-install {
         display: none;
     }
 

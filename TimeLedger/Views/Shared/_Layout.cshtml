@@ -51,6 +51,12 @@
                             <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
                         }
                     </ul>
+                    <div class="app-install">
+                        <button type="button" class="btn btn-outline-primary btn-sm install-btn" data-pwa-install style="display:none;">
+                            <i class="fa-solid fa-download"></i>
+                            <span>アプリをインストール</span>
+                        </button>
+                    </div>
                     <div class="app-login">
                         <partial name="_LoginPartial" />
                     </div>
@@ -105,6 +111,12 @@
                 <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
             }
         </ul>
+        <div class="mobile-install">
+            <button type="button" class="btn btn-outline-primary w-100 install-btn" data-pwa-install style="display:none;">
+                <i class="fa-solid fa-download"></i>
+                <span>アプリをインストール</span>
+            </button>
+        </div>
         <div class="mobile-login">
             <partial name="_LoginPartial" />
         </div>

@@ -65,4 +65,37 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    const installButtons = Array.from(document.querySelectorAll('[data-pwa-install]'));
+    const hideInstallButtons = () => installButtons.forEach(btn => btn.style.display = 'none');
+    const showInstallButtons = () => installButtons.forEach(btn => btn.style.display = 'inline-flex');
+    let deferredPrompt = null;
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (isStandalone) {
+        hideInstallButtons();
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        showInstallButtons();
+    });
+
+    window.addEventListener('appinstalled', () => {
+        deferredPrompt = null;
+        hideInstallButtons();
+    });
+
+    installButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                hideInstallButtons();
+            }
+            deferredPrompt = null;
+        });
+    });
 });
