@@ -9,6 +9,8 @@ using System.Linq;
 
 
 var builder = WebApplication.CreateBuilder(args);
+// appsettings.{Environment}.json で接続先を環境ごとに切り替える。
+// 本番のパスワードは環境変数や Secret Manager で上書きすること。
 
 //================ DB接続 ==================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
