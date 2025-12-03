@@ -173,6 +173,10 @@ body.nav-open {
     justify-content: center;
 }
 
+.mobile-install .install-hint {
+    margin-top: 0.6rem;
+}
+
 .mobile-login {
     margin-top: 1rem;
 }
@@ -224,6 +228,13 @@ body.nav-open {
     align-items: center;
     gap: 0.35rem;
     white-space: nowrap;
+}
+
+.install-hint {
+    display: none;
+    margin-top: 0.3rem;
+    font-size: 0.82rem;
+    color: var(--ink-600);
 }
 
 .app-menu a {

@@ -67,8 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const installButtons = Array.from(document.querySelectorAll('[data-pwa-install]'));
-    const hideInstallButtons = () => installButtons.forEach(btn => btn.style.display = 'none');
+    const installHints = Array.from(document.querySelectorAll('[data-pwa-hint]'));
+    const hideInstallButtons = () => {
+        installButtons.forEach(btn => btn.style.display = 'none');
+        installHints.forEach(hint => hint.style.display = 'none');
+    };
     const showInstallButtons = () => installButtons.forEach(btn => btn.style.display = 'inline-flex');
+    const showInstallHints = () => installHints.forEach(hint => hint.style.display = 'block');
+    const hideInstallHints = () => installHints.forEach(hint => hint.style.display = 'none');
     let deferredPrompt = null;
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -83,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         deferredPrompt = e;
         showInstallButtons();
+        hideInstallHints();
     });
 
     window.addEventListener('appinstalled', () => {
@@ -93,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     installButtons.forEach(btn => {
         btn.addEventListener('click', async () => {
             if (!deferredPrompt) {
-                alert('ブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。');
+                showInstallHints();
                 return;
             }
 
