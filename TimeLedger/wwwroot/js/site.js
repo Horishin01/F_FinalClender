@@ -4,6 +4,7 @@
 // Write your JavaScript code.
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.info('[site.js] loaded');
     const nav = document.querySelector('.app-nav');
     const toggle = document.querySelector('.nav-toggle');
     const navBlock = nav?.querySelector('.app-nav-block');
@@ -58,58 +59,72 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.matches) closeNav();
     });
 
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(() => {
-                // 登録失敗時もアプリ動作を止めない
-            });
-        });
-    }
+    const installButtons = Array.from(document.querySelectorAll('[data-pwa-install-button]'));
+    const installHints = Array.from(document.querySelectorAll('[data-pwa-install-hint]'));
+    console.info('[site.js] install buttons found:', installButtons.length);
 
-    const installButtons = Array.from(document.querySelectorAll('[data-pwa-install]'));
-    const installHints = Array.from(document.querySelectorAll('[data-pwa-hint]'));
-    const hideInstallButtons = () => {
-        installButtons.forEach(btn => btn.style.display = 'none');
-        installHints.forEach(hint => hint.style.display = 'none');
+    const setVisible = (show, reason) => {
+        installButtons.forEach(btn => btn.dataset.visible = show ? 'true' : 'false');
+        installHints.forEach(hint => hint.dataset.visible = show ? 'true' : 'false');
+        if (!show && reason) console.info('[site.js] install hidden:', reason);
     };
-    const showInstallButtons = () => installButtons.forEach(btn => btn.style.display = 'inline-flex');
-    const showInstallHints = () => installHints.forEach(hint => hint.style.display = 'block');
-    const hideInstallHints = () => installHints.forEach(hint => hint.style.display = 'none');
+
+    const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     let deferredPrompt = null;
 
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    if (isStandalone) {
-        hideInstallButtons();
+    if (!isSecure) {
+        setVisible(false, 'insecure-context');
+    } else if (isStandalone) {
+        setVisible(false, 'already-installed');
+    } else {
+        setVisible(false, 'waiting-beforeinstallprompt');
     }
-    else {
-        showInstallButtons();
+
+    if ('serviceWorker' in navigator && isSecure) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.info('[site.js] sw registered', reg.scope))
+                .catch(err => console.warn('[site.js] sw register failed', err));
+        });
+    } else {
+        console.info('[site.js] sw registration skipped (insecure or unsupported)');
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {
+        console.info('[site.js] beforeinstallprompt fired');
         e.preventDefault();
         deferredPrompt = e;
-        showInstallButtons();
-        hideInstallHints();
+        setVisible(true);
     });
 
     window.addEventListener('appinstalled', () => {
+        console.info('[site.js] appinstalled');
         deferredPrompt = null;
-        hideInstallButtons();
+        setVisible(false, 'installed');
     });
 
     installButtons.forEach(btn => {
         btn.addEventListener('click', async () => {
+            console.info('[site.js] install clicked');
             if (!deferredPrompt) {
-                showInstallHints();
+                setVisible(false, 'no-beforeinstallprompt');
                 return;
             }
 
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
+            console.info('[site.js] userChoice:', outcome);
             if (outcome === 'accepted') {
-                hideInstallButtons();
+                setVisible(false, 'accepted');
             }
             deferredPrompt = null;
         });
     });
+
+    setTimeout(() => {
+        if (!deferredPrompt && !isStandalone && isSecure) {
+            console.info('[site.js] beforeinstallprompt not fired (browser/state not eligible?)');
+        }
+    }, 5000);
 });

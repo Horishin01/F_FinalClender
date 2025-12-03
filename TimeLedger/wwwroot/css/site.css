@@ -230,6 +230,15 @@ body.nav-open {
     white-space: nowrap;
 }
 
+[data-pwa-install-button][data-visible="false"],
+[data-pwa-install-hint][data-visible="false"] {
+    display: none !important;
+}
+[data-pwa-install-hint][data-visible="true"] {
+    display: block;
+}
+/* 開発時に常時表示したい場合は data-visible="true" を手動で付与する */
+
 .install-hint {
     display: none;
     margin-top: 0.3rem;

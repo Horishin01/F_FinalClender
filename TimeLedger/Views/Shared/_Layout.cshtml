@@ -52,11 +52,16 @@
                         }
                     </ul>
                     <div class="app-install">
-                        <button type="button" class="btn btn-outline-primary btn-sm install-btn" data-pwa-install style="display:none;">
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary btn-sm install-btn"
+                            id="installAppButton"
+                            data-pwa-install-button
+                            data-visible="false">
                             <i class="fa-solid fa-download"></i>
                             <span>アプリをインストール</span>
                         </button>
-                        <div class="install-hint" data-pwa-hint style="display:none;">
+                        <div class="install-hint" data-pwa-install-hint data-visible="false">
                             ブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。
                         </div>
                     </div>
@@ -115,11 +120,16 @@
             }
         </ul>
         <div class="mobile-install">
-            <button type="button" class="btn btn-outline-primary w-100 install-btn" data-pwa-install style="display:none;">
+            <button
+                type="button"
+                class="btn btn-outline-primary w-100 install-btn"
+                id="installAppButtonMobile"
+                data-pwa-install-button
+                data-visible="false">
                 <i class="fa-solid fa-download"></i>
                 <span>アプリをインストール</span>
             </button>
-            <div class="install-hint" data-pwa-hint style="display:none;">
+            <div class="install-hint" data-pwa-install-hint data-visible="false">
                 ブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。
             </div>
         </div>
