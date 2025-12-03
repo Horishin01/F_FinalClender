@@ -360,6 +360,7 @@
         const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
         btn.addEventListener('click', async () => {
             btn.disabled = true;
+            btn.classList.add('is-loading');
             visual.setState('running', 'すべて同期中…');
             try {
                 const res = await fetch('/Events/Sync', { method: 'POST', headers: { 'RequestVerificationToken': token } });
@@ -380,7 +381,8 @@
             }
             finally {
                 btn.disabled = false;
-                setTimeout(() => visual.setState('idle', '待機中'), 1600);
+                btn.classList.remove('is-loading');
+                setTimeout(() => visual.setState('idle', ''), 1600);
             }
         });
     }
@@ -392,7 +394,7 @@
         const setState = (state, message) => {
             if (!root) return;
             root.dataset.state = state;
-            if (status && message) status.textContent = message;
+            if (status && message !== undefined) status.textContent = message;
             if (meter) {
                 if (state === 'idle') {
                     meter.style.transform = 'scaleX(0)';
@@ -403,7 +405,7 @@
                 }
             }
         };
-        setState('idle', '待機中');
+        setState('idle', '');
         return { setState };
     }
 
@@ -470,12 +472,15 @@
         const period = qs('#calPeriod');
         const mobileMq = window.matchMedia('(max-width: 768px)');
         const initialView = mobileMq.matches ? 'listWeek' : 'dayGridMonth';
+        const now = new Date();
+        const scrollTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
         const calendar = new FullCalendar.Calendar(calEl, {
             headerToolbar: false,
             locale: 'ja',
             timeZone: 'local',
             buttonText: { month: '月', week: '週', day: '日' },
             nowIndicator: true,
+            scrollTime,
             height: '80vh',
             expandRows: false,
             dayMaxEvents: true,
@@ -585,10 +590,24 @@
         bindExternalSyncButtons();
         bindStats();
         bindMobileToggles();
+        startNowClock();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         init().catch(err => console.error(err));
     });
+
+    function startNowClock() {
+        const root = qs('#icNowClock');
+        if (!root) return;
+        const timeEl = qs('.time', root);
+        const update = () => {
+            const now = new Date();
+            const opts = { hour: '2-digit', minute: '2-digit' };
+            if (timeEl) timeEl.textContent = now.toLocaleTimeString('ja-JP', opts);
+        };
+        update();
+        setInterval(update, 30 * 1000);
+    }
 
 })();

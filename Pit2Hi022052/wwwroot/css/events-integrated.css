@@ -9,7 +9,7 @@
 
     /* 全体幅をやや拡大しつつ中央カレンダーを強調 */
     width: 100%;
-    max-width: 2050px;
+    max-width: 2150px;
     margin: 0 auto;
     min-height: 80vh;
     box-sizing: border-box;
@@ -39,7 +39,7 @@ body.app-body.events-page .ic-root {
     align-items: center;
 
     /* レイアウト本体と同じ幅でセンタリング */
-    max-width: 2040px;
+    max-width: 2000px;
     margin: 0 auto 1rem;
     padding: 0 4px;
 
@@ -68,10 +68,10 @@ body.app-body.events-page .ic-root {
  */
 .ic-layout {
     display: grid;
-    grid-template-columns: minmax(240px, 1.15fr) minmax(0, 5.2fr) minmax(240px, 1.15fr);
+    grid-template-columns: minmax(260px, 1.2fr) minmax(0, 5.5fr) minmax(260px, 1.2fr);
     gap: clamp(22px, 2vw, 32px);
     width: 100%;
-    max-width: 1900px;
+    max-width: 2000px;
     margin: 0 auto;
     align-items: stretch;  /* サイドと中央の縦位置を揃える */
 }
@@ -99,7 +99,7 @@ body.app-body.events-page .ic-root {
 @media (min-width: 1400px) {
     .ic-layout {
         position: relative;
-        left: -2px;   /* 必要なら -1〜-4px 程度で再調整 */
+        left: 0;
     }
 }
 
@@ -636,6 +636,37 @@ body.app-body.events-page .ic-root {
     color: #fff;
 }
 
+.ic-now {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(99, 102, 241, 0.12);
+    color: #0f172a;
+    border-radius: 14px;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    min-width: 0;
+}
+
+.ic-now .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.18);
+}
+
+.ic-now .label {
+    font-weight: 800;
+    font-size: 0.88rem;
+}
+
+.ic-now .time {
+    font-weight: 900;
+    letter-spacing: 0.02em;
+}
+
 /* 右端の「今日・同期・新規追加」エリア */
 .ic-main-actions {
     display: flex;
@@ -712,6 +743,10 @@ body.app-body.events-page .ic-root {
     font-weight: 800;
     color: #0f172a;
     white-space: nowrap;
+}
+
+.sync-status:empty {
+    display: none;
 }
 
 .sync-meter {

@@ -311,6 +311,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .ev-badge {
@@ -394,6 +396,19 @@
 .fc .fc-daygrid-week-number,
 .fc .fc-daygrid-week-number span {
     color: var(--ui-muted);
+}
+
+.fc-timegrid-event .ev-row {
+    flex-wrap: wrap;          /* タイトルが隠れないように必要なら改行 */
+    column-gap: 0.35rem;
+    row-gap: 2px;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.fc-timegrid-event .ev-title {
+    white-space: normal;      /* 改行を許可してタイトルを必ず表示 */
+    flex-basis: 100%;         /* タイトルは必要なら次の行で全幅を使う */
 }
 
 .fc .fc-list-day-cushion {

@@ -109,6 +109,11 @@
                     <button id="viewWeek" class="view-btn">週</button>
                     <button id="viewDay" class="view-btn">日</button>
                 </div>
+                <div class="ic-now" id="icNowClock" aria-live="polite">
+                    <span class="dot" aria-hidden="true"></span>
+                    <span class="label">現在</span>
+                    <span class="time">--:--</span>
+                </div>
                 <div class="ic-main-actions">
                     <button id="calToday" class="ic-btn ghost"><i class="fa-solid fa-calendar-day"></i> 今日</button>
                     <form id="syncForm" method="post">
@@ -126,15 +131,6 @@
                         <button type="submit" class="ic-btn ghost" data-sync-provider="Google"><i class="fa-brands fa-google"></i> Google同期</button>
                     </form>
                     <a class="ic-btn primary" asp-action="Create"><i class="fa-solid fa-plus"></i> 新規追加</a>
-                </div>
-                <div class="sync-visual" id="syncVisual" data-state="idle" aria-live="polite">
-                    <div class="sync-icon" id="syncIcon">
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                    </div>
-                    <div class="sync-meter" aria-hidden="true">
-                        <div class="sync-meter-fill" id="syncMeterFill"></div>
-                    </div>
-                    <div class="sync-status" id="syncStatusText">待機中</div>
                 </div>
             </div>
             <div class="ic-calendar-wrap">
