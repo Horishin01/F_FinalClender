@@ -2,12 +2,12 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build: Pit2Hi022052",
+      "label": "build: TimeLedger",
       "type": "process",
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/Pit2Hi022052.csproj",
+        "${workspaceFolder}/TimeLedger.csproj",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:Summary"
       ],
@@ -21,14 +21,14 @@
       }
     },
     {
-      "label": "watch: run Pit2Hi022052",
+      "label": "watch: run TimeLedger",
       "type": "process",
       "command": "dotnet",
       "args": [
         "watch",
         "run",
         "--project",
-        "${workspaceFolder}/Pit2Hi022052.csproj"
+        "${workspaceFolder}/TimeLedger.csproj"
       ],
       "options": {
         "cwd": "${workspaceFolder}",

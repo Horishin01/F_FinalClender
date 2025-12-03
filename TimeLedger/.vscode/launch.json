@@ -2,11 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": ".NET Launch (Pit2Hi022052)",
+      "name": ".NET Launch (TimeLedger)",
       "type": "coreclr",
       "request": "launch",
-      "preLaunchTask": "build: Pit2Hi022052",
-      "program": "${workspaceFolder}/bin/Debug/net8.0/Pit2Hi022052.dll",
+      "preLaunchTask": "build: TimeLedger",
+      "program": "${workspaceFolder}/bin/Debug/net8.0/TimeLedger.dll",
       "args": [],
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
