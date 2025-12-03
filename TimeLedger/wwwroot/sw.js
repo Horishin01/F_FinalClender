@@ -1,4 +1,4 @@
-const CACHE_NAME = 'timeledger-cache-v2';
+const CACHE_NAME = 'timeledger-cache-v3';
 const ASSETS = [
   '/',
   '/css/site.css',
@@ -32,6 +32,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+
   // ナビゲーションはネット優先、失敗時はキャッシュのルートへ
   if (event.request.mode === 'navigate') {
     event.respondWith(
@@ -43,6 +45,12 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => caches.match('/') || Response.error())
     );
+    return;
+  }
+
+  // 動的API（イベント取得など）はキャッシュしない
+  if (url.pathname.startsWith('/Events/GetEvents')) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
     return;
   }
 
