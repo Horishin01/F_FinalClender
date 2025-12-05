@@ -121,8 +121,23 @@
             <p class="card-body-text">エラー/正常のログをフィルタし、時間帯やユーザー別の傾向を把握します。</p>
             <div class="card-links">
                 <a class="link-chip" asp-area="" asp-controller="Analytics" asp-action="UserAccess">アクセス分析</a>
-                <a class="link-chip" asp-area="" asp-controller="Flow" asp-action="Index">フロー / 確認用ページ</a>
+            </div>
+        </div>
+
+        <div class="portal-card link-card">
+            <div class="card-head">
+                <div>
+                    <p class="card-eyebrow">新機能開発</p>
+                    <h2 class="card-title">Labs / プレビュー</h2>
+                </div>
+                <i class="fa-solid fa-flask card-icon"></i>
+            </div>
+            <p class="card-body-text">開発中のフロント実験ページをまとめました。いずれも管理者のみがアクセスでき、localStorage やダミーデータでの動作です。</p>
+            <div class="card-links">
+                <a class="link-chip" asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a>
+                <a class="link-chip" asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a>
                 <a class="link-chip" asp-area="" asp-controller="Tools" asp-action="TimeInsight">Time Insight</a>
+                <a class="link-chip" asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a>
             </div>
         </div>
     </section>

@@ -9,6 +9,7 @@
         { text: '今から集中タイム開始', context: '仕事' },
         { text: '1on1の準備メモを書く', context: '仕事' }
     ];
+    const DEFAULT_CONTEXTS = ['仕事', 'プライベート', '健康', '学び', 'メモ'];
 
     document.addEventListener('DOMContentLoaded', () => {
         const els = {
@@ -22,12 +23,17 @@
             streak: document.getElementById('flowStreak'),
             heroCount: document.getElementById('flowHeroCount'),
             heroStreak: document.getElementById('flowHeroStreak'),
-            filterButtons: document.querySelectorAll('[data-filter]')
+            filterButtons: document.querySelectorAll('[data-filter]'),
+            filterContext: document.getElementById('flowFilterContext'),
+            search: document.getElementById('flowSearch'),
+            reset: document.getElementById('flowResetData')
         };
 
         const state = {
             entries: loadEntries(),
-            filter: 'today'
+            filter: 'today',
+            context: 'all',
+            search: ''
         };
 
         const addEntry = (text, context) => {
@@ -39,6 +45,14 @@
                 createdAt: new Date().toISOString()
             });
             persistEntries(state.entries);
+            syncContextOptions();
+            render();
+        };
+
+        const removeEntry = (id) => {
+            state.entries = state.entries.filter(e => e.id !== id);
+            persistEntries(state.entries);
+            syncContextOptions();
             render();
         };
 
@@ -61,42 +75,77 @@
 
         els.filterButtons?.forEach(btn => {
             btn.addEventListener('click', () => {
-                els.filterButtons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
                 state.filter = btn.dataset.filter || 'today';
+                setActiveFilterButtons();
                 render();
             });
         });
 
+        els.filterContext?.addEventListener('change', (event) => {
+            state.context = event.target.value || 'all';
+            render();
+        });
+
+        els.search?.addEventListener('input', (event) => {
+            state.search = (event.target.value || '').trim().toLowerCase();
+            render();
+        });
+
+        els.reset?.addEventListener('click', () => {
+            state.entries = generateSampleData();
+            persistEntries(state.entries);
+            state.filter = 'today';
+            state.context = 'all';
+            state.search = '';
+            syncContextOptions();
+            resetControls();
+            render();
+        });
+
         renderSuggestions(els.suggestions, addEntry);
+        syncContextOptions();
+        setActiveFilterButtons();
         render();
 
         function render() {
-            const today = dateKey(new Date());
-            const filtered = (state.filter === 'all' ? state.entries : state.entries.filter(e => dateKey(e.createdAt) === today))
-                .slice()
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const filtered = filterEntries();
+            const todayKey = dateKey(new Date());
 
             if (els.list) {
-                els.list.innerHTML = ''; // Clear existing
+                els.list.innerHTML = '';
                 if (!filtered.length) {
                     const empty = document.createElement('li');
                     empty.className = 'flow-empty';
                     empty.textContent = 'まだ記録がありません。提案チップから試してみてください。';
                     els.list.appendChild(empty);
                 } else {
+                    let currentDay = '';
                     filtered.forEach(entry => {
-                        const li = document.createElement('li');
                         const created = safeDate(entry.createdAt);
-                        const dayLabel = dateKey(created) === today ? '今日' : `${created.getMonth() + 1}/${created.getDate()}`;
-                        
+                        const dayKey = dateKey(created);
+                        if (dayKey !== currentDay) {
+                            const dayLi = document.createElement('li');
+                            dayLi.className = 'flow-day';
+                            dayLi.textContent = dayKey === todayKey ? '今日' : formatDay(created);
+                            els.list.appendChild(dayLi);
+                            currentDay = dayKey;
+                        }
+
+                        const li = document.createElement('li');
+                        li.className = 'flow-entry';
+                        const dayLabel = dayKey === todayKey ? '今日' : formatDay(created);
                         li.innerHTML = `
-                            <div class="flow-text">${escapeHtml(entry.text)}</div>
-                            <div class="flow-meta">
-                                <span class="flow-context">${escapeHtml(entry.context)}</span>
-                                <span>${dayLabel} ${formatTime(created)}</span>
+                            <div class="flow-entry-main">
+                                <div class="flow-text">${escapeHtml(entry.text)}</div>
+                                <div class="flow-meta">
+                                    <span class="flow-context">${escapeHtml(entry.context)}</span>
+                                    <span>${dayLabel} ${formatTime(created)}</span>
+                                </div>
                             </div>
+                            <button type="button" class="flow-delete" data-remove="${entry.id}" aria-label="この記録を削除">削除</button>
                         `;
+                        const removeBtn = li.querySelector('[data-remove]');
+                        removeBtn?.addEventListener('click', () => removeEntry(entry.id));
                         els.list.appendChild(li);
                     });
                 }
@@ -108,6 +157,60 @@
             setText(els.streak, stats.streak);
             setText(els.heroCount, `${stats.today} 件`);
             setText(els.heroStreak, `連続 ${stats.streak} 日目`);
+        }
+
+        function filterEntries() {
+            const todayKey = dateKey(new Date());
+            return state.entries
+                .filter(e => state.filter === 'all' || dateKey(e.createdAt) === todayKey)
+                .filter(e => state.context === 'all' || (e.context || 'メモ') === state.context)
+                .filter(e => {
+                    if (!state.search) return true;
+                    const hay = `${e.text} ${e.context || ''}`.toLowerCase();
+                    return hay.includes(state.search);
+                })
+                .slice()
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        function syncContextOptions() {
+            if (!els.filterContext) return;
+            const contexts = Array.from(new Set([
+                ...DEFAULT_CONTEXTS,
+                ...SUGGESTIONS.map(s => s.context),
+                ...state.entries.map(e => e.context || 'メモ')
+            ]));
+            const previous = state.context;
+            els.filterContext.innerHTML = '<option value="all">すべてのコンテキスト</option>';
+            contexts.sort().forEach(ctx => {
+                const option = document.createElement('option');
+                option.value = ctx;
+                option.textContent = ctx;
+                els.filterContext.appendChild(option);
+            });
+            if (previous && contexts.includes(previous)) {
+                els.filterContext.value = previous;
+            } else {
+                els.filterContext.value = 'all';
+                state.context = 'all';
+            }
+        }
+
+        function setActiveFilterButtons() {
+            els.filterButtons?.forEach(btn => {
+                const isActive = (btn.dataset.filter || 'today') === state.filter;
+                if (isActive) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function resetControls() {
+            setActiveFilterButtons();
+            if (els.search) els.search.value = '';
+            if (els.filterContext) els.filterContext.value = 'all';
         }
     });
 
@@ -163,15 +266,13 @@
 
     function generateSampleData() {
         const samples = [];
-        const now = new Date();
-
         const add = (text, context, daysAgo = 0) => {
             const d = new Date();
             d.setDate(d.getDate() - daysAgo);
             d.setHours(d.getHours() - Math.random() * 5, Math.random() * 60, Math.random() * 60);
             samples.push({ id: uid(), text, context, createdAt: d.toISOString() });
         };
-        
+
         // Today's entries
         add('最初のFlowを記録した', '仕事', 0);
         add('UI改善のアイデアをメモ', '仕事', 0);
@@ -217,6 +318,10 @@
         const h = String(date.getHours()).padStart(2, '0');
         const m = String(date.getMinutes()).padStart(2, '0');
         return `${h}:${m}`;
+    }
+
+    function formatDay(date) {
+        return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
     }
 
     function safeDate(input) {

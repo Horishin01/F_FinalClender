@@ -8,25 +8,27 @@
 
 <section class="flow-hero container-xl">
     <div class="flow-hero-copy">
-        <p class="eyebrow">習慣ハック / フロントのみ</p>
-        <h1>持ち越さない「Flowリスト」で今を積み上げる</h1>
+        <p class="eyebrow">Flow Log / Frontend Only</p>
+        <h1>Flowリストで「いま」を小さく残す</h1>
         <p class="lede">
-            docs/新しい機能　検討.txt のメモをもとに、ToDoを溜めず「今やった／今やる」ことだけを書く専用ページをフロントエンドだけで実装しました。
-            記録はブラウザーの localStorage のみに保存されます。
+            ToDo ではなく「やったこと」を即メモするページ。ブラウザの localStorage のみに保存するフロントエンド専用機能なので、気軽に書き捨てできます。
         </p>
         <div class="hero-badges">
-            <span class="chip">持ち越さない</span>
-            <span class="chip">Doneログ</span>
             <span class="chip">フロントのみ</span>
+            <span class="chip">localStorage</span>
+            <span class="chip">今日に集中</span>
         </div>
+        <ol class="flow-steps">
+            <li>いまやったことを 1 行で書く</li>
+            <li>コンテキスト（仕事/健康など）を選ぶ</li>
+            <li>今日ビューで日次、全体ビューで連続性を振り返る</li>
+        </ol>
     </div>
     <div class="flow-hero-card glass">
         <p class="eyebrow">今日の積み上げ</p>
         <h2 id="flowHeroCount">0 件</h2>
         <p id="flowHeroStreak" class="annotation">連続 0 日目</p>
-        <div class="hero-quote">
-            「昨日のメモを持ち越さなくていいし、明日のメモを書く必要もない」
-        </div>
+        <p class="hero-note">記録はこのブラウザだけに保存されます。リロードやオフラインでも残りますが、別端末には同期されません。</p>
     </div>
 </section>
 
@@ -35,9 +37,9 @@
         <header class="flow-card-head">
             <div>
                 <p class="eyebrow">記録する</p>
-                <h2>今やったことを書く</h2>
+                <h2>いまやったことを書く</h2>
             </div>
-            <span class="badge ghost">ローカル保存</span>
+            <span class="badge ghost">ローカル保存のみ</span>
         </header>
 
         <div class="flow-form">
@@ -47,12 +49,30 @@
                     <option value="仕事">仕事</option>
                     <option value="プライベート">プライベート</option>
                     <option value="健康">健康</option>
+                    <option value="学び">学び</option>
+                    <option value="メモ">メモ</option>
                 </select>
                 <button type="button" class="btn primary" id="btnAddFlow">記録する</button>
             </div>
         </div>
 
         <p class="annotation">思いついた瞬間に書くのがコツ。未完了を持ち越さず「Done」を積み上げます。</p>
+
+        <div class="flow-controls">
+            <div class="pill-group flow-filter" role="group" aria-label="表示切替">
+                <button type="button" class="pill active" data-filter="today">今日</button>
+                <button type="button" class="pill" data-filter="all">全期間</button>
+            </div>
+            <div class="flow-filters">
+                <label class="visually-hidden" for="flowFilterContext">コンテキスト</label>
+                <select id="flowFilterContext">
+                    <option value="all">すべてのコンテキスト</option>
+                </select>
+                <label class="visually-hidden" for="flowSearch">キーワード</label>
+                <input id="flowSearch" type="search" placeholder="キーワードで絞り込む">
+                <button type="button" class="btn ghost small" id="flowResetData">リセット</button>
+            </div>
+        </div>
 
         <div class="suggestion-chips" id="flowSuggestions"></div>
 
@@ -74,11 +94,6 @@
             </div>
         </div>
 
-        <div class="pill-group tiny flow-filter" role="group" aria-label="表示切替">
-            <button type="button" class="pill active" data-filter="today">今日</button>
-            <button type="button" class="pill" data-filter="all">全期間</button>
-        </div>
-
         <div class="flow-log-container">
             <ul id="flowList" class="flow-log" aria-live="polite">
                 <li class="flow-empty">まだ記録がありません。ワンタップの提案を押してみてください。</li>
@@ -89,17 +104,28 @@
     <article class="flow-notes glass">
         <header class="flow-card-head">
             <div>
-                <p class="eyebrow">コンセプト抜粋</p>
-                <h2>持ち越さない / ToDoとの差分</h2>
+                <p class="eyebrow">使い方とヒント</p>
+                <h2>持ち越さない / シンプルに振り返る</h2>
             </div>
         </header>
-        <ul class="idea-list">
-            <li><strong>持ち越さない理由:</strong> 過去も未来も書かない。「今」「自分が何をしたか」だけを記録。</li>
-            <li><strong>ToDoとの差分:</strong> 未完了を貯めず、完了ログを積む。やらなきゃより、やったを優先。</li>
-            <li><strong>書くタイミング:</strong> 今からやる時／やり終わった直後／一日の振り返り。</li>
-            <li><strong>具体例:</strong> スマホ開く前に深呼吸、モーニングルーティンをまとめて書く、水を飲む、と書いてから行動を切り替える。</li>
-        </ul>
-        <p class="annotation">フロントエンドのみのため、ページ再読み込み後も localStorage が残っている限りデータは保持されます。</p>
+        <div class="flow-side-block">
+            <p class="annotation">リセットボタンは localStorage を初期化してサンプルを再投入します。エクスポートやサーバー保存は行いません。</p>
+            <ul class="idea-list">
+                <li><strong>持ち越さない理由:</strong> 過去も未来も書かない。「今」「自分が何をしたか」だけを記録。</li>
+                <li><strong>ToDoとの差分:</strong> 未完了を貯めず、完了ログを積む。やらなきゃより、やったを優先。</li>
+                <li><strong>書くタイミング:</strong> 今からやる時／やり終わった直後／一日の振り返り。</li>
+                <li><strong>具体例:</strong> 深呼吸する、集中タイム開始、席を立って水を飲む、雑念を一行メモ。</li>
+            </ul>
+        </div>
+        <div class="flow-side-block">
+            <p class="eyebrow">ミニチェック</p>
+            <ul class="flow-checklist">
+                <li>入力→Enterで即保存</li>
+                <li>コンテキストで並び替え・検索</li>
+                <li>削除ボタンで1件ずつ整理</li>
+                <li>今日/全期間をワンタップで切替</li>
+            </ul>
+        </div>
     </article>
 </section>
 

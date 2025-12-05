@@ -45,26 +45,8 @@
                         @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
                         {
                             <li><a asp-area="" asp-controller="Admin" asp-action="Index">管理者ポータル</a></li>
-                            <li><a asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a></li>
-                            <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
-                            <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
-                            <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
                         }
                     </ul>
-                    <div class="app-install">
-                        <button
-                            type="button"
-                            class="btn btn-outline-primary btn-sm install-btn"
-                            id="installAppButton"
-                            data-pwa-install-button
-                            data-visible="false">
-                            <i class="fa-solid fa-download"></i>
-                            <span>アプリをインストール</span>
-                        </button>
-                        <div class="install-hint" data-pwa-install-hint data-visible="false">
-                            ブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。
-                        </div>
-                    </div>
                     <div class="app-login">
                         <partial name="_LoginPartial" />
                     </div>
@@ -114,26 +96,8 @@
             @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Admin))
             {
                 <li><a asp-area="" asp-controller="Admin" asp-action="Index">管理者ポータル</a></li>
-                <li><a asp-area="" asp-controller="Flow" asp-action="Index">Flowリスト</a></li>
-                <li><a asp-area="" asp-controller="Tools" asp-action="Packlist">Packlist</a></li>
-                <li><a asp-area="" asp-controller="Tools" asp-action="TimeInsight">TimeInsight</a></li>
-                <li><a asp-area="" asp-controller="Tools" asp-action="Patterns">Patterns</a></li>
             }
         </ul>
-        <div class="mobile-install">
-            <button
-                type="button"
-                class="btn btn-outline-primary w-100 install-btn"
-                id="installAppButtonMobile"
-                data-pwa-install-button
-                data-visible="false">
-                <i class="fa-solid fa-download"></i>
-                <span>アプリをインストール</span>
-            </button>
-            <div class="install-hint" data-pwa-install-hint data-visible="false">
-                ブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。
-            </div>
-        </div>
         <div class="mobile-login">
             <partial name="_LoginPartial" />
         </div>
