@@ -29,6 +29,16 @@
         <h2 id="flowHeroCount">0 件</h2>
         <p id="flowHeroStreak" class="annotation">連続 0 日目</p>
         <p class="hero-note">記録はこのブラウザだけに保存されます。リロードやオフラインでも残りますが、別端末には同期されません。</p>
+        <div class="flow-progress">
+            <div class="flow-progress-head">
+                <span>今日の目安</span>
+                <span id="flowProgressLabel">0/5</span>
+            </div>
+            <div class="flow-progress-bar" aria-hidden="true">
+                <span id="flowProgressValue"></span>
+            </div>
+            <p class="annotation">目安は 5 件。無理せず「いま」を残すだけでOK。</p>
+        </div>
     </div>
 </section>
 
@@ -61,6 +71,7 @@
         <div class="flow-controls">
             <div class="pill-group flow-filter" role="group" aria-label="表示切替">
                 <button type="button" class="pill active" data-filter="today">今日</button>
+                <button type="button" class="pill" data-filter="week">今週</button>
                 <button type="button" class="pill" data-filter="all">全期間</button>
             </div>
             <div class="flow-filters">
@@ -74,6 +85,7 @@
             </div>
         </div>
 
+        <div class="flow-context-chips" id="flowContextChips" aria-label="コンテキストを素早く選ぶ"></div>
         <div class="suggestion-chips" id="flowSuggestions"></div>
 
         <div class="flow-stats-grid">
@@ -94,6 +106,33 @@
             </div>
         </div>
 
+        <div class="flow-insights">
+            <div class="insight-card">
+                <div class="insight-head">
+                    <div>
+                        <p class="eyebrow">今週の偏り</p>
+                        <h3>よく出ているコンテキスト</h3>
+                    </div>
+                    <span class="badge ghost small">直近7日</span>
+                </div>
+                <ul class="insight-list" id="flowTopContexts">
+                    <li class="flow-empty">データがありません。</li>
+                </ul>
+            </div>
+            <div class="insight-card">
+                <div class="insight-head">
+                    <div>
+                        <p class="eyebrow">直近7日</p>
+                        <h3>1日の件数ヒート</h3>
+                    </div>
+                    <span class="badge ghost small">目安 5 件/日</span>
+                </div>
+                <div class="heat-bars" id="flowHeatBars" aria-label="直近7日の件数">
+                    <p class="annotation">まだ記録がありません。</p>
+                </div>
+            </div>
+        </div>
+
         <div class="flow-log-container">
             <ul id="flowList" class="flow-log" aria-live="polite">
                 <li class="flow-empty">まだ記録がありません。ワンタップの提案を押してみてください。</li>
@@ -101,32 +140,6 @@
         </div>
     </article>
 
-    <article class="flow-notes glass">
-        <header class="flow-card-head">
-            <div>
-                <p class="eyebrow">使い方とヒント</p>
-                <h2>持ち越さない / シンプルに振り返る</h2>
-            </div>
-        </header>
-        <div class="flow-side-block">
-            <p class="annotation">リセットボタンは localStorage を初期化してサンプルを再投入します。エクスポートやサーバー保存は行いません。</p>
-            <ul class="idea-list">
-                <li><strong>持ち越さない理由:</strong> 過去も未来も書かない。「今」「自分が何をしたか」だけを記録。</li>
-                <li><strong>ToDoとの差分:</strong> 未完了を貯めず、完了ログを積む。やらなきゃより、やったを優先。</li>
-                <li><strong>書くタイミング:</strong> 今からやる時／やり終わった直後／一日の振り返り。</li>
-                <li><strong>具体例:</strong> 深呼吸する、集中タイム開始、席を立って水を飲む、雑念を一行メモ。</li>
-            </ul>
-        </div>
-        <div class="flow-side-block">
-            <p class="eyebrow">ミニチェック</p>
-            <ul class="flow-checklist">
-                <li>入力→Enterで即保存</li>
-                <li>コンテキストで並び替え・検索</li>
-                <li>削除ボタンで1件ずつ整理</li>
-                <li>今日/全期間をワンタップで切替</li>
-            </ul>
-        </div>
-    </article>
 </section>
 
 @section Styles {
