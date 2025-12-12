@@ -2,6 +2,8 @@
 (function () {
     const qs = (sel, root = document) => root.querySelector(sel);
     const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const mobileMq = window.matchMedia('(max-width: 768px)');
+    let hasAutoFocusedCalendar = false;
 
     const state = {
         allEvents: [],
@@ -279,6 +281,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
+            if (mobileMq.matches) closeMobilePanels();
         });
         catList?.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-category]');
@@ -289,6 +292,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
+            if (mobileMq.matches) closeMobilePanels();
         });
         const search = qs('#icSearch');
         search?.addEventListener('input', (e) => {
@@ -296,7 +300,35 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
+            if (mobileMq.matches) closeMobilePanels();
         });
+    }
+
+    const mobilePanels = {
+        filters: () => qs('#icSidebarLeft'),
+        insights: () => qs('#icSidebarRight')
+    };
+
+    function getMobileOverlay() {
+        return qs('#mobileOverlay');
+    }
+
+    function closeMobilePanels() {
+        Object.values(mobilePanels).forEach(get => get()?.classList.remove('is-open'));
+        getMobileOverlay()?.classList.remove('is-active');
+        document.body.classList.remove('mobile-lock');
+    }
+
+    function toggleMobilePanel(kind) {
+        const target = mobilePanels[kind]?.();
+        if (!target) return;
+        const willOpen = !target.classList.contains('is-open');
+        closeMobilePanels();
+        if (willOpen) {
+            target.classList.add('is-open');
+            getMobileOverlay()?.classList.add('is-active');
+            document.body.classList.add('mobile-lock');
+        }
     }
 
     function bindCalendarNav(calendar) {
@@ -304,18 +336,24 @@
         qs('#calNext')?.addEventListener('click', () => calendar.next());
         qs('#calToday')?.addEventListener('click', () => calendar.today());
 
-        const views = { viewMonth: 'dayGridMonth', viewWeek: 'timeGridWeek', viewDay: 'timeGridDay' };
-        Object.entries(views).forEach(([id, v]) => {
+        const views = {
+            viewMonth: { desktop: 'dayGridMonth', mobile: 'dayGridMonth' },
+            viewWeek: { desktop: 'timeGridWeek', mobile: 'listWeek' },
+            viewDay: { desktop: 'timeGridDay', mobile: 'timeGridDay' }
+        };
+        Object.entries(views).forEach(([id, viewSet]) => {
             qs('#' + id)?.addEventListener('click', () => {
-                calendar.changeView(v);
+                const targetView = mobileMq.matches ? viewSet.mobile : viewSet.desktop;
+                calendar.changeView(targetView);
                 Object.keys(views).forEach(k => qs('#' + k)?.classList.remove('active'));
                 qs('#' + id)?.classList.add('active');
+                setActiveViewButton(targetView);
             });
         });
     }
 
     function setActiveViewButton(viewName) {
-        const mapping = { dayGridMonth: 'viewMonth', timeGridWeek: 'viewWeek', timeGridDay: 'viewDay', listWeek: null };
+        const mapping = { dayGridMonth: 'viewMonth', timeGridWeek: 'viewWeek', timeGridDay: 'viewDay', listWeek: 'viewWeek', listDay: 'viewDay' };
         Object.values(mapping).forEach(id => id && qs('#' + id)?.classList.remove('active'));
         const btnId = mapping[viewName];
         if (btnId) qs('#' + btnId)?.classList.add('active');
@@ -330,8 +368,9 @@
             setActiveViewButton('timeGridDay');
         } else if (kind === 'week') {
             state.calendar.gotoDate(now);
-            state.calendar.changeView('timeGridWeek');
-            setActiveViewButton('timeGridWeek');
+            const view = mobileMq.matches ? 'listWeek' : 'timeGridWeek';
+            state.calendar.changeView(view);
+            setActiveViewButton(view);
         } else if (kind === 'dup') {
             const dupIds = findDuplicateIds(state.filteredBase);
             if (dupIds.size > 0) {
@@ -467,10 +506,17 @@
         }
     }
 
+    function getCalendarHeight() {
+        return mobileMq.matches ? 'auto' : '80vh';
+    }
+
+    function refreshCalendarHeight() {
+        if (state.calendar) state.calendar.setOption('height', getCalendarHeight());
+    }
+
     function initCalendar() {
         const calEl = qs('#calendar');
         const period = qs('#calPeriod');
-        const mobileMq = window.matchMedia('(max-width: 768px)');
         const initialView = mobileMq.matches ? 'listWeek' : 'dayGridMonth';
         const now = new Date();
         const scrollTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
@@ -481,7 +527,7 @@
             buttonText: { month: '月', week: '週', day: '日' },
             nowIndicator: true,
             scrollTime,
-            height: '80vh',
+            height: getCalendarHeight(),
             expandRows: false,
             dayMaxEvents: true,
             initialView,
@@ -543,39 +589,61 @@
         });
         calendar.render();
         state.calendar = calendar;
+        setActiveViewButton(initialView);
 
         const handleMobileView = (e) => {
             if (!state.calendar) return;
             if (e.matches) {
                 state.calendar.changeView('listWeek');
+                setActiveViewButton('listWeek');
             } else if (state.focusStat !== 'week' && state.focusStat !== 'today') {
                 state.calendar.changeView('dayGridMonth');
                 setActiveViewButton('dayGridMonth');
             }
+            if (!e.matches) closeMobilePanels();
+            refreshCalendarHeight();
         };
-        mobileMq.addEventListener('change', handleMobileView);
+        if (mobileMq.addEventListener) {
+            mobileMq.addEventListener('change', handleMobileView);
+        } else if (mobileMq.addListener) {
+            mobileMq.addListener(handleMobileView);
+        }
         handleMobileView(mobileMq);
     }
 
     function bindMobileToggles() {
         const wrap = qs('.mobile-quick-actions');
         if (!wrap) return;
-        const sidebarLeft = qs('#icSidebarLeft');
-        const sidebarRight = qs('#icSidebarRight');
+        const overlay = getMobileOverlay();
         wrap.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-action]');
             if (!btn) return;
             const action = btn.dataset.action;
             if (action === 'scroll-calendar') {
+                closeMobilePanels();
                 qs('#calendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             if (action === 'toggle-filters') {
-                sidebarLeft?.classList.toggle('is-open');
+                toggleMobilePanel('filters');
             }
             if (action === 'toggle-insights') {
-                sidebarRight?.classList.toggle('is-open');
+                toggleMobilePanel('insights');
             }
         });
+        overlay?.addEventListener('click', closeMobilePanels);
+        qsa('[data-mobile-close]').forEach(btn => btn.addEventListener('click', closeMobilePanels));
+    }
+
+    function autoFocusCalendarOnLoad() {
+        if (hasAutoFocusedCalendar || !mobileMq.matches) return;
+        const cal = qs('#calendar');
+        if (!cal) return;
+        // レイアウト描画後に少し遅らせてスクロール
+        setTimeout(() => {
+            const top = cal.getBoundingClientRect().top + window.scrollY - 18;
+            window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+            hasAutoFocusedCalendar = true;
+        }, 280);
     }
 
     async function init() {
@@ -590,7 +658,9 @@
         bindExternalSyncButtons();
         bindStats();
         bindMobileToggles();
+        window.addEventListener('resize', refreshCalendarHeight);
         startNowClock();
+        autoFocusCalendarOnLoad();
     }
 
     document.addEventListener('DOMContentLoaded', () => {

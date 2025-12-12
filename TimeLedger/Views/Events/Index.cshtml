@@ -36,6 +36,15 @@
 
     <div class="ic-layout">
         <div class="ic-sidebar-left mobile-collapsible" id="icSidebarLeft">
+            <div class="mobile-sheet-head">
+                <div>
+                    <p class="eyebrow">フィルター</p>
+                    <strong>表示を絞り込み</strong>
+                </div>
+                <button type="button" class="ic-btn ghost mini" data-mobile-close="filters">
+                    <i class="fa-solid fa-xmark"></i> 閉じる
+                </button>
+            </div>
             <div class="ic-card">
                 <div class="ic-card-head">カレンダーソース</div>
                 <div class="ic-card-body ic-list" id="icSourceList">
@@ -139,6 +148,15 @@
         </div>
 
         <div class="ic-sidebar-right mobile-collapsible" id="icSidebarRight">
+            <div class="mobile-sheet-head">
+                <div>
+                    <p class="eyebrow">インサイト</p>
+                    <strong>検索・統計・直近予定</strong>
+                </div>
+                <button type="button" class="ic-btn ghost mini" data-mobile-close="insights">
+                    <i class="fa-solid fa-xmark"></i> 閉じる
+                </button>
+            </div>
             <div class="ic-card">
                 <div class="ic-card-head">
                     <span class="ic-card-title">
@@ -203,6 +221,8 @@
             </div>
         </div>
     </div>
+
+    <div class="mobile-overlay" id="mobileOverlay" aria-hidden="true"></div>
 
     <div class="ic-extensions">
         <section class="ic-extension-card ic-card-iccard">
