@@ -22,6 +22,9 @@
     --src-outlook: #e6f1ff;
     --src-work: #eaf7ff;
     --src-local: #eef5ff;
+    --weekend-sat: #e9f0ff;
+    --weekend-sun: #fff1ed;
+    --weekend-text: #0f172a;
 }
 
 .calendar-stage {
@@ -212,6 +215,19 @@
     letter-spacing: 0.05em;
 }
 
+.fc .fc-col-header-cell.fc-day-sat,
+.fc .fc-col-header-cell.fc-day-sun {
+    color: var(--weekend-text);
+}
+
+.fc .fc-col-header-cell.fc-day-sat {
+    background: linear-gradient(135deg, #f2f6ff, var(--weekend-sat));
+}
+
+.fc .fc-col-header-cell.fc-day-sun {
+    background: linear-gradient(135deg, #fff5ee, var(--weekend-sun));
+}
+
 .fc .fc-daygrid-day-number,
 .fc .fc-timegrid-axis-cushion {
     color: #111827;
@@ -222,6 +238,16 @@
 .fc .fc-timegrid-col.fc-day-today {
     background: #f7f4ff;
     position: relative;
+}
+
+.fc .fc-daygrid-day.fc-day-sat:not(.fc-day-today),
+.fc .fc-timegrid-col.fc-day-sat:not(.fc-day-today) {
+    background: var(--weekend-sat);
+}
+
+.fc .fc-daygrid-day.fc-day-sun:not(.fc-day-today),
+.fc .fc-timegrid-col.fc-day-sun:not(.fc-day-today) {
+    background: var(--weekend-sun);
 }
 
 .fc .fc-daygrid-day.fc-day-today::after,

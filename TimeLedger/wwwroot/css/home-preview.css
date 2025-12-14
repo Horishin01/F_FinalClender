@@ -609,6 +609,97 @@
     color: var(--ink-500);
 }
 
+.flow-mini-insights {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin: 0.3rem 0 0.6rem;
+}
+
+.mini-card {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    padding: 0.75rem 0.85rem;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.mini-card h3 {
+    margin: 0.1rem 0 0.2rem;
+    font-size: 1.05rem;
+}
+
+.mini-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.mini-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    padding: 0.45rem 0.6rem;
+    background: #f8fafc;
+}
+
+.mini-list .label {
+    font-weight: 700;
+    color: var(--ink-700);
+}
+
+.mini-list .count {
+    font-weight: 800;
+    color: var(--ink-900);
+}
+
+.mini-heat {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.mini-heat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mini-heat-label {
+    width: 46px;
+    color: var(--ink-700);
+    font-weight: 600;
+}
+
+.mini-heat-bar {
+    position: relative;
+    flex: 1;
+    height: 8px;
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.mini-heat-bar span {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    background: linear-gradient(90deg, #22c55e, #3b82f6);
+    border-radius: 999px;
+}
+
+.mini-heat-count {
+    width: 28px;
+    text-align: right;
+    font-weight: 700;
+    color: var(--ink-700);
+}
+
 .flow-log {
     list-style: none;
     padding: 0;

@@ -38,7 +38,7 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 ## 6. ドメインモデル概要
 | エンティティ | 主なフィールド | 目的 / メモ |
 | --- | --- | --- |
-| `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID?`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description?`, `AllDay` (+ UI 用 `IsAllDay`)、`Source`,`CategoryId`(FK→`CalendarCategory`),`Priority`,`Location`,`AttendeesCsv`,`Recurrence`,`ReminderMinutesBefore` | カレンダー予定。外部同期用 UID は null 許容で、ローカル作成のイベントは UID なしで保存可。カテゴリはマスタ参照型に変更し、色/アイコンをカテゴリ側で管理。ソース/優先度/参加者/繰り返し/リマインダーは現状保存のみ（処理は未実装）。 |
+| `Event` (`Models/Event.cs`) | `Id`, `UserId`, `UID?`, `Title`, `StartDate`, `EndDate`, `LastModified`, `Description?`, `AllDay` (+ UI 用 `IsAllDay`)、`Source`,`CategoryId`(FK→`CalendarCategory`),`Priority`,`Location`,`AttendeesCsv`,`Recurrence`,`ReminderMinutesBefore`,`RecurrenceExceptions?` | カレンダー予定。外部同期用 UID は null 許容で、ローカル作成のイベントは UID なしで保存可。カテゴリはマスタ参照型に変更し、色/アイコンをカテゴリ側で管理。繰り返しはビュー範囲内で UI 展開し、リマインダーとともにバッジ表示する（DB保存は1件のまま、実通知計算は未実装）。`RecurrenceExceptions` に日付(yyyy-MM-dd)を保持して単発スキップを表現する。 |
 | `CalendarCategory` (`Models/CalendarCategory.cs`) | `Id`, `UserId`, `Name`, `Icon`, `Color` | ユーザーごとのカテゴリマスタ。アイコン(FontAwesome)とカラーを任意設定可。`CategoriesController` で CRUD。Events から FK 参照。 |
 | `OutlookCalendarConnection` (`Models/OutlookCalendarConnection.cs`) | `Id`, `UserId`, `Provider="Outlook"`, `AccountEmail`, `AccessTokenEncrypted`, `RefreshTokenEncrypted?`, `ExpiresAtUtc?`, `Scope?`, `LastSyncedAtUtc?`, `CreatedAtUtc`, `UpdatedAtUtc` | Outlook カレンダー用の認可コードフローで取得したトークンをサーバー側が保持。UserId にユニークインデックスがあり 1:1。列名は Encrypted だが現状は TODO でプレーン保存のため、公開前に暗号化と鍵管理を実装する。ユーザーは手入力しない。 |
 | `GoogleCalendarConnection` (`Models/GoogleCalendarConnection.cs`) | `Id`, `UserId`, `Provider="Google"`, `AccountEmail`, `AccessTokenEncrypted`, `RefreshTokenEncrypted?`, `ExpiresAtUtc?`, `Scope?`, `LastSyncedAtUtc?`, `CreatedAtUtc`, `UpdatedAtUtc` | Google Calendar 用トークンストア。UserId にユニークインデックスがあり 1:1。Outlook と同様に OAuth 認可コードフローでサーバーが保持し、リフレッシュ/同期状態を管理（暗号化は TODO）。 |
@@ -99,10 +99,12 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - **カレンダー (`Views/Events/Index.cshtml` + `wwwroot/css/calendar-ui.css` + `wwwroot/css/events-integrated.css` + `wwwroot/js/events-integrated.js`):**
   - 左サイドでソース/カテゴリのフィルター（カテゴリは DB マスタから動的生成）、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。
   - FullCalendar に拡張メタを渡し、フィルター/統計用に利用する。同期ボタンは `/Events/Sync` (iCloud) を AJAX 呼び出し、Outlook/Google 同期ボタンは `ExternalCalendars/Sync` へ POST。
+  - モバイル/タブレット（～1024px）は1カラム化し、クイックアクション＋シート表示を採用。リストビューは時間/タイトルを1行扱いのレイアウトで重なりを防止。
 - **フォーム/詳細 (`Views/Events/Create|Edit|Details|Delete` + `wwwroot/css/event-forms.css` + `wwwroot/js/event-forms.js`):**
   - 円弧の大きいカード、丸みのある入力欄、グラデーションボタンを採用。
   - プレビューカードとカラースウォッチで UI の雰囲気を即時確認可能 (`event-forms.js` がタイトル/開始時刻/色をリアルタイム反映)。
-  - ソース/カテゴリ/優先度/場所/参加者/繰り返し/リマインダーの入力欄を追加済みだが、繰り返し展開や通知計算は未実装（保存のみ）。
+  - ソース/カテゴリ/優先度/場所/参加者/繰り返し/リマインダーの入力欄を追加済みで、繰り返しはカレンダー表示・直近予定に自動展開し、リマインダーとともにバッジ表示する（発火通知やバックエンド側の実計算は未実装）。単発スキップは `RecurrenceExceptions` で保持し、UI展開時に除外する。
+  - 削除画面では繰り返しイベントの場合に「この発生のみ / この日以降を削除 / すべて削除」を選択可能。場所が URL の場合はリンクとして表示し、新しいタブで開く。
   - 詳細/削除画面はモーダル風シート (`details-sheet`, `details-grid`) で表示し、閉じる/編集/削除ボタンを横並びに配置。
 - **アカウント設定 (`Areas/Identity/Pages/Account/Manage/*` + `wwwroot/css/account-manage.css`):**
   - `_Layout.cshtml` でガラス調ヘッダー＋サイドナビを備えたカード UI に統一し、ナビ文言や各ページ内文書を日本語化。

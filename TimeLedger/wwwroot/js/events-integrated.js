@@ -2,6 +2,8 @@
 (function () {
     const qs = (sel, root = document) => root.querySelector(sel);
     const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const mobileMq = window.matchMedia('(max-width: 768px)');
+    let hasAutoFocusedCalendar = false;
 
     const state = {
         allEvents: [],
@@ -13,8 +15,83 @@
             query: ''
         },
         focusStat: null,
-        calendar: null
+        calendar: null,
+        viewRange: null
     };
+
+    const recurrenceLabelMap = {
+        None: '',
+        Daily: '毎日',
+        Weekly: '毎週',
+        Biweekly: '隔週',
+        Monthly: '毎月'
+    };
+
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+    const pad2 = (v) => String(v).padStart(2, '0');
+
+    function addDays(date, days) {
+        const d = new Date(date);
+        d.setDate(d.getDate() + days);
+        return d;
+    }
+
+    function addMonthsPreserveDay(date, months, anchorDay) {
+        const d = new Date(date);
+        const targetDay = anchorDay ?? d.getDate();
+        d.setDate(1);
+        d.setMonth(d.getMonth() + months);
+        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        if (targetDay > lastDay) {
+            // 月末までしかない場合はその月の最終日に合わせる
+            d.setDate(lastDay);
+        } else {
+            d.setDate(targetDay);
+        }
+        return d;
+    }
+
+    function normalizeReminderValue(value) {
+        if (value === null || value === undefined || value === '') return null;
+        const num = Number(value);
+        return Number.isNaN(num) ? null : num;
+    }
+
+    function getRecurrenceLabel(recurrence) {
+        const key = (recurrence || '').toString();
+        if (!key || key === 'None') return '';
+        return recurrenceLabelMap[key] || key;
+    }
+
+    function getReminderLabel(minutes) {
+        const value = normalizeReminderValue(minutes);
+        if (value === null) return '';
+        if (value === 0) return '開始時';
+        if (value < 60) return `${value}分前`;
+        const hours = Math.floor(value / 60);
+        const mins = value % 60;
+        if (mins === 0) return `${hours}時間前`;
+        return `${hours}時間${mins}分前`;
+    }
+
+    function getDayKey(val) {
+        const d = parseDate(val);
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+
+    function renderBadges(evt, compact = false) {
+        const chips = [];
+        const recurrenceLabel = getRecurrenceLabel(evt.recurrence);
+        if (recurrenceLabel) {
+            chips.push(`<span class="ev-badge ${compact ? 'compact' : ''} repeat" title="繰り返し: ${recurrenceLabel}"><i class="fa-solid fa-arrows-rotate"></i></span>`);
+        }
+        const reminderLabel = getReminderLabel(evt.reminder);
+        if (reminderLabel) {
+            chips.push(`<span class="ev-badge ${compact ? 'compact' : ''} reminder" title="リマインダー: ${reminderLabel}"><i class="fa-solid fa-bell"></i>${reminderLabel}</span>`);
+        }
+        return chips.join('');
+    }
 
     async function fetchEvents() {
         const res = await fetch('/Events/GetEvents');
@@ -27,8 +104,31 @@
             categoryId: e.categoryId || '',
             categoryIcon: e.categoryIcon || '',
             categoryColor: e.categoryColor || '',
-            priority: (e.priority || 'Normal')
+            priority: (e.priority || 'Normal'),
+            recurrence: e.recurrence || 'None',
+            reminder: normalizeReminderValue(e.reminder),
+            recurrenceExceptions: parseExceptionList(e.recurrenceExceptions)
         }));
+    }
+
+    function parseExceptionList(raw) {
+        if (!raw) return [];
+        return raw.split(',')
+            .map(x => x.trim())
+            .filter(Boolean);
+    }
+
+    function shouldSkipDate(skipList, dateKey) {
+        if (!skipList || !skipList.length) return false;
+        for (const token of skipList) {
+            if (token.startsWith('>=')) {
+                const boundary = token.replace('>=', '').trim();
+                if (boundary && dateKey >= boundary) return true;
+            } else if (token === dateKey) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function applyFilters() {
@@ -47,12 +147,10 @@
         const startWeek = startOfWeek(new Date());
         const endWeek = endOfWeek(new Date());
         if (state.focusStat === 'today') {
-            focused = base.filter(e => isSameDay(parseDate(e.start), today));
+            const endToday = endOfDay(today);
+            focused = base.filter(e => hasOccurrenceInRange(e, today, endToday));
         } else if (state.focusStat === 'week') {
-            focused = base.filter(e => {
-                const d = parseDate(e.start);
-                return d >= startWeek && d <= endWeek;
-            });
+            focused = base.filter(e => hasOccurrenceInRange(e, startWeek, endWeek));
         } else if (state.focusStat === 'dup') {
             const dupIds = findDuplicateIds(base);
             focused = base.filter(e => dupIds.has(e.id));
@@ -61,18 +159,19 @@
         state.filtered = focused;
     }
 
-    function updateStats() {
+    function updateStats(events) {
         const today = new Date();
         const startWeek = startOfWeek(today);
         const endWeek = endOfWeek(today);
 
-        const total = state.filteredBase.length;
-        const todayCount = state.filteredBase.filter(e => isSameDay(parseDate(e.start), today)).length;
-        const weekCount = state.filteredBase.filter(e => {
+        const pool = events || state.filteredBase;
+        const total = pool.length;
+        const todayCount = pool.filter(e => isSameDay(parseDate(e.start), today)).length;
+        const weekCount = pool.filter(e => {
             const d = parseDate(e.start);
             return d >= startWeek && d <= endWeek;
         }).length;
-        const dup = detectDup(state.filteredBase);
+        const dup = detectDup(pool);
 
         setText('#statTotal', total);
         setText('#statToday', todayCount);
@@ -80,20 +179,22 @@
         setText('#statDup', dup);
 
         // counts
-        const bySource = countBy(state.filtered, e => e.source);
-        const byCat = countBy(state.filtered, e => e.categoryId || e.type);
+        const bySource = countBy(pool, e => e.source);
+        const byCat = countBy(pool, e => e.categoryId || e.type);
         setText('#srcAll', total); setText('#srcGoogle', bySource.Google || 0); setText('#srcICloud', bySource.ICloud || 0);
         setText('#srcOutlook', bySource.Outlook || 0); setText('#srcWork', bySource.Work || 0); setText('#srcLocal', bySource.Local || 0);
         setText('#catAll', total);
         renderCategoryFilters();
     }
 
-    function updateUpcoming() {
+    function updateUpcoming(sourceEvents) {
         const list = qs('#icUpcoming');
         if (!list) return;
         list.innerHTML = '';
 
-        const pool = state.filtered.length ? state.filtered : state.allEvents;
+        const pool = sourceEvents && sourceEvents.length
+            ? sourceEvents
+            : (state.filtered.length ? state.filtered : state.allEvents);
         const todayAnchor = startOfDay(new Date());
         const now = new Date();
 
@@ -119,10 +220,12 @@
             const end = item.end;
             const dayLabel = `${start.getMonth() + 1}/${start.getDate()} (${dayNames[start.getDay()]})`;
             const timeLabel = item.allDay ? '終日' : `${formatTime(start)} - ${end ? formatTime(end) : ''}`.trim();
+            const badges = renderBadges(item.event, true);
             li.innerHTML = `
                 <div class="date">${dayLabel} ${timeLabel}</div>
                 <div class="ttl">${item.event.title}</div>
                 <div class="meta">${item.event.source || ''} / ${item.event.type || ''}</div>
+                ${badges ? `<div class="ic-badges">${badges}</div>` : ''}
             `;
             list.appendChild(li);
         });
@@ -165,6 +268,12 @@
         return d;
     }
 
+    function endOfDay(date) {
+        const d = startOfDay(date);
+        d.setHours(23, 59, 59, 999);
+        return d;
+    }
+
     function formatTime(date) {
         return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
     }
@@ -190,7 +299,7 @@
     function detectDup(events) {
         const seen = new Set(); let dup = 0;
         events.forEach(e => {
-            const key = `${(e.start || '').split('T')[0]}-${(e.title || '').toLowerCase()}`;
+            const key = `${getDayKey(e.start)}-${(e.title || '').toLowerCase()}`;
             if (seen.has(key)) dup += 1;
             seen.add(key);
         });
@@ -200,13 +309,93 @@
     function findDuplicateIds(events) {
         const map = new Map();
         events.forEach(e => {
-            const key = `${(e.start || '').split('T')[0]}-${(e.title || '').toLowerCase()}`;
+            const key = `${getDayKey(e.start)}-${(e.title || '').toLowerCase()}`;
             if (!map.has(key)) map.set(key, []);
             map.get(key).push(e.id);
         });
         const dup = new Set();
         map.forEach(ids => { if (ids.length > 1) ids.forEach(id => dup.add(id)); });
         return dup;
+    }
+
+    function expandRecurringEvents(events, rangeStart, rangeEnd) {
+        if (!rangeStart || !rangeEnd) return events;
+        const start = new Date(rangeStart);
+        const end = new Date(rangeEnd);
+        const expanded = [];
+
+        const pushOccurrence = (evt, startDate, durationMs) => {
+            const endDate = durationMs ? new Date(startDate.getTime() + durationMs) : (evt.end ? new Date(evt.end) : null);
+            const key = getDayKey(startDate);
+            const skipList = evt.recurrenceExceptions || [];
+            if (shouldSkipDate(skipList, key)) return;
+            expanded.push({
+                ...evt,
+                id: `${evt.id || 'evt'}__r${expanded.length}`,
+                baseId: evt.baseId || evt.id,
+                start: new Date(startDate),
+                end: endDate
+            });
+        };
+
+        for (const evt of events) {
+            const recurrence = (evt.recurrence || 'None').toString();
+            if (!recurrence || recurrence === 'None') {
+                expanded.push(evt);
+                continue;
+            }
+
+            const anchorStart = parseDateStrict(evt.start) ?? parseDateStrict(evt.end);
+            if (!anchorStart) {
+                expanded.push(evt);
+                continue;
+            }
+            const anchorEnd = parseDateStrict(evt.end);
+            const durationMs = anchorEnd ? (anchorEnd.getTime() - anchorStart.getTime()) : 0;
+
+            if (recurrence === 'Daily' || recurrence === 'Weekly' || recurrence === 'Biweekly') {
+                const interval = recurrence === 'Daily' ? 1 : (recurrence === 'Weekly' ? 7 : 14);
+                let current = new Date(anchorStart);
+                if (current < start) {
+                    const diffDays = Math.floor((start.getTime() - current.getTime()) / MS_PER_DAY);
+                    const steps = Math.floor(diffDays / interval);
+                    current = addDays(current, steps * interval);
+                    while (current < start) current = addDays(current, interval);
+                }
+                while (current <= end) {
+                    pushOccurrence(evt, current, durationMs);
+                    current = addDays(current, interval);
+                }
+                continue;
+            }
+
+            if (recurrence === 'Monthly') {
+                let current = new Date(anchorStart);
+                const anchorDay = anchorStart.getDate();
+                while (current < start) {
+                    current = addMonthsPreserveDay(current, 1, anchorDay);
+                }
+                while (current <= end) {
+                    pushOccurrence(evt, current, durationMs);
+                    current = addMonthsPreserveDay(current, 1, anchorDay);
+                }
+                continue;
+            }
+
+            expanded.push(evt);
+        }
+        return expanded;
+    }
+
+    function hasOccurrenceInRange(evt, rangeStart, rangeEnd) {
+        if (!evt || !rangeStart || !rangeEnd) return false;
+        const start = new Date(rangeStart);
+        const end = new Date(rangeEnd);
+        const occurrences = expandRecurringEvents([evt], start, end);
+        return occurrences.some(o => {
+            const s = parseDate(o.start);
+            return s >= start && s <= end;
+        });
     }
 
     function countBy(arr, fn) {
@@ -279,6 +468,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
+            if (mobileMq.matches) closeMobilePanels();
         });
         catList?.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-category]');
@@ -289,6 +479,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
+            if (mobileMq.matches) closeMobilePanels();
         });
         const search = qs('#icSearch');
         search?.addEventListener('input', (e) => {
@@ -296,7 +487,35 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
+            if (mobileMq.matches) closeMobilePanels();
         });
+    }
+
+    const mobilePanels = {
+        filters: () => qs('#icSidebarLeft'),
+        insights: () => qs('#icSidebarRight')
+    };
+
+    function getMobileOverlay() {
+        return qs('#mobileOverlay');
+    }
+
+    function closeMobilePanels() {
+        Object.values(mobilePanels).forEach(get => get()?.classList.remove('is-open'));
+        getMobileOverlay()?.classList.remove('is-active');
+        document.body.classList.remove('mobile-lock');
+    }
+
+    function toggleMobilePanel(kind) {
+        const target = mobilePanels[kind]?.();
+        if (!target) return;
+        const willOpen = !target.classList.contains('is-open');
+        closeMobilePanels();
+        if (willOpen) {
+            target.classList.add('is-open');
+            getMobileOverlay()?.classList.add('is-active');
+            document.body.classList.add('mobile-lock');
+        }
     }
 
     function bindCalendarNav(calendar) {
@@ -304,18 +523,24 @@
         qs('#calNext')?.addEventListener('click', () => calendar.next());
         qs('#calToday')?.addEventListener('click', () => calendar.today());
 
-        const views = { viewMonth: 'dayGridMonth', viewWeek: 'timeGridWeek', viewDay: 'timeGridDay' };
-        Object.entries(views).forEach(([id, v]) => {
+        const views = {
+            viewMonth: { desktop: 'dayGridMonth', mobile: 'dayGridMonth' },
+            viewWeek: { desktop: 'timeGridWeek', mobile: 'listWeek' },
+            viewDay: { desktop: 'timeGridDay', mobile: 'timeGridDay' }
+        };
+        Object.entries(views).forEach(([id, viewSet]) => {
             qs('#' + id)?.addEventListener('click', () => {
-                calendar.changeView(v);
+                const targetView = mobileMq.matches ? viewSet.mobile : viewSet.desktop;
+                calendar.changeView(targetView);
                 Object.keys(views).forEach(k => qs('#' + k)?.classList.remove('active'));
                 qs('#' + id)?.classList.add('active');
+                setActiveViewButton(targetView);
             });
         });
     }
 
     function setActiveViewButton(viewName) {
-        const mapping = { dayGridMonth: 'viewMonth', timeGridWeek: 'viewWeek', timeGridDay: 'viewDay', listWeek: null };
+        const mapping = { dayGridMonth: 'viewMonth', timeGridWeek: 'viewWeek', timeGridDay: 'viewDay', listWeek: 'viewWeek', listDay: 'viewDay' };
         Object.values(mapping).forEach(id => id && qs('#' + id)?.classList.remove('active'));
         const btnId = mapping[viewName];
         if (btnId) qs('#' + btnId)?.classList.add('active');
@@ -330,8 +555,9 @@
             setActiveViewButton('timeGridDay');
         } else if (kind === 'week') {
             state.calendar.gotoDate(now);
-            state.calendar.changeView('timeGridWeek');
-            setActiveViewButton('timeGridWeek');
+            const view = mobileMq.matches ? 'listWeek' : 'timeGridWeek';
+            state.calendar.changeView(view);
+            setActiveViewButton(view);
         } else if (kind === 'dup') {
             const dupIds = findDuplicateIds(state.filteredBase);
             if (dupIds.size > 0) {
@@ -374,7 +600,7 @@
                 const scanned = payload?.scanned ?? '?';
                 visual.setState('done', `同期完了: 保存 ${saved} / 取得 ${scanned}`);
                 await fetchEvents();
-                rerender(true);
+                rerender();
             } catch (e) {
                 visual.setState('error', '同期でエラーが発生しました');
                 alert('同期エラー');
@@ -443,34 +669,68 @@
             end: e.end,
             allDay: e.allDay,
             extendedProps: {
+                baseId: e.baseId || e.id,
                 source: e.source,
                 type: e.type,
                 categoryId: e.categoryId,
                 categoryIcon: e.categoryIcon,
                 categoryColor: e.categoryColor,
                 priority: e.priority,
-                location: e.location
+                location: e.location,
+                recurrence: e.recurrence,
+                reminder: e.reminder,
+                recurrenceExceptions: e.recurrenceExceptions
             }
         }));
     }
 
+    function getExpansionRange() {
+        const today = startOfDay(new Date());
+        const fallbackStart = addDays(startOfWeek(today), -30);
+        const fallbackEnd = addDays(endOfWeek(today), 180);
+        const baseStart = state.viewRange?.start ?? fallbackStart;
+        const baseEnd = state.viewRange?.end ?? fallbackEnd;
+        return {
+            start: baseStart,
+            end: addDays(baseEnd, 60) // ビュー範囲より先まで少し広げて直近予定を埋める
+        };
+    }
+
+    function updateViewRange(start, end) {
+        const next = { start: new Date(start), end: new Date(end) };
+        const changed = !state.viewRange
+            || state.viewRange.start.getTime() !== next.start.getTime()
+            || state.viewRange.end.getTime() !== next.end.getTime();
+        state.viewRange = next;
+        return changed;
+    }
+
     function rerender(skipFetch) {
         if (!skipFetch) applyFilters();
-        updateStats();
-        updateUpcoming();
+        const { start, end } = getExpansionRange();
+        const expanded = expandRecurringEvents(state.filtered, start, end);
+        updateStats(expanded);
+        updateUpcoming(expanded);
         if (state.calendar) {
             state.calendar.removeAllEventSources();
-            state.calendar.addEventSource(mapToFc(state.filtered));
+            state.calendar.addEventSource(mapToFc(expanded));
             state.calendar.render();
             const period = qs('#calPeriod');
             if (period) period.textContent = state.calendar.view?.title || '----';
         }
     }
 
+    function getCalendarHeight() {
+        return mobileMq.matches ? 'auto' : '80vh';
+    }
+
+    function refreshCalendarHeight() {
+        if (state.calendar) state.calendar.setOption('height', getCalendarHeight());
+    }
+
     function initCalendar() {
         const calEl = qs('#calendar');
         const period = qs('#calPeriod');
-        const mobileMq = window.matchMedia('(max-width: 768px)');
         const initialView = mobileMq.matches ? 'listWeek' : 'dayGridMonth';
         const now = new Date();
         const scrollTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
@@ -481,7 +741,7 @@
             buttonText: { month: '月', week: '週', day: '日' },
             nowIndicator: true,
             scrollTime,
-            height: '80vh',
+            height: getCalendarHeight(),
             expandRows: false,
             dayMaxEvents: true,
             initialView,
@@ -495,6 +755,8 @@
                 if (src) classes.push(`src-${src}`);
                 const cat = (props.type || '').toString().toLowerCase();
                 if (cat) classes.push(`cat-${cat}`);
+                if (props.recurrence && props.recurrence !== 'None') classes.push('has-recurrence');
+                if (normalizeReminderValue(props.reminder) !== null) classes.push('has-reminder');
                 return classes;
             },
             eventContent(arg) {
@@ -502,7 +764,9 @@
                 const prioKey = (props.priority || '').toString().toLowerCase();
                 const prioLabel = { high: '高', normal: '通常', low: '低' }[prioKey] || '通常';
                 const prioTag = `<span class="ev-prio-dot prio-${prioKey || 'normal'}" title="優先度: ${prioLabel}" aria-label="優先度: ${prioLabel}"></span>`;
-                const time = arg.timeText ? `<span class="ev-time">${arg.timeText}</span>` : '';
+                const isListView = (arg.view?.type || '').toString().startsWith('list');
+                // リストビューでは FullCalendar が左列に時間を表示するため、重複を避けて時間表示を省く
+                const time = !isListView && arg.timeText ? `<span class="ev-time">${arg.timeText}</span>` : '';
                 const srcKey = (props.source || '').toString().toLowerCase();
                 const srcIcons = {
                     google: '<i class="fa-brands fa-google"></i>',
@@ -512,9 +776,19 @@
                     local: '<i class="fa-solid fa-database"></i>'
                 };
                 const source = props.source ? `<span class="ev-badge ev-source">${srcIcons[srcKey] ?? ''}</span>` : '';
-                return { html: `<div class="ev-row wrap">${prioTag}${time}<span class="ev-title">${arg.event.title}</span>${source}</div>` };
+                const badges = renderBadges(props);
+                const badgeRow = badges ? `<div class="ev-meta-row">${badges}</div>` : '';
+                if (isListView) {
+                    return { html: `<div class="ev-row wrap list-view"><span class="ev-title">${arg.event.title}</span>${source}</div>${badgeRow}` };
+                }
+                return { html: `<div class="ev-row wrap">${prioTag}${time}<span class="ev-title">${arg.event.title}</span>${source}</div>${badgeRow}` };
             },
-            datesSet(info) { if (period) period.textContent = info.view.title; },
+            datesSet(info) {
+                if (period) period.textContent = info.view.title;
+                if (updateViewRange(info.start, info.end)) {
+                    rerender(true);
+                }
+            },
             dateClick(info) {
                 let startDate;
                 let endDate;
@@ -532,7 +806,10 @@
                 window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
             },
             eventClick(info) {
-                if (info.event.id) window.location.href = `/Events/Details?id=${encodeURIComponent(info.event.id)}`;
+                const props = info.event.extendedProps || {};
+                const baseId = props.baseId || info.event.id;
+                const occ = info.event.startStr;
+                if (baseId) window.location.href = `/Events/Details?id=${encodeURIComponent(baseId)}&occurrence=${encodeURIComponent(occ)}`;
             },
             selectable: true,
             select(info) {
@@ -543,39 +820,61 @@
         });
         calendar.render();
         state.calendar = calendar;
+        setActiveViewButton(initialView);
 
         const handleMobileView = (e) => {
             if (!state.calendar) return;
             if (e.matches) {
                 state.calendar.changeView('listWeek');
+                setActiveViewButton('listWeek');
             } else if (state.focusStat !== 'week' && state.focusStat !== 'today') {
                 state.calendar.changeView('dayGridMonth');
                 setActiveViewButton('dayGridMonth');
             }
+            if (!e.matches) closeMobilePanels();
+            refreshCalendarHeight();
         };
-        mobileMq.addEventListener('change', handleMobileView);
+        if (mobileMq.addEventListener) {
+            mobileMq.addEventListener('change', handleMobileView);
+        } else if (mobileMq.addListener) {
+            mobileMq.addListener(handleMobileView);
+        }
         handleMobileView(mobileMq);
     }
 
     function bindMobileToggles() {
         const wrap = qs('.mobile-quick-actions');
         if (!wrap) return;
-        const sidebarLeft = qs('#icSidebarLeft');
-        const sidebarRight = qs('#icSidebarRight');
+        const overlay = getMobileOverlay();
         wrap.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-action]');
             if (!btn) return;
             const action = btn.dataset.action;
             if (action === 'scroll-calendar') {
+                closeMobilePanels();
                 qs('#calendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             if (action === 'toggle-filters') {
-                sidebarLeft?.classList.toggle('is-open');
+                toggleMobilePanel('filters');
             }
             if (action === 'toggle-insights') {
-                sidebarRight?.classList.toggle('is-open');
+                toggleMobilePanel('insights');
             }
         });
+        overlay?.addEventListener('click', closeMobilePanels);
+        qsa('[data-mobile-close]').forEach(btn => btn.addEventListener('click', closeMobilePanels));
+    }
+
+    function autoFocusCalendarOnLoad() {
+        if (hasAutoFocusedCalendar || !mobileMq.matches) return;
+        const cal = qs('#calendar');
+        if (!cal) return;
+        // レイアウト描画後に少し遅らせてスクロール
+        setTimeout(() => {
+            const top = cal.getBoundingClientRect().top + window.scrollY - 18;
+            window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+            hasAutoFocusedCalendar = true;
+        }, 280);
     }
 
     async function init() {
@@ -583,14 +882,15 @@
         await fetchEvents();
         applyFilters();
         initCalendar();
-        updateStats();
-        updateUpcoming();
+        rerender(true);
         bindCalendarNav(state.calendar);
         bindSync();
         bindExternalSyncButtons();
         bindStats();
         bindMobileToggles();
+        window.addEventListener('resize', refreshCalendarHeight);
         startNowClock();
+        autoFocusCalendarOnLoad();
     }
 
     document.addEventListener('DOMContentLoaded', () => {

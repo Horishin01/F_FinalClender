@@ -4,6 +4,15 @@
     if (Model is null) { throw new NullReferenceException(); }
     string FormatDate(DateTime? dt) => dt?.ToString("yyyy-MM-dd HH:mm") ?? "--";
     string FormatText(string? value) => string.IsNullOrWhiteSpace(value) ? "（未入力）" : value!;
+    string TrimOrEmpty(string? value) => (value ?? string.Empty).Trim();
+    bool IsHttpUrl(string? value)
+    {
+        var v = TrimOrEmpty(value);
+        if (string.IsNullOrWhiteSpace(v)) return false;
+        return v.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || v.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+    }
+    var locationValue = TrimOrEmpty(Model.Location);
     var attendees = string.IsNullOrWhiteSpace(Model.AttendeesCsv)
         ? Array.Empty<string>()
         : Model.AttendeesCsv
@@ -83,7 +92,16 @@
             </div>
             <div>
                 <span class="label">場所</span>
-                <span class="value">@FormatText(Model.Location)</span>
+                <span class="value">
+                    @if (IsHttpUrl(locationValue))
+                    {
+                        <a href="@locationValue" target="_blank" rel="noopener noreferrer">@locationValue</a>
+                    }
+                    else
+                    {
+                        @FormatText(locationValue)
+                    }
+                </span>
             </div>
             <div>
                 <span class="label">参加者</span>

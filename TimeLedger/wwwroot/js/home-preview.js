@@ -102,7 +102,9 @@
             flowCountToday: document.getElementById('flowCountToday'),
             flowCountWeek: document.getElementById('flowCountWeek'),
             flowStreak: document.getElementById('flowStreak'),
-            flowFilterButtons: document.querySelectorAll('[data-flow-filter]')
+            flowFilterButtons: document.querySelectorAll('[data-flow-filter]'),
+            flowTopContextsMini: document.getElementById('flowTopContextsMini'),
+            flowHeatMini: document.getElementById('flowHeatMini')
         };
 
         const state = {
@@ -565,6 +567,7 @@
             });
             persistFlowEntries(currentState.flowEntries);
             renderFlowList(currentState, els);
+            renderFlowMiniInsights(currentState.flowEntries, els);
         };
 
         const handleAdd = () => {
@@ -591,11 +594,13 @@
                 btn.classList.add('active');
                 currentState.flowFilter = btn.dataset.flowFilter || 'today';
                 renderFlowList(currentState, els);
+                renderFlowMiniInsights(currentState.flowEntries, els);
             });
         });
 
         renderFlowSuggestions(els, addEntry);
         renderFlowList(currentState, els);
+        renderFlowMiniInsights(currentState.flowEntries, els);
     }
 
     function renderFlowSuggestions(els, addEntry) {
@@ -646,6 +651,70 @@
         if (els.flowCountToday) els.flowCountToday.textContent = stats.todayCount;
         if (els.flowCountWeek) els.flowCountWeek.textContent = stats.weekCount;
         if (els.flowStreak) els.flowStreak.textContent = stats.streak;
+    }
+
+    function renderFlowMiniInsights(entries, els) {
+        renderTopContextsMini(entries, els.flowTopContextsMini);
+        renderHeatMini(entries, els.flowHeatMini);
+    }
+
+    function renderTopContextsMini(entries, container) {
+        if (!container) return;
+        container.innerHTML = '';
+        const threshold = startOfDay(new Date());
+        threshold.setDate(threshold.getDate() - 6);
+        const recent = entries.filter(e => startOfDay(e.createdAt) >= threshold);
+        if (!recent.length) {
+            container.innerHTML = '<li class="flow-empty">まだ記録がありません。</li>';
+            return;
+        }
+        const counts = {};
+        recent.forEach(e => {
+            const key = e.context || 'メモ';
+            counts[key] = (counts[key] || 0) + 1;
+        });
+        Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .forEach(([ctx, count]) => {
+                const li = document.createElement('li');
+                li.className = 'flow-mini-item';
+                li.innerHTML = `
+                    <span class="label">${ctx}</span>
+                    <span class="count">${count}</span>
+                `;
+                container.appendChild(li);
+            });
+    }
+
+    function renderHeatMini(entries, wrap) {
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        const today = startOfDay(new Date());
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            days.push(d);
+        }
+        const max = Math.max(1, ...days.map(d => entries.filter(e => dateKey(e.createdAt) === dateKey(d)).length));
+        let hasData = false;
+        days.forEach(d => {
+            const key = dateKey(d);
+            const count = entries.filter(e => dateKey(e.createdAt) === key).length;
+            if (count > 0) hasData = true;
+            const bar = document.createElement('div');
+            bar.className = 'mini-heat-row';
+            bar.innerHTML = `
+                <span class="mini-heat-label">${key.slice(5)}</span>
+                <div class="mini-heat-bar"><span style="width:${Math.min(1, count / max) * 100}%"></span></div>
+                <span class="mini-heat-count">${count}</span>
+            `;
+            wrap.appendChild(bar);
+        });
+        if (!hasData) {
+            wrap.innerHTML = '<p class="annotation">直近7日の記録がありません。</p>';
+        }
     }
 
     function summarizeFlows(entries) {
