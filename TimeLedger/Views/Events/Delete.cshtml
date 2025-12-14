@@ -19,6 +19,34 @@
         <form asp-action="Delete" method="post" class="sheet-actions">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
+            @if (Model.Recurrence != EventRecurrence.None)
+            {
+                var occ = ViewBag.Occurrence as string;
+                <input type="hidden" name="occurrence" value="@occ" />
+                <div class="alert alert-info" role="alert">
+                    繰り返しイベントです。削除範囲を選択してください。
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="mode" id="delSingle" value="single" checked />
+                    <label class="form-check-label" for="delSingle">この発生のみ削除</label>
+                    @if (string.IsNullOrWhiteSpace(occ))
+                    {
+                        <div class="text-muted small">※発生日が指定されていません。カレンダー経由で開くと発生日が渡されます。</div>
+                    }
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="mode" id="delFuture" value="future" />
+                    <label class="form-check-label" for="delFuture">この日以降の繰り返しをすべて削除</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="mode" id="delAll" value="all" />
+                    <label class="form-check-label" for="delAll">すべての発生を削除</label>
+                </div>
+            }
+            else
+            {
+                <input type="hidden" name="mode" value="all" />
+            }
             <a asp-action="Index" class="btn btn-secondary">キャンセル</a>
             <button type="submit" class="btn btn-danger">
                 <i class="fa-solid fa-trash me-1"></i> 削除する

@@ -23,8 +23,8 @@ Table: AspNetRoleClaims / AspNetUserClaims / AspNetUserLogins / AspNetUserTokens
 
 Table: Events
 - PK: Id (string)
-- Columns: UserId (FK -> AspNetUsers.Id), UID (nullable), Title, StartDate (null可), EndDate (null可), LastModified (null可), Description (nullable), AllDay (bool), Source (enum), CategoryId (FK -> Categories.Id), Priority (enum), Location (nullable), AttendeesCsv (nullable), Recurrence (enum), ReminderMinutesBefore (nullable int)
-- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。ローカル作成のイベントでは UID は空を許容。AllDay は bool 列で永続化し、`IsAllDay` は API 整合用の NotMapped エイリアス。CategoryId はカテゴリマスタ（Categories）への外部キー。
+- Columns: UserId (FK -> AspNetUsers.Id), UID (nullable), Title, StartDate (null可), EndDate (null可), LastModified (null可), Description (nullable), AllDay (bool), Source (enum), CategoryId (FK -> Categories.Id), Priority (enum), Location (nullable), AttendeesCsv (nullable), Recurrence (enum), ReminderMinutesBefore (nullable int), RecurrenceExceptions (text, nullable)
+- 従属関係: Id -> 全カラム。UIDは外部同期用識別子で他属性から決まらない。ローカル作成のイベントでは UID は空を許容。AllDay は bool 列で永続化し、`IsAllDay` は API 整合用の NotMapped エイリアス。CategoryId はカテゴリマスタ（Categories）への外部キー。RecurrenceExceptions は単発/以降スキップの日付を "yyyy-MM-dd" または ">=yyyy-MM-dd" 形式で保持。
 - スケーリング: UserIdカーディナリティは高い。アクセス頻度が高い場合、UserId+StartDateに複合インデックス検討。
 
 Table: Categories (CalendarCategory)

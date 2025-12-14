@@ -94,7 +94,8 @@ namespace TimeLedger.Controllers
                 location = e.Location,
                 attendees = e.AttendeesCsv,
                 recurrence = e.Recurrence.ToString(),
-                reminder = e.ReminderMinutesBefore
+                reminder = e.ReminderMinutesBefore,
+                recurrenceExceptions = e.RecurrenceExceptions
             });
 
             return new JsonResult(json);
@@ -276,7 +277,7 @@ namespace TimeLedger.Controllers
             return View(model);
         }
 
-        public IActionResult Details(string id)
+        public IActionResult Details(string id, string? occurrence = null)
         {
             if (string.IsNullOrEmpty(id)) return NotFound("イベントIDが指定されていません。");
 
@@ -285,34 +286,147 @@ namespace TimeLedger.Controllers
                 .FirstOrDefault(e => e.Id == id);
             if (ev == null) return NotFound($"ID({id})のイベントは存在しません。");
 
+            if (!string.IsNullOrWhiteSpace(occurrence))
+            {
+                ViewBag.Occurrence = occurrence;
+            }
+
             return View(ev);
         }
 
         [HttpGet]
-        public IActionResult Delete(string id)
+        public IActionResult Delete(string id, string? occurrence = null)
         {
             var ev = _context.Events
                 .Include(e => e.Category)
                 .FirstOrDefault(e => e.Id == id);
             if (ev == null) return NotFound("削除対象のイベントが見つかりません。");
+
+            if (!string.IsNullOrWhiteSpace(occurrence))
+            {
+                ViewBag.Occurrence = occurrence;
+            }
             return View(ev);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(string id, bool confirm)
+        public async Task<IActionResult> Delete(string id, string? mode, string? occurrence)
         {
-            var ev = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+            var currentUser = await _userManager.GetUserAsync(User);
+            var ev = await _context.Events.FirstOrDefaultAsync(e => e.Id == id && (currentUser == null || e.UserId == currentUser.Id));
             if (ev != null)
             {
-                var currentUser = await _userManager.GetUserAsync(User);
-                var shouldSync = false;
-
-                _context.Events.Remove(ev);
-                await _context.SaveChangesAsync();
-
+                if (ev.Recurrence != EventRecurrence.None && !string.IsNullOrWhiteSpace(mode))
+                {
+                    if (mode.Equals("single", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (DateTime.TryParse(occurrence, out var occDate))
+                        {
+                            var exceptions = (ev.RecurrenceExceptions ?? string.Empty)
+                                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(x => x.Trim())
+                                .Where(x => !string.IsNullOrWhiteSpace(x))
+                                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                            var key = occDate.Date.ToString("yyyy-MM-dd");
+                            exceptions.Add(key);
+                            ev.RecurrenceExceptions = string.Join(",", exceptions);
+                            ev.LastModified = DateTime.UtcNow;
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    else if (mode.Equals("future", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (DateTime.TryParse(occurrence, out var occDate))
+                        {
+                            var exceptions = (ev.RecurrenceExceptions ?? string.Empty)
+                                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(x => x.Trim())
+                                .Where(x => !string.IsNullOrWhiteSpace(x))
+                                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                            var token = $">={occDate.Date:yyyy-MM-dd}";
+                            exceptions.Add(token);
+                            ev.RecurrenceExceptions = string.Join(",", exceptions);
+                            ev.LastModified = DateTime.UtcNow;
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    else
+                    {
+                        _context.Events.Remove(ev);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    _context.Events.Remove(ev);
+                    await _context.SaveChangesAsync();
+                }
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteOccurrence(string id, string occurrenceDate)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(occurrenceDate))
+                return BadRequest("IDまたは日付が不正です。");
+
+            if (!DateTime.TryParse(occurrenceDate, out var parsedDate))
+                return BadRequest("日付の形式が不正です。");
+            parsedDate = parsedDate.Date;
+            var ev = await _context.Events.FirstOrDefaultAsync(e => e.Id == id && e.UserId == currentUser.Id);
+            if (ev == null) return NotFound("対象イベントが存在しません。");
+            if (ev.Recurrence == EventRecurrence.None) return BadRequest("繰り返しイベントではありません。");
+
+            var exceptions = (ev.RecurrenceExceptions ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var key = parsedDate.ToString("yyyy-MM-dd");
+            exceptions.Add(key);
+            ev.RecurrenceExceptions = string.Join(",", exceptions);
+            ev.LastModified = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "指定日の発生を削除しました", date = key });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteOccurrencesFromDate(string id, string occurrenceDate)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(occurrenceDate))
+                return BadRequest("IDまたは日付が不正です。");
+
+            if (!DateTime.TryParse(occurrenceDate, out var parsedDate))
+                return BadRequest("日付の形式が不正です。");
+            parsedDate = parsedDate.Date;
+
+            var ev = await _context.Events.FirstOrDefaultAsync(e => e.Id == id && e.UserId == currentUser.Id);
+            if (ev == null) return NotFound("対象イベントが存在しません。");
+            if (ev.Recurrence == EventRecurrence.None) return BadRequest("繰り返しイベントではありません。");
+
+            var exceptions = (ev.RecurrenceExceptions ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var token = $">={parsedDate:yyyy-MM-dd}";
+            exceptions.Add(token);
+            ev.RecurrenceExceptions = string.Join(",", exceptions);
+            ev.LastModified = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "指定日以降の発生を削除しました", from = token });
         }
 
         private async Task PopulateCategoriesAsync(string? selectedId = null)

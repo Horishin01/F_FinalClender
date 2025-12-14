@@ -20,6 +20,14 @@
     };
     var priorityLabel = PriorityLabel(Model.Priority);
     var priorityClass = PriorityClass(Model.Priority);
+    string TrimOrEmpty(string? value) => (value ?? string.Empty).Trim();
+    bool IsHttpUrl(string? value)
+    {
+        var v = TrimOrEmpty(value);
+        return !string.IsNullOrWhiteSpace(v) &&
+            (v.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+             v.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+    }
 }
 <link rel="stylesheet" href="~/css/event-forms.css" asp-append-version="true" />
 
@@ -39,7 +47,7 @@
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
                         <i class="fa-solid fa-pen-to-square"></i> 編集
                     </a>
-                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                    <a asp-action="Delete" asp-route-id="@Model.Id" asp-route-occurrence="@(ViewBag.Occurrence as string)" class="btn btn-danger">
                         <i class="fa-solid fa-trash-alt"></i> 削除
                     </a>
                 </div>
@@ -59,7 +67,17 @@
                 }
                 @if (!string.IsNullOrWhiteSpace(Model.Location))
                 {
-                    <span class="meta-chip"><i class="fa-solid fa-location-dot"></i> @Model.Location</span>
+                    var locationValue = TrimOrEmpty(Model.Location);
+                    if (IsHttpUrl(locationValue))
+                    {
+                        <a class="meta-chip" href="@locationValue" target="_blank" rel="noopener noreferrer">
+                            <i class="fa-solid fa-location-dot"></i> @locationValue
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="meta-chip"><i class="fa-solid fa-location-dot"></i> @locationValue</span>
+                    }
                 }
             </div>
 

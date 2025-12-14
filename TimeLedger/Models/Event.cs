@@ -80,6 +80,9 @@ namespace TimeLedger.Models
         [Display(Name = "リマインダー(分前)")]
         public int? ReminderMinutesBefore { get; set; }
 
+        // 繰り返し予定から一部日付を除外するためのカンマ区切り日付(yyyy-MM-dd)
+        public string? RecurrenceExceptions { get; set; }
+
         // 既存のAllDayをIsAllDayとしても扱えるようにする（API整合用）
         public virtual bool AllDay { get; set; } = false;
         [NotMapped]
