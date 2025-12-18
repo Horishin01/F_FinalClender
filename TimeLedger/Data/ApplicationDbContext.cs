@@ -1,6 +1,8 @@
 ﻿/*----------------------------------------------------------
  ApplicationDbContext.cs
 ----------------------------------------------------------*/
+// 役割: Identity ベースの DbContext。カレンダー/外部連携/アクセスログ/告知など本アプリの全 DbSet をここで登録する。
+// 注意: Npgsql の Timestamp 互換スイッチをコンストラクタで設定、複合キーや型変換は OnModelCreating で管理。
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TimeLedger.Models;

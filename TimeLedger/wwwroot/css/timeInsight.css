@@ -1,4 +1,6 @@
-/* TimeInsight dashboard */
+/* timeInsight.css
+   対象: TimeInsight ダッシュボード UI の配色とカード/チャートレイアウト。 */
+
 .timeinsight-page .app-main.container-xl {
     max-width: 1320px;
 }

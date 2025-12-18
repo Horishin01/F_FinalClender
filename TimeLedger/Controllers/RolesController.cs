@@ -1,3 +1,6 @@
+// RolesController
+// Identity ロールの一覧/作成/削除/編集を行う。RoleManager を直接操作し、ビューにモデルを渡す補助メソッドを保持。
+
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

@@ -1,3 +1,6 @@
+// AnalyticsController
+// 管理者向けのアクセスログ分析エンドポイント。直近のユーザーアクセスを集計し、ビュー用の統計モデルを組み立てる。
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

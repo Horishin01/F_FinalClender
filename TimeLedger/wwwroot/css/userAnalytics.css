@@ -1,4 +1,6 @@
-/* Admin analytics */
+/* userAnalytics.css
+   対象: 管理者向けアクセス分析ページの UI。ダッシュボード配色とグリッド/カードレイアウトを定義。 */
+
 .ic-root.ua-root {
     background: radial-gradient(circle at 18% 20%, #10b981 0, #0ea5e9 35%, #0b1224 85%);
     padding: 1.2rem 1rem 1.6rem;

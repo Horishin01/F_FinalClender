@@ -1,3 +1,7 @@
+/* account-manage.css
+   対象: アカウント管理/設定画面のレイアウトとアクセントカラーをまとめる。
+   カスタマイズ: :root の変数で背景/アクセントを一括調整。フォームやカードの丸みは --settings-pill や border-radius を変更。 */
+
 :root {
     --settings-bg: #f5f7ff;
     --settings-border: #e2e8f0;

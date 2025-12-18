@@ -1,3 +1,5 @@
+// GoogleCalendarConnection
+// Google カレンダーとの OAuth 接続情報とトークン群を永続化するモデル。UserId に一意制約を付与して単一接続に限定。
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

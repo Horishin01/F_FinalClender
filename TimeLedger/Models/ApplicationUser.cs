@@ -2,6 +2,7 @@
  ApplicationUser.cs
 42 / 76
 ----------------------------------------------------------*/
+// Identity ユーザーの拡張モデル。将来のプロファイル項目追加のために明示的な派生クラスを保持する。
 using Microsoft.AspNetCore.Identity;
 namespace TimeLedger.Models;
 //==========================================================

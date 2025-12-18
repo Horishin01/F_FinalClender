@@ -1,4 +1,6 @@
-/* Patterns (weekday templates) */
+/* patterns.css
+   対象: Patterns ページ（曜日テンプレート UI）のスタイル。3 カラムカードやモバイルシートの配色・余白を定義。 */
+
 .patterns-page .app-main.container-xl {
     max-width: 1320px;
 }

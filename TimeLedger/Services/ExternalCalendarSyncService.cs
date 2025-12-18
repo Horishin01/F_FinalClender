@@ -1,3 +1,6 @@
+// ExternalCalendarSyncService & related clients
+// Outlook/Google から外部イベントを取得し、ローカル DB へ upsert する同期パイプライン。クライアント実装と DTO を同居させている。
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TimeLedger.Data;

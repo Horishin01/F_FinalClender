@@ -1,4 +1,6 @@
-/* Home preview layout */
+/* home-preview.css
+   対象: ホームのカレンダープレビュー/Flow/カード UI 用のレイアウトと配色。
+   カスタマイズ: :root でグラス感・影・インクカラーをまとめて調整。コンポーネントの丸みは card/preview クラスで変更可能。 */
 :root {
     --glass: rgba(255, 255, 255, 0.88);
     --glass-border: rgba(255, 255, 255, 0.6);

@@ -1,3 +1,5 @@
+// PrivacyViewModel
+// プライバシーページに表示するアップデート/インシデント告知の一覧を保持する。
 using System.Collections.Generic;
 using TimeLedger.Models;
 

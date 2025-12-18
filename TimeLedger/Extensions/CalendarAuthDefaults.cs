@@ -1,3 +1,6 @@
+// CalendarAuthDefaults
+// 外部カレンダー連携で使う認証スキーム名と必要スコープの定数置き場。Program.cs で登録する際に参照される。
+
 namespace TimeLedger.Extensions
 {
     public static class CalendarAuthDefaults

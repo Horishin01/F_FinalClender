@@ -1,3 +1,6 @@
+// AdminController
+// 管理者ポータルのサマリー表示専用。ユーザー/ロール/イベント数や外部連携数などを集計してビューへ渡す。
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

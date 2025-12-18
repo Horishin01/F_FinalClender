@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+// IcalParserService
+// 外部 ICS（iCal）ファイルを Event モデルへ変換するヘルパー。微調整しやすいようメソッドを小分けにしている。
+
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;

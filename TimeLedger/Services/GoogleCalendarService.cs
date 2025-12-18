@@ -1,3 +1,6 @@
+// GoogleCalendarService
+// Google カレンダー OAuth トークンの管理とリフレッシュ、接続情報の永続化を担当するサービス。ExternalCalendarSyncService から利用される。
+
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;

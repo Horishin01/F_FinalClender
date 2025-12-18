@@ -1,3 +1,6 @@
+// UsersController
+// 管理用のユーザー CRUD。UserManager/RoleManager を併用し、メール確認フラグやロール付与を含めて編集できる。
+
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

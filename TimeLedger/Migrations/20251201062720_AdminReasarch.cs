@@ -1,3 +1,6 @@
+// EF Core Migration: AdminReasarch
+// 自動生成されたマイグレーション。管理系スキーマ変更の履歴として保持し、コードは直接編集しないこと。
+
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;

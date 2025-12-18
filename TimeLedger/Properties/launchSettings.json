@@ -1,5 +1,6 @@
 ﻿{
   "$schema": "http://json.schemastore.org/launchsettings.json",
+  "__comment": "ローカル開発用の起動プロファイル。applicationUrl/環境変数などは開発環境に合わせて調整。",
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,

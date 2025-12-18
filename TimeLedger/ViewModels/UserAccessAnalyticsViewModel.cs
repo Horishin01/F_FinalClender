@@ -1,3 +1,5 @@
+// UserAccessAnalyticsViewModel
+// アクセスログ分析ビューで使う集計結果セット。サマリー値とグラフ用シーケンスを保持する DTO。
 using System;
 using System.Collections.Generic;
 

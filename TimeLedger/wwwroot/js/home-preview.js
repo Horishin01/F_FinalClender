@@ -1,3 +1,6 @@
+// home-preview.js
+// ホームのカレンダープレビュー・Flow/ICカードデモ用スクリプト。ローカルストレージで仮イベントやフロー入力を保持し、FullCalendar に描画する。
+
 (function () {
     const STORAGE_KEY = 'pit2hi-preview-events';
     const STORAGE_CARD_KEY = 'pit2hi-preview-card';

@@ -1,3 +1,6 @@
+// CategoriesController
+// ユーザー所有のカレンダーカテゴリ CRUD を提供。認証済みユーザーのみに絞り、アイコン候補を ViewBag で供給する。
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

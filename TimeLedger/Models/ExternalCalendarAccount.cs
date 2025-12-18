@@ -1,3 +1,6 @@
+// ExternalCalendarAccount / ExternalCalendarProvider
+// 外部カレンダーとの連携状態を管理するモデル。ユーザー単位の接続種別、同期間隔、最終同期日時などを保持する。
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

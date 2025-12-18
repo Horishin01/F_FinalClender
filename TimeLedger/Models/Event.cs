@@ -1,3 +1,6 @@
+// Event model
+// カレンダーイベントのドメインモデル。優先度/カテゴリ/外部ソース/繰り返し例外など FullCalendar 用拡張フィールドを含む。
+
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

@@ -1,3 +1,5 @@
+// OutlookCalendarConnection
+// Outlook カレンダー連携のアクセストークン情報を保持。UserId を一意制約で縛り、Ical 同期サービスが利用する。
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

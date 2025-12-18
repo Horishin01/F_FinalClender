@@ -1,3 +1,6 @@
+// ExternalCalendarsController
+// 認証ユーザーの外部カレンダー連携（Outlook/Google）の同期と状態確認エンドポイントをまとめる。
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

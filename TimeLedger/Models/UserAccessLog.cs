@@ -1,3 +1,6 @@
+// UserAccessLog
+// 認証ユーザーのリクエスト履歴を保持する監査テーブル。ミドルウェアが記録し、AnalyticsController で参照される。
+
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

@@ -1,3 +1,6 @@
+/* main.css
+   対象: FullCalendar バンドル付属のデフォルトテーマ補助。カレンダー本体の汎用クラスやカスタムカーソルを上書き。 */
+
 
 /* classes attached to <body> */
 /* TODO: make fc-event selector work when calender in shadow DOM */

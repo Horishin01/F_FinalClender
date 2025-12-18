@@ -1,3 +1,6 @@
+// ICloudSetting
+// iCloud CalDAV の接続設定（ユーザー名/アプリ用パスワード）を保持するモデル。UserId で 1:1 を想定。
+
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

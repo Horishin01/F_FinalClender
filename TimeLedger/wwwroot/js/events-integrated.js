@@ -1,8 +1,11 @@
-// 統合カレンダー風 UI (Events/Index 用). FullCalendar + サイドバー/統計/検索
+// events-integrated.js
+// 統合カレンダー UI (Events/Index) のメインスクリプト。FullCalendar の描画、サイドバーのフィルター/統計/検索、同期ステータス表示をまとめて管理。
+// ビューポート判定は app-viewport.js に依存し、:root[data-viewport] と連携する。
 (function () {
     const qs = (sel, root = document) => root.querySelector(sel);
     const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-    const mobileMq = window.matchMedia('(max-width: 768px)');
+    const viewport = window.appViewport || createViewportFallback();
+    const root = document.documentElement;
     let hasAutoFocusedCalendar = false;
 
     const state = {
@@ -18,6 +21,75 @@
         calendar: null,
         viewRange: null
     };
+
+    const desktopKey = 'icForceDesktop';
+
+    function applyDesktopMode(forceDesktop) {
+        const enabled = !!forceDesktop;
+        root.classList.toggle('force-desktop', enabled);
+        const toggleBtn = qs('#icToggleDesktop');
+        if (enabled) {
+            localStorage.setItem(desktopKey, '1');
+        } else {
+            localStorage.removeItem(desktopKey);
+        }
+        if (toggleBtn) {
+            toggleBtn.innerHTML = enabled
+                ? '<i class="fa-solid fa-mobile-screen-button"></i> 自動表示に戻す'
+                : '<i class="fa-solid fa-display"></i> PC表示';
+            toggleBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        }
+    }
+
+    function createViewportFallback() {
+        const listeners = new Set();
+        const mobileMq = window.matchMedia('(max-width: 767px)');
+        const tabletMq = window.matchMedia('(max-width: 1024px)');
+        const compute = () => {
+            if (mobileMq.matches) return 'mobile';
+            if (tabletMq.matches) return 'tablet';
+            return 'desktop';
+        };
+        let current = compute();
+        const notify = () => {
+            const next = compute();
+            if (next === current) return;
+            current = next;
+            listeners.forEach(fn => fn(current));
+        };
+        const bind = (mq) => {
+            if (!mq) return;
+            if (mq.addEventListener) {
+                mq.addEventListener('change', notify);
+            } else if (mq.addListener) {
+                mq.addListener(notify);
+            }
+        };
+        bind(mobileMq);
+        bind(tabletMq);
+        return {
+            breakpoints: { mobile: 768, tablet: 1024 },
+            current: () => current,
+            isMobile: () => current === 'mobile',
+            isTablet: () => current === 'tablet',
+            isDesktop: () => current === 'desktop',
+            subscribe(cb) {
+                if (typeof cb !== 'function') return () => { };
+                listeners.add(cb);
+                cb(current);
+                return () => listeners.delete(cb);
+            }
+        };
+    }
+
+    const isDesktopMode = () => root.classList.contains('force-desktop') || viewport.isDesktop();
+    const isMobileMode = () => !root.classList.contains('force-desktop') && (viewport.isMobile() || (viewport.isTablet && viewport.isTablet()));
+
+    applyDesktopMode(localStorage.getItem(desktopKey) === '1');
+
+    qs('#icToggleDesktop')?.addEventListener('click', () => {
+        applyDesktopMode(!root.classList.contains('force-desktop'));
+    });
 
     const recurrenceLabelMap = {
         None: '',
@@ -468,7 +540,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
-            if (mobileMq.matches) closeMobilePanels();
+            if (isMobileMode()) closeMobilePanels();
         });
         catList?.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-category]');
@@ -479,7 +551,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
-            if (mobileMq.matches) closeMobilePanels();
+            if (isMobileMode()) closeMobilePanels();
         });
         const search = qs('#icSearch');
         search?.addEventListener('input', (e) => {
@@ -487,7 +559,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
-            if (mobileMq.matches) closeMobilePanels();
+            if (isMobileMode()) closeMobilePanels();
         });
     }
 
@@ -507,6 +579,7 @@
     }
 
     function toggleMobilePanel(kind) {
+        if (isDesktopMode()) return;
         const target = mobilePanels[kind]?.();
         if (!target) return;
         const willOpen = !target.classList.contains('is-open');
@@ -530,7 +603,7 @@
         };
         Object.entries(views).forEach(([id, viewSet]) => {
             qs('#' + id)?.addEventListener('click', () => {
-                const targetView = mobileMq.matches ? viewSet.mobile : viewSet.desktop;
+                const targetView = isMobileMode() ? viewSet.mobile : viewSet.desktop;
                 calendar.changeView(targetView);
                 Object.keys(views).forEach(k => qs('#' + k)?.classList.remove('active'));
                 qs('#' + id)?.classList.add('active');
@@ -555,7 +628,7 @@
             setActiveViewButton('timeGridDay');
         } else if (kind === 'week') {
             state.calendar.gotoDate(now);
-            const view = mobileMq.matches ? 'listWeek' : 'timeGridWeek';
+            const view = isMobileMode() ? 'listWeek' : 'timeGridWeek';
             state.calendar.changeView(view);
             setActiveViewButton(view);
         } else if (kind === 'dup') {
@@ -721,7 +794,7 @@
     }
 
     function getCalendarHeight() {
-        return mobileMq.matches ? 'auto' : '80vh';
+        return isMobileMode() ? 'auto' : '80vh';
     }
 
     function refreshCalendarHeight() {
@@ -731,7 +804,7 @@
     function initCalendar() {
         const calEl = qs('#calendar');
         const period = qs('#calPeriod');
-        const initialView = mobileMq.matches ? 'listWeek' : 'dayGridMonth';
+        const initialView = isMobileMode() ? 'listWeek' : 'dayGridMonth';
         const now = new Date();
         const scrollTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
         const calendar = new FullCalendar.Calendar(calEl, {
@@ -822,24 +895,20 @@
         state.calendar = calendar;
         setActiveViewButton(initialView);
 
-        const handleMobileView = (e) => {
+        const handleMobileView = (mode) => {
             if (!state.calendar) return;
-            if (e.matches) {
+            const isMobile = mode === 'mobile';
+            if (isMobile) {
                 state.calendar.changeView('listWeek');
                 setActiveViewButton('listWeek');
             } else if (state.focusStat !== 'week' && state.focusStat !== 'today') {
                 state.calendar.changeView('dayGridMonth');
                 setActiveViewButton('dayGridMonth');
             }
-            if (!e.matches) closeMobilePanels();
+            if (!isMobile) closeMobilePanels();
             refreshCalendarHeight();
         };
-        if (mobileMq.addEventListener) {
-            mobileMq.addEventListener('change', handleMobileView);
-        } else if (mobileMq.addListener) {
-            mobileMq.addListener(handleMobileView);
-        }
-        handleMobileView(mobileMq);
+        viewport.subscribe(handleMobileView);
     }
 
     function bindMobileToggles() {
@@ -866,7 +935,7 @@
     }
 
     function autoFocusCalendarOnLoad() {
-        if (hasAutoFocusedCalendar || !mobileMq.matches) return;
+        if (hasAutoFocusedCalendar || !isMobileMode()) return;
         const cal = qs('#calendar');
         if (!cal) return;
         // レイアウト描画後に少し遅らせてスクロール
