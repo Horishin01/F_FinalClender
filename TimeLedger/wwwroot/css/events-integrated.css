@@ -1520,3 +1520,20 @@ body.mobile-lock {
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
     position: static !important;
 }
+
+.fc-day-holiday {
+    background: linear-gradient(180deg, rgba(255, 234, 238, 0.85), rgba(255, 248, 251, 0.8));
+}
+
+.fc-day-holiday .fc-daygrid-day-number,
+.fc-day-holiday .fc-list-day-text {
+    color: #c02639;
+    font-weight: 700;
+}
+
+.fc-event.is-holiday {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #b91c1c;
+    pointer-events: none;
+}

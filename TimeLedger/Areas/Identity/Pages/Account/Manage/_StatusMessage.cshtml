@@ -2,7 +2,10 @@
 
 @if (!string.IsNullOrEmpty(Model))
 {
-    var statusMessageClass = Model.StartsWith("Error", StringComparison.OrdinalIgnoreCase) ? "danger" : "success";
+    var isError = Model.StartsWith("Error", StringComparison.OrdinalIgnoreCase)
+        || Model.Contains("失敗", StringComparison.OrdinalIgnoreCase)
+        || Model.Contains("エラー", StringComparison.OrdinalIgnoreCase);
+    var statusMessageClass = isError ? "danger" : "success";
     <div class="status-toast @statusMessageClass" role="status">
         <span>@Model</span>
         <button type="button" aria-label="閉じる" onclick="this.closest('.status-toast')?.remove()">×</button>

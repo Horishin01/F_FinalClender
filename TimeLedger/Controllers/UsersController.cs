@@ -1,7 +1,9 @@
 // UsersController
 // 管理用のユーザー CRUD。UserManager/RoleManager を併用し、メール確認フラグやロール付与を含めて編集できる。
 
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -56,7 +58,6 @@ namespace TimeLedger.Controllers
 
         }
 
-
         public async Task<IActionResult> Index()
         {
             var modelsList = await UserManager.Users.ToListAsync();
@@ -65,9 +66,8 @@ namespace TimeLedger.Controllers
 
         public async Task<IActionResult> Details(string? id)
         {
-            if (!(id is not null)) { return NotFound(); }
-
-            var model = await UserManager.FindByIdAsync(id);
+            var model = await FindUserOrDefaultAsync(id);
+            if (model is null) { return NotFound(); }
             return View(model);
         }
 
@@ -82,37 +82,9 @@ namespace TimeLedger.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateConfirmed(InputModel? inputModel)
         {
-            try
-            {
-                if (!ModelState.IsValid) { throw new InvalidDataException(); }
-                if (!(inputModel is not null)) { throw new ArgumentNullException(nameof(inputModel)); }
-                
-                if (UserManager.Users.Any(u => u.Email == inputModel.Email))
-                {
-                    ModelState.AddModelError(string.Empty,
-                        "The email is already registered.");
-                    return await Create(inputModel);
-                }
-
-                var model = new ApplicationUser()
-                {
-                    Id = inputModel.Id,
-                    UserName = inputModel.UserName,
-                    Email = inputModel.Email,
-                    EmailConfirmed = inputModel.EmailConfirmed,
-                };
-                var result = await UserManager.CreateAsync(model, inputModel.Password);
-                if (!result.Succeeded) { throw new InvalidOperationException(result.ToString()); }
-
-                var roleResult = await EnsureDefaultRoleAsync(model);
-                if (!roleResult.Succeeded) { throw new InvalidOperationException(roleResult.ToString()); }
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception e)
-            {
-                Controllers.AddAllExceptionMessagesToModelError(this, e);
-                return await Create(inputModel);
-            }
+            return await ExecuteWithModelErrorHandlingAsync(
+                () => CreateUserInternalAsync(inputModel),
+                () => Create(inputModel));
         }
 
 
@@ -120,18 +92,10 @@ namespace TimeLedger.Controllers
         {
             if (inputModel is null)
             {
-                if (!(id is not null)) { return NotFound(); }
-                var model = await UserManager.FindByIdAsync(id);
+                var model = await FindUserOrDefaultAsync(id);
                 if (model is null) { return NotFound(); }
-                inputModel = new InputModel()
-                {
-                    Id = model.Id,
-                    UserName = model.UserName ?? string.Empty,
-                    Email = model.Email ?? string.Empty,
-                    EmailConfirmed = model.EmailConfirmed,
-                };
+                inputModel = BuildInputModel(model);
             }
-            if (!(inputModel is not null)) { return NotFound(); }
             return await Create(inputModel);
         }
 
@@ -139,58 +103,64 @@ namespace TimeLedger.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditConfirmed(string? id, InputModel? inputModel)
         {
-            try
-            {
-                if (!ModelState.IsValid) { throw new InvalidDataException(); }
-                if (!(id is not null)) { throw new ArgumentNullException(nameof(id)); }
-                if (!(inputModel is not null)) { throw new ArgumentNullException(nameof(inputModel)); }
-
-                var model = await UserManager.FindByIdAsync(id);
-                if (model is null) { return NotFound(); }
-                model.Id = inputModel.Id;
-                model.UserName = inputModel.UserName;
-                model.Email = inputModel.Email;
-                model.EmailConfirmed = inputModel.EmailConfirmed;
-                if (!(model.Id == id)) { throw new ArgumentException(string.Empty, nameof(id)); }
-
-                var result = await UserManager.UpdateAsync(model);
-                if (!result.Succeeded) { throw new InvalidOperationException(result.ToString()); }
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception e)
-            {
-                Controllers.AddAllExceptionMessagesToModelError(this, e);
-                return await Edit(id, inputModel);
-            }
+            return await ExecuteWithModelErrorHandlingAsync(
+                () => UpdateUserInternalAsync(id, inputModel),
+                () => Edit(id, inputModel));
         }
 
         public async Task<IActionResult> Delete(string? id)
         {
-            return await Details(id);
+            var model = await FindUserOrDefaultAsync(id);
+            if (model is null) { return NotFound(); }
+            return View(model);
         }
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string? id)
         {
-            try
-            {
-                if (!(id is not null)) { throw new ArgumentNullException(nameof(id)); }
-                var model = await UserManager.FindByIdAsync(id);
-                if (model is null) { return NotFound(); }
-                var result = await UserManager.DeleteAsync(model);
-                if (!result.Succeeded) { throw new InvalidOperationException(result.ToString()); }
+            return await ExecuteWithModelErrorHandlingAsync(
+                () => DeleteUserInternalAsync(id),
+                () => Delete(id));
+        }
 
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception e)
+        protected virtual InputModel BuildInputModel(ApplicationUser user)
+        {
+            return new InputModel()
             {
-                Controllers.AddAllExceptionMessagesToModelError(this, e);
-                return await Delete(id);
+                Id = user.Id,
+                UserName = user.UserName ?? string.Empty,
+                Email = user.Email ?? string.Empty,
+                EmailConfirmed = user.EmailConfirmed,
+            };
+        }
+
+        protected virtual ApplicationUser CreateUserFromInput(InputModel inputModel)
+        {
+            var user = new ApplicationUser();
+            ApplyInputModelToUser(inputModel, user);
+            return user;
+        }
+
+        protected virtual void ApplyInputModelToUser(InputModel inputModel, ApplicationUser user)
+        {
+            user.Id = inputModel.Id;
+            user.UserName = inputModel.UserName;
+            user.Email = inputModel.Email;
+            user.EmailConfirmed = inputModel.EmailConfirmed;
+        }
+
+        protected virtual async Task EnsureEmailUniqueAsync(string email, string? currentUserId = null)
+        {
+            var normalizedEmail = UserManager.NormalizeEmail(email) ?? email;
+            var existingUser = await UserManager.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+            if (existingUser is not null && existingUser.Id != currentUserId)
+            {
+                throw new ValidationException("The email is already registered.");
             }
         }
 
-        private async Task<IdentityResult> EnsureDefaultRoleAsync(ApplicationUser user)
+        protected virtual async Task<IdentityResult> EnsureDefaultRoleAsync(ApplicationUser user)
         {
             if (!await RoleManager.RoleExistsAsync(RoleNames.User))
             {
@@ -208,5 +178,109 @@ namespace TimeLedger.Controllers
 
             return await UserManager.AddToRoleAsync(user, RoleNames.User);
         }
+
+        protected virtual async Task<ApplicationUser?> FindUserOrDefaultAsync(string? id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) { return null; }
+            return await UserManager.FindByIdAsync(id);
+        }
+
+        protected virtual async Task<ApplicationUser> LoadUserOrThrowAsync(string? id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            var user = await UserManager.FindByIdAsync(id);
+            if (user is null)
+            {
+                throw new KeyNotFoundException($"User '{id}' was not found.");
+            }
+
+            return user;
+        }
+
+        private InputModel RequireInputModel(InputModel? inputModel)
+        {
+            return inputModel ?? throw new ArgumentNullException(nameof(inputModel));
+        }
+
+        private void EnsureModelStateIsValid()
+        {
+            if (ModelState.IsValid) { return; }
+            throw new ValidationException("入力内容をご確認ください。");
+        }
+
+        private static void ValidateIdentifierMatches(string? id, string userId)
+        {
+            if (!string.Equals(userId, id, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("User id mismatch.", nameof(id));
+            }
+        }
+
+        private async Task EnsureSucceededAsync(Task<IdentityResult> operation)
+        {
+            var result = await operation;
+            if (result.Succeeded) { return; }
+
+            var description = result.Errors.Any()
+                ? string.Join("; ", result.Errors.Select(e => e.Description))
+                : result.ToString();
+            throw new InvalidOperationException(description);
+        }
+
+        private async Task<IActionResult> CreateUserInternalAsync(InputModel? inputModel)
+        {
+            var model = RequireInputModel(inputModel);
+            EnsureModelStateIsValid();
+
+            await EnsureEmailUniqueAsync(model.Email);
+            var user = CreateUserFromInput(model);
+
+            await EnsureSucceededAsync(UserManager.CreateAsync(user, model.Password));
+            await EnsureSucceededAsync(EnsureDefaultRoleAsync(user));
+
+            return RedirectToIndex();
+        }
+
+        private async Task<IActionResult> UpdateUserInternalAsync(string? id, InputModel? inputModel)
+        {
+            var model = RequireInputModel(inputModel);
+            EnsureModelStateIsValid();
+
+            var user = await LoadUserOrThrowAsync(id);
+            await EnsureEmailUniqueAsync(model.Email, user.Id);
+            ApplyInputModelToUser(model, user);
+            ValidateIdentifierMatches(id, user.Id);
+
+            await EnsureSucceededAsync(UserManager.UpdateAsync(user));
+            return RedirectToIndex();
+        }
+
+        private async Task<IActionResult> DeleteUserInternalAsync(string? id)
+        {
+            var user = await LoadUserOrThrowAsync(id);
+            await EnsureSucceededAsync(UserManager.DeleteAsync(user));
+            return RedirectToIndex();
+        }
+
+        private async Task<IActionResult> ExecuteWithModelErrorHandlingAsync(
+            Func<Task<IActionResult>> action,
+            Func<Task<IActionResult>> onError)
+        {
+            try
+            {
+                return await action();
+            }
+            catch (Exception e)
+            {
+                Controllers.AddAllExceptionMessagesToModelError(this, e);
+                return await onError();
+            }
+        }
+
+        private IActionResult RedirectToIndex() => RedirectToAction(nameof(Index));
     }
 }

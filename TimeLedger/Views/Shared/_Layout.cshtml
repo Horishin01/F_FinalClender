@@ -70,10 +70,32 @@
         </main>
     </div>
 
-    <footer class="app-footer text-muted">
+    <footer class="app-footer">
         <div class="container-xl footer-inner">
-            <div>&copy; @DateTime.Now.Year - TimeLedger</div>
-            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <div class="footer-brand">
+                <div class="logo">⏱️</div>
+                <div>
+                    <div class="brand-name">TimeLedger</div>
+                    <small class="brand-tagline">暮らしと予定を、ひとつのリズムで。</small>
+                </div>
+            </div>
+            <div class="footer-links">
+                <div>
+                    <p class="footer-title">プロダクト</p>
+                    <a asp-area="" asp-controller="Home" asp-action="Index">ホーム</a>
+                    <a asp-area="" asp-controller="Events" asp-action="Index">カレンダー</a>
+                </div>
+                <div>
+                    <p class="footer-title">サポート</p>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy">プライバシー</a>
+                    <a href="mailto:support@example.com">お問い合わせ</a>
+                </div>
+                <div>
+                    <p class="footer-title">チーム</p>
+                    <span>開発: TimeLedger Crew</span><br />
+                    <span>&copy; @DateTime.Now.Year TimeLedger</span>
+                </div>
+            </div>
         </div>
     </footer>
 

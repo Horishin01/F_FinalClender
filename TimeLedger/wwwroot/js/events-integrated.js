@@ -19,27 +19,9 @@
         },
         focusStat: null,
         calendar: null,
-        viewRange: null
+        viewRange: null,
+        holidayDates: new Set()
     };
-
-    const desktopKey = 'icForceDesktop';
-
-    function applyDesktopMode(forceDesktop) {
-        const enabled = !!forceDesktop;
-        root.classList.toggle('force-desktop', enabled);
-        const toggleBtn = qs('#icToggleDesktop');
-        if (enabled) {
-            localStorage.setItem(desktopKey, '1');
-        } else {
-            localStorage.removeItem(desktopKey);
-        }
-        if (toggleBtn) {
-            toggleBtn.innerHTML = enabled
-                ? '<i class="fa-solid fa-mobile-screen-button"></i> 自動表示に戻す'
-                : '<i class="fa-solid fa-display"></i> PC表示';
-            toggleBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-        }
-    }
 
     function createViewportFallback() {
         const listeners = new Set();
@@ -82,14 +64,8 @@
         };
     }
 
-    const isDesktopMode = () => root.classList.contains('force-desktop') || viewport.isDesktop();
-    const isMobileMode = () => !root.classList.contains('force-desktop') && (viewport.isMobile() || (viewport.isTablet && viewport.isTablet()));
-
-    applyDesktopMode(localStorage.getItem(desktopKey) === '1');
-
-    qs('#icToggleDesktop')?.addEventListener('click', () => {
-        applyDesktopMode(!root.classList.contains('force-desktop'));
-    });
+    const isDesktopMode = () => viewport.isDesktop();
+    const isMobileMode = () => viewport.isMobile() || (viewport.isTablet && viewport.isTablet());
 
     const recurrenceLabelMap = {
         None: '',
@@ -169,6 +145,8 @@
         const res = await fetch('/Events/GetEvents');
         if (!res.ok) throw new Error('イベント取得に失敗しました');
         const json = await res.json();
+        const holidays = await fetchHolidayEvents();
+        state.holidayDates = new Set(holidays.map(h => toDateKey(h.start)));
         state.allEvents = json.map(e => ({
             ...e,
             source: (e.source || 'Local'),
@@ -180,7 +158,34 @@
             recurrence: e.recurrence || 'None',
             reminder: normalizeReminderValue(e.reminder),
             recurrenceExceptions: parseExceptionList(e.recurrenceExceptions)
-        }));
+        })).concat(holidays);
+    }
+
+    async function fetchHolidayEvents() {
+        try {
+            const res = await fetch('https://holidays-jp.github.io/api/v1/date.json');
+            if (!res.ok) throw new Error('祝日APIにアクセスできませんでした');
+            const data = await res.json();
+            return Object.entries(data).map(([date, name]) => ({
+                id: `holiday-${date}`,
+                title: `${name}`,
+                start: date,
+                end: addDays(date, 1),
+                allDay: true,
+                source: 'Holiday',
+                type: '',
+                categoryId: '',
+                categoryIcon: 'fa-flag',
+                categoryColor: '#ef4444',
+                priority: 'Low',
+                recurrence: 'None',
+                reminder: null,
+                recurrenceExceptions: []
+            }));
+        } catch (err) {
+            console.warn('祝日情報の取得に失敗しました', err);
+            return [];
+        }
     }
 
     function parseExceptionList(raw) {
@@ -188,6 +193,18 @@
         return raw.split(',')
             .map(x => x.trim())
             .filter(Boolean);
+    }
+
+    function toDateKey(date) {
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+            return date.slice(0, 10);
+        }
+        const d = new Date(date);
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+
+    function isHolidayDate(date) {
+        return state.holidayDates.has(toDateKey(date));
     }
 
     function shouldSkipDate(skipList, dateKey) {
@@ -253,8 +270,13 @@
         // counts
         const bySource = countBy(pool, e => e.source);
         const byCat = countBy(pool, e => e.categoryId || e.type);
-        setText('#srcAll', total); setText('#srcGoogle', bySource.Google || 0); setText('#srcICloud', bySource.ICloud || 0);
-        setText('#srcOutlook', bySource.Outlook || 0); setText('#srcWork', bySource.Work || 0); setText('#srcLocal', bySource.Local || 0);
+        setText('#srcAll', total);
+        setText('#srcGoogle', bySource.Google || 0);
+        setText('#srcICloud', bySource.ICloud || 0);
+        setText('#srcOutlook', bySource.Outlook || 0);
+        setText('#srcWork', bySource.Work || 0);
+        setText('#srcLocal', bySource.Local || 0);
+        setText('#srcHoliday', bySource.Holiday || 0);
         setText('#catAll', total);
         renderCategoryFilters();
     }
@@ -481,12 +503,14 @@
     function renderCategoryFilters() {
         const list = qs('#icCategoryList');
         if (!list) return;
-        const base = state.allEvents.filter(e => {
-            const sOk = state.filters.source === 'all' || (e.source || '').toLowerCase() === state.filters.source.toLowerCase();
-            const term = state.filters.query.trim().toLowerCase();
-            const qOk = !term || `${e.title} ${e.description || ''} ${e.location || ''}`.toLowerCase().includes(term);
-            return sOk && qOk;
-        });
+        const base = state.allEvents
+            .filter(e => e.source !== 'Holiday')
+            .filter(e => {
+                const sOk = state.filters.source === 'all' || (e.source || '').toLowerCase() === state.filters.source.toLowerCase();
+                const term = state.filters.query.trim().toLowerCase();
+                const qOk = !term || `${e.title} ${e.description || ''} ${e.location || ''}`.toLowerCase().includes(term);
+                return sOk && qOk;
+            });
         const categories = new Map();
         base.forEach(e => {
             const key = (e.categoryId || e.type || 'uncat').toLowerCase();
@@ -741,6 +765,7 @@
             start: e.start,
             end: e.end,
             allDay: e.allDay,
+            display: e.source === 'Holiday' ? 'block' : 'auto',
             extendedProps: {
                 baseId: e.baseId || e.id,
                 source: e.source,
@@ -752,7 +777,8 @@
                 location: e.location,
                 recurrence: e.recurrence,
                 reminder: e.reminder,
-                recurrenceExceptions: e.recurrenceExceptions
+                recurrenceExceptions: e.recurrenceExceptions,
+                isHoliday: e.source === 'Holiday'
             }
         }));
     }
@@ -826,11 +852,15 @@
                 if (prio) classes.push(`prio-${prio}`);
                 const src = (props.source || '').toString().toLowerCase();
                 if (src) classes.push(`src-${src}`);
+                if (props.isHoliday) classes.push('is-holiday');
                 const cat = (props.type || '').toString().toLowerCase();
                 if (cat) classes.push(`cat-${cat}`);
                 if (props.recurrence && props.recurrence !== 'None') classes.push('has-recurrence');
                 if (normalizeReminderValue(props.reminder) !== null) classes.push('has-reminder');
                 return classes;
+            },
+            dayCellClassNames(arg) {
+                return isHolidayDate(arg.date) ? ['fc-day-holiday'] : [];
             },
             eventContent(arg) {
                 const props = arg.event.extendedProps || {};
@@ -880,6 +910,10 @@
             },
             eventClick(info) {
                 const props = info.event.extendedProps || {};
+                if (props.source === 'Holiday') {
+                    info.jsEvent?.preventDefault();
+                    return;
+                }
                 const baseId = props.baseId || info.event.id;
                 const occ = info.event.startStr;
                 if (baseId) window.location.href = `/Events/Details?id=${encodeURIComponent(baseId)}&occurrence=${encodeURIComponent(occ)}`;
@@ -958,25 +992,11 @@
         bindStats();
         bindMobileToggles();
         window.addEventListener('resize', refreshCalendarHeight);
-        startNowClock();
         autoFocusCalendarOnLoad();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         init().catch(err => console.error(err));
     });
-
-    function startNowClock() {
-        const root = qs('#icNowClock');
-        if (!root) return;
-        const timeEl = qs('.time', root);
-        const update = () => {
-            const now = new Date();
-            const opts = { hour: '2-digit', minute: '2-digit' };
-            if (timeEl) timeEl.textContent = now.toLocaleTimeString('ja-JP', opts);
-        };
-        update();
-        setInterval(update, 30 * 1000);
-    }
 
 })();
