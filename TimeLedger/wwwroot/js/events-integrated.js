@@ -501,6 +501,10 @@
     function renderCategoryFilters() {
         const list = qs('#icCategoryList');
         if (!list) return;
+        const isUncategorized = (evt) => {
+            const type = (evt.type || '').trim();
+            return !evt.categoryId && (!type || type === '未分類');
+        };
         const base = state.allEvents
             .filter(e => e.source !== 'Holiday')
             .filter(e => {
@@ -511,7 +515,8 @@
             });
         const categories = new Map();
         base.forEach(e => {
-            const key = (e.categoryId || e.type || 'uncat').toLowerCase();
+            if (isUncategorized(e)) return;
+            const key = (e.categoryId || e.type || '').toLowerCase();
             if (!categories.has(key)) {
                 categories.set(key, {
                     id: e.categoryId || key,
@@ -522,7 +527,7 @@
             }
         });
 
-        const counts = countBy(base, e => (e.categoryId || e.type || 'uncat').toLowerCase());
+        const counts = countBy(base.filter(e => !isUncategorized(e)), e => (e.categoryId || e.type || '').toLowerCase());
         list.innerHTML = '';
 
         const makeBtn = (label, key, color, icon, count) => {
