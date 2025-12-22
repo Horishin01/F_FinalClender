@@ -275,7 +275,6 @@
         setText('#srcOutlook', bySource.Outlook || 0);
         setText('#srcWork', bySource.Work || 0);
         setText('#srcLocal', bySource.Local || 0);
-        setText('#srcHoliday', bySource.Holiday || 0);
         setText('#catAll', total);
         renderCategoryFilters();
     }
