@@ -262,7 +262,6 @@
         }).length;
         const dup = detectDup(pool);
 
-        setText('#statTotal', total);
         setText('#statToday', todayCount);
         setText('#statWeek', weekCount);
         setText('#statDup', dup);
