@@ -1,3 +1,7 @@
+// Program.cs
+// アプリのエントリーポイント。DI/認証プロバイダ/カレンダー連携クライアントの登録と、Admin ユーザーのシードを行う。
+// 外部 OAuth のクライアントID/Secret は appsettings または環境変数経由で設定し、起動時に存在する場合のみ追加する。
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TimeLedger.Data;

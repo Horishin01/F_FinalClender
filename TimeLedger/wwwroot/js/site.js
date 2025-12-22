@@ -1,7 +1,8 @@
 ﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 // for details on configuring this project to bundle and minify static web assets.
 
-// Write your JavaScript code.
+// site.js
+// グローバルな UI 振る舞いをまとめる（ナビ開閉、モバイルメニューのアクセシビリティ制御、ツールチップ初期化など）。
 
 document.addEventListener('DOMContentLoaded', () => {
     console.info('[site.js] loaded');

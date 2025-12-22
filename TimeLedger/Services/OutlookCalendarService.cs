@@ -1,3 +1,6 @@
+// OutlookCalendarService
+// Outlook カレンダーの OAuth トークン管理と Microsoft Graph 呼び出しを行うサービス。接続の保存/更新/削除を集約する。
+
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;

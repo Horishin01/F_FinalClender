@@ -1,3 +1,6 @@
+/* site.css
+   対象: 全ページ共通のベーススタイル（タイポグラフィ、ナビ、ボタン、フォームなど）。色は :root 変数で一括管理。 */
+
 :root {
     --brand-start: #6272ff;
     --brand-end: #7de9f2;
@@ -362,6 +365,12 @@ body.nav-open {
     .nav-toggle { width: 100%; justify-content: center; }
 }
 
+@media (max-width: 768px) {
+    .footer-links {
+        min-width: 100%;
+    }
+}
+
 .app-nav.is-open {
     position: relative;
     z-index: 1200;
@@ -387,24 +396,78 @@ body.nav-open {
 }
 
 .app-footer {
-    padding: 1.5rem 0 2rem;
+    background: linear-gradient(90deg, #f6f7fb 0%, #eef1f9 100%);
+    padding: 2rem 0 2.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 .footer-inner {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 1rem;
-    color: #f1f5f9;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    color: #1f2a44;
 }
 
-.app-footer a {
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.footer-brand .logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6a8bff, #7bd5ff);
+    display: grid;
+    place-items: center;
     color: #fff;
-    text-decoration: none;
+    font-size: 20px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
-.app-footer a:hover {
+.footer-brand .brand-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: #1f2a44;
+}
+
+.footer-brand .brand-tagline {
+    color: #4b5878;
+}
+
+.footer-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    min-width: 320px;
+    flex: 1;
+}
+
+.footer-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1f2a44;
+    margin-bottom: 6px;
+}
+
+.footer-links a {
+    display: block;
+    color: #3b4868;
+    text-decoration: none;
+    margin-bottom: 4px;
+}
+
+.footer-links a:hover {
     text-decoration: underline;
+}
+
+.footer-links span {
+    color: #3b4868;
+    font-size: 13px;
+    line-height: 1.6;
 }
 
 .auth-chip {

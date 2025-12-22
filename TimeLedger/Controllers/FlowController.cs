@@ -1,3 +1,6 @@
+// FlowController
+// Flow デモページ（管理者限定）の表示のみを行うシンプルなコントローラー。BodyClass を設定してビューを返す。
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TimeLedger.Models;

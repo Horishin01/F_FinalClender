@@ -63,7 +63,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
             }
 
             _logger.LogInformation("User with ID '{UserId}' has disabled 2fa.", _userManager.GetUserId(User));
-            StatusMessage = "2fa has been disabled. You can reenable 2fa when you setup an authenticator app";
+            StatusMessage = "2 段階認証を無効にしました。Authenticator アプリを再設定すると再度有効化できます。";
             return RedirectToPage("./TwoFactorAuthentication");
         }
     }

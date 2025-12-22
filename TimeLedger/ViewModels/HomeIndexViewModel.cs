@@ -1,3 +1,5 @@
+// HomeIndexViewModel / CalendarPreviewEvent
+// ホーム画面のプレビュー用に、最小限のイベント情報と認証状態を運ぶビューモデル。
 using System;
 using System.Collections.Generic;
 

@@ -1,3 +1,8 @@
+/* admin-portal.css
+   対象: /Admin/Index などの管理者ポータル専用スタイル。
+   目的: カード型ダッシュボードの配色・グリッド・ヒーローセクションをまとめて定義し、一般ページの CSS と分離する。
+   カスタマイズ: グリッド列数は .portal-grid の minmax / repeat を調整。色味は .admin-hero と .card-icon 付近を変更するとトーンを揃えやすい。 */
+
 /* Admin portal */
 .admin-portal {
     background: #f3f6fb;

@@ -2,7 +2,10 @@
 
 @if (!String.IsNullOrEmpty(Model))
 {
-    var statusMessageClass = Model.StartsWith("Error") ? "danger" : "success";
+    var isError = Model.StartsWith("Error", StringComparison.OrdinalIgnoreCase)
+        || Model.Contains("失敗", StringComparison.OrdinalIgnoreCase)
+        || Model.Contains("エラー", StringComparison.OrdinalIgnoreCase);
+    var statusMessageClass = isError ? "danger" : "success";
     <div class="alert alert-@statusMessageClass alert-dismissible" role="alert">
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         @Model

@@ -48,6 +48,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account
             /// </summary>
             [Required]
             [EmailAddress]
+            [Display(Name = "メールアドレス")]
             public string Email { get; set; }
         }
 
@@ -65,7 +66,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account
             var user = await _userManager.FindByEmailAsync(Input.Email);
             if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "Verification email sent. Please check your email.");
+                ModelState.AddModelError(string.Empty, "確認メールを送信しました。メールをご確認ください。");
                 return Page();
             }
 
@@ -79,10 +80,10 @@ namespace TimeLedger.Areas.Identity.Pages.Account
                 protocol: Request.Scheme);
             await _emailSender.SendEmailAsync(
                 Input.Email,
-                "Confirm your email",
-                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                "メールアドレスを確認してください",
+                $"以下のリンクをクリックしてアカウントを有効化してください: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>メールアドレスを確認する</a>。");
 
-            ModelState.AddModelError(string.Empty, "Verification email sent. Please check your email.");
+            ModelState.AddModelError(string.Empty, "確認メールを送信しました。メールをご確認ください。");
             return Page();
         }
     }

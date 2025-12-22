@@ -1,3 +1,6 @@
+// AppNoticesController
+// 管理者がインシデント/アップデートの告知を登録・編集するための CRUD コントローラー。
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

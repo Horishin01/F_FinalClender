@@ -1,3 +1,6 @@
+// UserAccessLoggingMiddleware
+// 認証ユーザーのアクセス履歴を DB に保存するミドルウェア。エラー時も例外を再スローしつつ 500 を付与し、処理時間や例外種別を記録する。
+
 ﻿using System.Diagnostics;
 using System.Security.Claims;
 using System.Security.Cryptography;

@@ -1,3 +1,6 @@
+// ToolsController
+// 管理者向けのツール系デモページ（Packlist/TimeInsight/Patterns）の表示のみを担当。
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TimeLedger.Models;

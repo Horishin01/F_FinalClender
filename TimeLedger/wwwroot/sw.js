@@ -1,3 +1,6 @@
+// sw.js
+// PWA のサービスワーカー。静的アセットをプリキャッシュし、ナビゲーションはネット優先（フォールバックはルートキャッシュ）、GET のみを対象にする。
+
 const CACHE_NAME = 'timeledger-cache-v3';
 const ASSETS = [
   '/',

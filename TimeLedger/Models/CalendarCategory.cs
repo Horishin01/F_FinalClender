@@ -1,3 +1,6 @@
+// CalendarCategory
+// ユーザーごとのカテゴリ設定モデル。色・アイコン・並び順を保持し、イベント紐付け時の分類に利用する。
+
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

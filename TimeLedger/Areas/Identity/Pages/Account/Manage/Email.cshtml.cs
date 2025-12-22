@@ -70,7 +70,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
             /// </summary>
             [Required]
             [EmailAddress]
-            [Display(Name = "New email")]
+            [Display(Name = "新しいメールアドレス")]
             public string NewEmail { get; set; }
         }
 
@@ -124,16 +124,16 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
                     pageHandler: null,
                     values: new { area = "Identity", userId = userId, email = Input.NewEmail, code = code },
                     protocol: Request.Scheme);
-                await _emailSender.SendEmailAsync(
-                    Input.NewEmail,
-                    "Confirm your email",
-                    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+            await _emailSender.SendEmailAsync(
+                Input.NewEmail,
+                "メールアドレスを確認してください",
+                $"以下のリンクをクリックしてメールアドレスの変更を完了してください: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>メールアドレスを確認する</a>。");
 
-                StatusMessage = "Confirmation link to change email sent. Please check your email.";
-                return RedirectToPage();
-            }
+            StatusMessage = "メールアドレス変更用の確認メールを送信しました。メールをご確認ください。";
+            return RedirectToPage();
+        }
 
-            StatusMessage = "Your email is unchanged.";
+            StatusMessage = "メールアドレスに変更はありません。";
             return RedirectToPage();
         }
 
@@ -162,10 +162,10 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
                 protocol: Request.Scheme);
             await _emailSender.SendEmailAsync(
                 email,
-                "Confirm your email",
-                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                "メールアドレスを確認してください",
+                $"以下のリンクをクリックしてアカウントを有効化してください: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>メールアドレスを確認する</a>。");
 
-            StatusMessage = "Verification email sent. Please check your email.";
+            StatusMessage = "確認メールを送信しました。メールをご確認ください。";
             return RedirectToPage();
         }
     }

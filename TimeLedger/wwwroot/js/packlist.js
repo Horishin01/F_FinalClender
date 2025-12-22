@@ -1,3 +1,6 @@
+// packlist.js
+// Packlist ページのクライアント処理。サーバー埋め込みの JSON を読み取り、チェックリスト UI を構築・保存する。
+
 (() => {
     const dataEl = document.getElementById('packlist-data');
     if (!dataEl) return;

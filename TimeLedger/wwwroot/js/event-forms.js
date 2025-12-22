@@ -1,3 +1,6 @@
+// event-forms.js
+// イベント作成/編集フォームのプレビューやカラー選択、繰り返し/終日切替を UI で補助するスクリプト。
+
 ﻿(function () {
     document.addEventListener('DOMContentLoaded', function () {
         const titleInput = document.querySelector('[name="Title"]');

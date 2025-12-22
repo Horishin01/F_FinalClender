@@ -1,3 +1,5 @@
+// AppNotice / NoticeKind
+// インシデント/アップデート告知のモデル。管理画面から CRUD され、トップやプライバシーで参照される。
 using System;
 using System.ComponentModel.DataAnnotations;
 

@@ -1,4 +1,6 @@
-/* Packlist: today-focused checklist */
+/* packlist.css
+   対象: Packlist ページのチェックリスト UI。カード/タグ/ステップバーの配色とレイアウトをまとめている。 */
+
 .packlist-page .app-main.container-xl {
     max-width: 1280px;
 }

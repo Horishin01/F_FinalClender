@@ -1,3 +1,6 @@
+// ICCard
+// IC カード UID をユーザーと紐付けるモデル。将来の物理カード認証や連携に備え、UserId 外部キーを持つ。
+
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 

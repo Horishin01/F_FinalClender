@@ -1,4 +1,12 @@
-/* 統合カレンダー風UI (既存 Events/Index 用) */
+/* events-integrated.css
+   対象: Events/Index (統合カレンダー UI) 全体の 3 カラムレイアウト・サイドバー・FullCalendar 埋め込み。
+   ポイント:
+     - .ic-layout の 3 カラムをベースにし、@media / data-viewport で段階的に 1 カラムへフォールバック。
+     - FullCalendar のリスト/タイムグリッドを直接上書きしているため、JS 側のビュー切替とセットで調整すること。
+     - モバイル向けは app-viewport.js の data-viewport にもフック（末尾のセレクター）。
+   カスタマイズ例:
+     - 全体色味を変える: .ic-root のグラデーションと各 .ic-card-title-icon のグラデーションを変更。
+     - サイドバー幅調整: .ic-layout の grid-template-columns の数値を更新。 */
 
 /* 全体コンテナ */
 .ic-root {
@@ -1194,31 +1202,31 @@ body.mobile-lock {
 }
 
 /* 幅が狭い場合は縦並びに切り替え（モバイル用） */
-@media (max-width: 1200px) {
-    .ic-layout {
+@media (max-width: 1023px) {
+    :root:not(.force-desktop) .ic-layout {
         grid-template-columns: 1fr;
         position: static;
         left: 0;
     }
-    .ic-main-head {
+    :root:not(.force-desktop) .ic-main-head {
         grid-template-columns: 1fr;
         row-gap: 0.5rem;
     }
-    .ic-main-actions {
+    :root:not(.force-desktop) .ic-main-actions {
         justify-content: flex-start;
         flex-wrap: wrap;
     }
-    .sync-visual {
+    :root:not(.force-desktop) .sync-visual {
         width: 100%;
         justify-content: flex-start;
     }
-    .sync-meter {
+    :root:not(.force-desktop) .sync-meter {
         width: 100%;
     }
-    .ic-sidebar-left {
+    :root:not(.force-desktop) .ic-sidebar-left {
         flex-direction: column;
     }
-    .ic-sidebar-right {
+    :root:not(.force-desktop) .ic-sidebar-right {
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     }
 }
@@ -1276,34 +1284,34 @@ body.mobile-lock {
     }
 }
 
-@media (max-width: 1024px) {
-    .mobile-quick-actions { display: flex; }
-    .ic-layout {
+@media (max-width: 900px) {
+    :root:not(.force-desktop) .mobile-quick-actions { display: flex; }
+    :root:not(.force-desktop) .ic-layout {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
         padding-bottom: 0.25rem;
     }
-    .ic-main {
+    :root:not(.force-desktop) .ic-main {
         order: 1;
         padding: 0.8rem 0.35rem 0.9rem;
     }
-    .ic-sidebar-left { order: 2; }
-    .ic-sidebar-right { order: 3; }
-    .ic-sidebar-left,
-    .ic-sidebar-right {
+    :root:not(.force-desktop) .ic-sidebar-left { order: 2; }
+    :root:not(.force-desktop) .ic-sidebar-right { order: 3; }
+    :root:not(.force-desktop) .ic-sidebar-left,
+    :root:not(.force-desktop) .ic-sidebar-right {
         gap: 0.7rem;
         background: transparent;
         box-shadow: none;
         padding: 0;
     }
-    .ic-card {
+    :root:not(.force-desktop) .ic-card {
         width: 100%;
     }
-    .ic-calendar-wrap {
+    :root:not(.force-desktop) .ic-calendar-wrap {
         min-height: clamp(480px, 72vh, 780px);
     }
-    .mobile-collapsible {
+    :root:not(.force-desktop) .mobile-collapsible {
         display: block;
         position: fixed;
         left: 0;
@@ -1321,12 +1329,12 @@ body.mobile-lock {
         transition: transform 0.2s ease, opacity 0.2s ease;
         z-index: 60;
     }
-    .mobile-collapsible.is-open {
+    :root:not(.force-desktop) .mobile-collapsible.is-open {
         transform: translateY(0);
         opacity: 1;
         pointer-events: auto;
     }
-    .mobile-sheet-head {
+    :root:not(.force-desktop) .mobile-sheet-head {
         display: flex;
         position: sticky;
         top: 0;
@@ -1463,4 +1471,69 @@ body.mobile-lock {
     .sync-status {
         white-space: normal;
     }
+}
+
+/* Viewport helper (app-viewport.js) to avoid scattered pixel-based checks */
+:root:not(.force-desktop)[data-viewport="desktop"] .mobile-quick-actions { display: none; }
+:root:not(.force-desktop)[data-viewport="tablet"] .mobile-quick-actions,
+:root:not(.force-desktop)[data-viewport="mobile"] .mobile-quick-actions { display: flex; }
+
+:root:not(.force-desktop)[data-viewport="tablet"] .ic-layout,
+:root:not(.force-desktop)[data-viewport="mobile"] .ic-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-bottom: 0.25rem;
+}
+:root:not(.force-desktop)[data-viewport="tablet"] .ic-main,
+:root:not(.force-desktop)[data-viewport="mobile"] .ic-main { order: 1; }
+:root:not(.force-desktop)[data-viewport="tablet"] .ic-sidebar-left,
+:root:not(.force-desktop)[data-viewport="mobile"] .ic-sidebar-left { order: 2; }
+:root:not(.force-desktop)[data-viewport="tablet"] .ic-sidebar-right,
+:root:not(.force-desktop)[data-viewport="mobile"] .ic-sidebar-right { order: 3; }
+
+:root.force-desktop .mobile-quick-actions { display: none !important; }
+:root.force-desktop .mobile-overlay { display: none !important; }
+:root.force-desktop .mobile-collapsible {
+    display: block !important;
+    position: static !important;
+    transform: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+:root.force-desktop .mobile-sheet-head { display: none !important; }
+:root.force-desktop .ic-layout {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 1.2fr) minmax(0, 5.5fr) minmax(260px, 1.2fr) !important;
+    gap: clamp(22px, 2vw, 32px) !important;
+}
+:root.force-desktop .ic-main {
+    order: 0 !important;
+    padding: 0.6rem 0.2rem 0.75rem !important;
+}
+:root.force-desktop .ic-sidebar-left,
+:root.force-desktop .ic-sidebar-right {
+    order: 0 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    padding: 0.7rem !important;
+    border-radius: 22px !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+    position: static !important;
+}
+
+.fc-day-holiday {
+    background: linear-gradient(180deg, rgba(255, 234, 238, 0.85), rgba(255, 248, 251, 0.8));
+}
+
+.fc-day-holiday .fc-daygrid-day-number,
+.fc-day-holiday .fc-list-day-text {
+    color: #c02639;
+    font-weight: 700;
+}
+
+.fc-event.is-holiday {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #b91c1c;
+    pointer-events: none;
 }

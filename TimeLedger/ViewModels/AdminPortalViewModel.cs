@@ -1,3 +1,5 @@
+// AdminPortalViewModel
+// 管理ポータルで表示するサマリー統計をまとめたシンプルな DTO。
 namespace TimeLedger.ViewModels
 {
     public class AdminPortalViewModel

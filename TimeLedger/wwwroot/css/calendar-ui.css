@@ -1,4 +1,15 @@
-﻿:root {
+﻿/* calendar-ui.css
+   対象: カレンダー UI (FullCalendar 埋め込み) の見た目をまとめて制御するメインテーマ。
+   ポイント:
+     - :root で CSS カスタムプロパティを定義し、色・影・カテゴリ/優先度の配色を一元管理。
+     - FullCalendar のクラス (.fc-*) を直接上書きしているため、JS 側で themeSystem を変える場合はここも併せて調整。
+     - ビューポート判定は app-viewport.js の data-viewport を活用（末尾のセクション参照）。
+   カスタマイズ例:
+     - 色をまとめて変えたい: 先頭の --ui-* / --cat-* / --prio-* を編集。
+     - イベントカードの角丸や影を調整: .fc .fc-event ブロックの border-radius / box-shadow。
+     - タイムラインで改行させたい: .fc-timegrid-event .ev-title の white-space などを変更。 */
+
+:root {
     --ui-panel: #ffffff;
     --ui-shadow: 0 25px 60px rgba(15, 23, 42, 0.15);
     --ui-border: #e5e8f3;

@@ -83,7 +83,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
             }
 
             await _signInManager.ForgetTwoFactorClientAsync();
-            StatusMessage = "The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.";
+            StatusMessage = "このブラウザーを忘れる設定にしました。次回このブラウザーからログインする際は 2 段階認証コードが必要になります。";
             return RedirectToPage();
         }
     }

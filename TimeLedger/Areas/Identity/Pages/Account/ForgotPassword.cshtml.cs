@@ -47,6 +47,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account
             /// </summary>
             [Required]
             [EmailAddress]
+            [Display(Name = "メールアドレス")]
             public string Email { get; set; }
         }
 
@@ -73,8 +74,8 @@ namespace TimeLedger.Areas.Identity.Pages.Account
 
                 await _emailSender.SendEmailAsync(
                     Input.Email,
-                    "Reset Password",
-                    $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    "パスワードをリセットしてください",
+                    $"下記リンクからパスワードを再設定してください: <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>パスワードを再設定する</a>。");
 
                 return RedirectToPage("./ForgotPasswordConfirmation");
             }

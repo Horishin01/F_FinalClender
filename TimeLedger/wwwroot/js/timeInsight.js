@@ -1,3 +1,6 @@
+// timeInsight.js
+// TimeInsight デモページの描画ロジック。サーバーから埋め込まれた JSON データを読み込み、指標カードやチャートをレンダリングする。
+
 (() => {
     const dataEl = document.getElementById('timeInsight-data');
     if (!dataEl) return;

@@ -1,3 +1,6 @@
+// flow.js
+// Flow デモページ用。入力済みフローを localStorage に保存・復元し、簡易的な提案チップやスタッツを描画する。
+
 (function () {
     const STORAGE_KEY = 'pit2hi-flow-page';
     const SUGGESTIONS = [

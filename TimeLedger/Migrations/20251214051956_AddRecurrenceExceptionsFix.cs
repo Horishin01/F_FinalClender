@@ -1,3 +1,6 @@
+// EF Core Migration: AddRecurrenceExceptionsFix
+// 自動生成されたマイグレーション。再帰例外の処理を補正したスキーマ変更で、手動編集は非推奨。
+
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable

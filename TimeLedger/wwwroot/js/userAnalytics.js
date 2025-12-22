@@ -1,3 +1,6 @@
+// userAnalytics.js
+// アクセスログ分析ページ用。サーバーから埋め込まれた JSON を読み込み、チャート/表を描画して簡易的なフィルタを提供する。
+
 (() => {
     document.addEventListener("DOMContentLoaded", () => {
         const dataEl = document.getElementById("userAnalytics-data");

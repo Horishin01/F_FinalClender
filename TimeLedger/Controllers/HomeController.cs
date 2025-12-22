@@ -1,3 +1,6 @@
+// HomeController
+// ホーム/プライバシー/エラー画面の表示担当。ログインユーザーのイベントを軽量に読み出してホームのプレビューに渡す。
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

@@ -1,3 +1,6 @@
+// UserRolesController
+// ユーザーとロールの紐付け管理用 CRUD。UserManager/RoleManager を用いつつ、複合キー (UserId, RoleId) で操作する。
+
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

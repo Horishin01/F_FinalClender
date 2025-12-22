@@ -1,0 +1,45 @@
+/* ui-framework.css
+   Purpose: Lightweight front-end framework layer to share breakpoints/containers
+   across Razor views without scattering pixel-based checks in JS. Relies on
+   app-viewport.js to set data-viewport on <html>. */
+
+:root {
+    --vp-bp-mobile: 768px;
+    --vp-bp-tablet: 1024px;
+    --vp-shell-max: 1480px;
+    --vp-shell-gutter: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+/* Generic shell wrapper that mirrors the max width used across pages */
+.vp-shell {
+    width: min(100%, var(--vp-shell-max));
+    margin: 0 auto;
+    padding-left: var(--vp-shell-gutter);
+    padding-right: var(--vp-shell-gutter);
+    box-sizing: border-box;
+}
+
+/* Show/hide helpers driven by data-viewport on <html>. These override layout
+   only when the viewport matches to avoid hard-coded pixel checks. */
+[data-viewport="desktop"] .vp-show-mobile,
+[data-viewport="desktop"] .vp-show-tablet,
+[data-viewport="tablet"] .vp-show-mobile,
+[data-viewport="mobile"] .vp-show-desktop,
+[data-viewport="mobile"] .vp-show-tablet,
+[data-viewport="tablet"] .vp-show-desktop {
+    display: none !important;
+}
+
+[data-viewport="mobile"] .vp-show-mobile,
+[data-viewport="tablet"] .vp-show-tablet,
+[data-viewport="desktop"] .vp-show-desktop {
+    /* revert keeps the element's own display while beating the hide rule */
+    display: revert !important;
+}
+
+/* Stack flex rows on mobile/tablet while keeping author-specified display */
+[data-viewport="mobile"] .vp-stack-on-mobile,
+[data-viewport="tablet"] .vp-stack-on-tablet {
+    flex-direction: column !important;
+    align-items: stretch;
+}

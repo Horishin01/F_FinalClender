@@ -1,3 +1,6 @@
+// EventsController
+// カレンダーイベントの CRUD と FullCalendar 用 API を提供。iCloud/ICS のインポート、メモリキャッシュを活用したリスト取得などを担う。
+
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;

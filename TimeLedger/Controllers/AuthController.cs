@@ -1,3 +1,6 @@
+// AuthController
+// 外部カレンダー連携用の OAuth フロー（Outlook/Google）と連携解除を扱う。認証スキームの有無を確認してからリダイレクトを生成する。
+
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;

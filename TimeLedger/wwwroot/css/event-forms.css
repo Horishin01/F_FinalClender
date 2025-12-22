@@ -1,3 +1,13 @@
+/* event-forms.css
+   対象: イベント作成/編集ビューのフォームやプレビュー周辺をまとめたスタイル。
+   ポイント:
+     - :root でフォーム用のカスタムプロパティを定義し、全体のトーンを統一。
+     - .ev-grid でフォームとサイドパネルの2カラムを作成（991px で 1 カラムへ）。
+     - フォーム入力は .form-control を上書きしているので、Bootstrap 更新時は競合を確認すること。
+   カスタマイズ例:
+     - 角丸を変える: .ev-panel / .form-control / .btn の border-radius を揃える。
+     - プレビュー枠の彩度: .ev-preview, .ev-preview-dot 周辺の色を変更。 */
+
 :root {
     --ev-bg: #f4f6ff;
     --ev-panel: #ffffff;

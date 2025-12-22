@@ -1,8 +1,11 @@
-// 統合カレンダー風 UI (Events/Index 用). FullCalendar + サイドバー/統計/検索
+// events-integrated.js
+// 統合カレンダー UI (Events/Index) のメインスクリプト。FullCalendar の描画、サイドバーのフィルター/統計/検索、同期ステータス表示をまとめて管理。
+// ビューポート判定は app-viewport.js に依存し、:root[data-viewport] と連携する。
 (function () {
     const qs = (sel, root = document) => root.querySelector(sel);
     const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-    const mobileMq = window.matchMedia('(max-width: 768px)');
+    const viewport = window.appViewport || createViewportFallback();
+    const root = document.documentElement;
     let hasAutoFocusedCalendar = false;
 
     const state = {
@@ -16,8 +19,53 @@
         },
         focusStat: null,
         calendar: null,
-        viewRange: null
+        viewRange: null,
+        holidayDates: new Set()
     };
+
+    function createViewportFallback() {
+        const listeners = new Set();
+        const mobileMq = window.matchMedia('(max-width: 767px)');
+        const tabletMq = window.matchMedia('(max-width: 1024px)');
+        const compute = () => {
+            if (mobileMq.matches) return 'mobile';
+            if (tabletMq.matches) return 'tablet';
+            return 'desktop';
+        };
+        let current = compute();
+        const notify = () => {
+            const next = compute();
+            if (next === current) return;
+            current = next;
+            listeners.forEach(fn => fn(current));
+        };
+        const bind = (mq) => {
+            if (!mq) return;
+            if (mq.addEventListener) {
+                mq.addEventListener('change', notify);
+            } else if (mq.addListener) {
+                mq.addListener(notify);
+            }
+        };
+        bind(mobileMq);
+        bind(tabletMq);
+        return {
+            breakpoints: { mobile: 768, tablet: 1024 },
+            current: () => current,
+            isMobile: () => current === 'mobile',
+            isTablet: () => current === 'tablet',
+            isDesktop: () => current === 'desktop',
+            subscribe(cb) {
+                if (typeof cb !== 'function') return () => { };
+                listeners.add(cb);
+                cb(current);
+                return () => listeners.delete(cb);
+            }
+        };
+    }
+
+    const isDesktopMode = () => viewport.isDesktop();
+    const isMobileMode = () => viewport.isMobile() || (viewport.isTablet && viewport.isTablet());
 
     const recurrenceLabelMap = {
         None: '',
@@ -97,6 +145,8 @@
         const res = await fetch('/Events/GetEvents');
         if (!res.ok) throw new Error('イベント取得に失敗しました');
         const json = await res.json();
+        const holidays = await fetchHolidayEvents();
+        state.holidayDates = new Set(holidays.map(h => toDateKey(h.start)));
         state.allEvents = json.map(e => ({
             ...e,
             source: (e.source || 'Local'),
@@ -108,7 +158,34 @@
             recurrence: e.recurrence || 'None',
             reminder: normalizeReminderValue(e.reminder),
             recurrenceExceptions: parseExceptionList(e.recurrenceExceptions)
-        }));
+        })).concat(holidays);
+    }
+
+    async function fetchHolidayEvents() {
+        try {
+            const res = await fetch('https://holidays-jp.github.io/api/v1/date.json');
+            if (!res.ok) throw new Error('祝日APIにアクセスできませんでした');
+            const data = await res.json();
+            return Object.entries(data).map(([date, name]) => ({
+                id: `holiday-${date}`,
+                title: `${name}`,
+                start: date,
+                end: addDays(date, 1),
+                allDay: true,
+                source: 'Holiday',
+                type: '',
+                categoryId: '',
+                categoryIcon: 'fa-flag',
+                categoryColor: '#ef4444',
+                priority: 'Low',
+                recurrence: 'None',
+                reminder: null,
+                recurrenceExceptions: []
+            }));
+        } catch (err) {
+            console.warn('祝日情報の取得に失敗しました', err);
+            return [];
+        }
     }
 
     function parseExceptionList(raw) {
@@ -116,6 +193,18 @@
         return raw.split(',')
             .map(x => x.trim())
             .filter(Boolean);
+    }
+
+    function toDateKey(date) {
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+            return date.slice(0, 10);
+        }
+        const d = new Date(date);
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+
+    function isHolidayDate(date) {
+        return state.holidayDates.has(toDateKey(date));
     }
 
     function shouldSkipDate(skipList, dateKey) {
@@ -181,8 +270,13 @@
         // counts
         const bySource = countBy(pool, e => e.source);
         const byCat = countBy(pool, e => e.categoryId || e.type);
-        setText('#srcAll', total); setText('#srcGoogle', bySource.Google || 0); setText('#srcICloud', bySource.ICloud || 0);
-        setText('#srcOutlook', bySource.Outlook || 0); setText('#srcWork', bySource.Work || 0); setText('#srcLocal', bySource.Local || 0);
+        setText('#srcAll', total);
+        setText('#srcGoogle', bySource.Google || 0);
+        setText('#srcICloud', bySource.ICloud || 0);
+        setText('#srcOutlook', bySource.Outlook || 0);
+        setText('#srcWork', bySource.Work || 0);
+        setText('#srcLocal', bySource.Local || 0);
+        setText('#srcHoliday', bySource.Holiday || 0);
         setText('#catAll', total);
         renderCategoryFilters();
     }
@@ -409,12 +503,14 @@
     function renderCategoryFilters() {
         const list = qs('#icCategoryList');
         if (!list) return;
-        const base = state.allEvents.filter(e => {
-            const sOk = state.filters.source === 'all' || (e.source || '').toLowerCase() === state.filters.source.toLowerCase();
-            const term = state.filters.query.trim().toLowerCase();
-            const qOk = !term || `${e.title} ${e.description || ''} ${e.location || ''}`.toLowerCase().includes(term);
-            return sOk && qOk;
-        });
+        const base = state.allEvents
+            .filter(e => e.source !== 'Holiday')
+            .filter(e => {
+                const sOk = state.filters.source === 'all' || (e.source || '').toLowerCase() === state.filters.source.toLowerCase();
+                const term = state.filters.query.trim().toLowerCase();
+                const qOk = !term || `${e.title} ${e.description || ''} ${e.location || ''}`.toLowerCase().includes(term);
+                return sOk && qOk;
+            });
         const categories = new Map();
         base.forEach(e => {
             const key = (e.categoryId || e.type || 'uncat').toLowerCase();
@@ -468,7 +564,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
-            if (mobileMq.matches) closeMobilePanels();
+            if (isMobileMode()) closeMobilePanels();
         });
         catList?.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-category]');
@@ -479,7 +575,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
-            if (mobileMq.matches) closeMobilePanels();
+            if (isMobileMode()) closeMobilePanels();
         });
         const search = qs('#icSearch');
         search?.addEventListener('input', (e) => {
@@ -487,7 +583,7 @@
             state.focusStat = null;
             qsa('.ic-stat').forEach(el => el.classList.remove('active'));
             rerender();
-            if (mobileMq.matches) closeMobilePanels();
+            if (isMobileMode()) closeMobilePanels();
         });
     }
 
@@ -507,6 +603,7 @@
     }
 
     function toggleMobilePanel(kind) {
+        if (isDesktopMode()) return;
         const target = mobilePanels[kind]?.();
         if (!target) return;
         const willOpen = !target.classList.contains('is-open');
@@ -530,7 +627,7 @@
         };
         Object.entries(views).forEach(([id, viewSet]) => {
             qs('#' + id)?.addEventListener('click', () => {
-                const targetView = mobileMq.matches ? viewSet.mobile : viewSet.desktop;
+                const targetView = isMobileMode() ? viewSet.mobile : viewSet.desktop;
                 calendar.changeView(targetView);
                 Object.keys(views).forEach(k => qs('#' + k)?.classList.remove('active'));
                 qs('#' + id)?.classList.add('active');
@@ -555,7 +652,7 @@
             setActiveViewButton('timeGridDay');
         } else if (kind === 'week') {
             state.calendar.gotoDate(now);
-            const view = mobileMq.matches ? 'listWeek' : 'timeGridWeek';
+            const view = isMobileMode() ? 'listWeek' : 'timeGridWeek';
             state.calendar.changeView(view);
             setActiveViewButton(view);
         } else if (kind === 'dup') {
@@ -668,6 +765,7 @@
             start: e.start,
             end: e.end,
             allDay: e.allDay,
+            display: e.source === 'Holiday' ? 'block' : 'auto',
             extendedProps: {
                 baseId: e.baseId || e.id,
                 source: e.source,
@@ -679,7 +777,8 @@
                 location: e.location,
                 recurrence: e.recurrence,
                 reminder: e.reminder,
-                recurrenceExceptions: e.recurrenceExceptions
+                recurrenceExceptions: e.recurrenceExceptions,
+                isHoliday: e.source === 'Holiday'
             }
         }));
     }
@@ -721,7 +820,7 @@
     }
 
     function getCalendarHeight() {
-        return mobileMq.matches ? 'auto' : '80vh';
+        return isMobileMode() ? 'auto' : '80vh';
     }
 
     function refreshCalendarHeight() {
@@ -731,7 +830,7 @@
     function initCalendar() {
         const calEl = qs('#calendar');
         const period = qs('#calPeriod');
-        const initialView = mobileMq.matches ? 'listWeek' : 'dayGridMonth';
+        const initialView = isMobileMode() ? 'listWeek' : 'dayGridMonth';
         const now = new Date();
         const scrollTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
         const calendar = new FullCalendar.Calendar(calEl, {
@@ -753,11 +852,15 @@
                 if (prio) classes.push(`prio-${prio}`);
                 const src = (props.source || '').toString().toLowerCase();
                 if (src) classes.push(`src-${src}`);
+                if (props.isHoliday) classes.push('is-holiday');
                 const cat = (props.type || '').toString().toLowerCase();
                 if (cat) classes.push(`cat-${cat}`);
                 if (props.recurrence && props.recurrence !== 'None') classes.push('has-recurrence');
                 if (normalizeReminderValue(props.reminder) !== null) classes.push('has-reminder');
                 return classes;
+            },
+            dayCellClassNames(arg) {
+                return isHolidayDate(arg.date) ? ['fc-day-holiday'] : [];
             },
             eventContent(arg) {
                 const props = arg.event.extendedProps || {};
@@ -807,6 +910,10 @@
             },
             eventClick(info) {
                 const props = info.event.extendedProps || {};
+                if (props.source === 'Holiday') {
+                    info.jsEvent?.preventDefault();
+                    return;
+                }
                 const baseId = props.baseId || info.event.id;
                 const occ = info.event.startStr;
                 if (baseId) window.location.href = `/Events/Details?id=${encodeURIComponent(baseId)}&occurrence=${encodeURIComponent(occ)}`;
@@ -822,24 +929,20 @@
         state.calendar = calendar;
         setActiveViewButton(initialView);
 
-        const handleMobileView = (e) => {
+        const handleMobileView = (mode) => {
             if (!state.calendar) return;
-            if (e.matches) {
+            const isMobile = mode === 'mobile';
+            if (isMobile) {
                 state.calendar.changeView('listWeek');
                 setActiveViewButton('listWeek');
             } else if (state.focusStat !== 'week' && state.focusStat !== 'today') {
                 state.calendar.changeView('dayGridMonth');
                 setActiveViewButton('dayGridMonth');
             }
-            if (!e.matches) closeMobilePanels();
+            if (!isMobile) closeMobilePanels();
             refreshCalendarHeight();
         };
-        if (mobileMq.addEventListener) {
-            mobileMq.addEventListener('change', handleMobileView);
-        } else if (mobileMq.addListener) {
-            mobileMq.addListener(handleMobileView);
-        }
-        handleMobileView(mobileMq);
+        viewport.subscribe(handleMobileView);
     }
 
     function bindMobileToggles() {
@@ -866,7 +969,7 @@
     }
 
     function autoFocusCalendarOnLoad() {
-        if (hasAutoFocusedCalendar || !mobileMq.matches) return;
+        if (hasAutoFocusedCalendar || !isMobileMode()) return;
         const cal = qs('#calendar');
         if (!cal) return;
         // レイアウト描画後に少し遅らせてスクロール
@@ -889,25 +992,11 @@
         bindStats();
         bindMobileToggles();
         window.addEventListener('resize', refreshCalendarHeight);
-        startNowClock();
         autoFocusCalendarOnLoad();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         init().catch(err => console.error(err));
     });
-
-    function startNowClock() {
-        const root = qs('#icNowClock');
-        if (!root) return;
-        const timeEl = qs('.time', root);
-        const update = () => {
-            const now = new Date();
-            const opts = { hour: '2-digit', minute: '2-digit' };
-            if (timeEl) timeEl.textContent = now.toLocaleTimeString('ja-JP', opts);
-        };
-        update();
-        setInterval(update, 30 * 1000);
-    }
 
 })();

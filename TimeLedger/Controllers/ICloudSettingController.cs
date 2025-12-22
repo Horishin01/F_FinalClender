@@ -1,3 +1,6 @@
+// ICloudSettingController
+// ユーザーごとの iCloud CalDAV 接続情報を CRUD するコントローラー。認証済みユーザーの設定のみ扱う。
+
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

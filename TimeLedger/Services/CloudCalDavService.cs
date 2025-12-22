@@ -1,3 +1,7 @@
+// CloudCalDavService
+// iCloud CalDAV からイベントを取得/同期するサービス。CalDAV プロトコルの HTTP 呼び出しと Event 永続化を担当。
+// 注: 通信失敗時のロギング・ステータスコード保持を行い、SyncAsync で薄い同期 API を提供する。
+
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;

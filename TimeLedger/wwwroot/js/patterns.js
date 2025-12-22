@@ -1,3 +1,6 @@
+// patterns.js
+// Patterns ページ向け。埋め込まれた JSON シードを読み込んでカード UI を生成し、簡易インタラクションを提供する。
+
 (() => {
     const seedEl = document.getElementById('pattern-seed');
     if (!seedEl) return;

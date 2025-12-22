@@ -43,6 +43,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account
             /// </summary>
             [Required]
             [EmailAddress]
+            [Display(Name = "メールアドレス")]
             public string Email { get; set; }
 
             /// <summary>
@@ -50,8 +51,9 @@ namespace TimeLedger.Areas.Identity.Pages.Account
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
             [Required]
-            [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+            [StringLength(100, ErrorMessage = "{0}は{2}文字以上{1}文字以下で入力してください。", MinimumLength = 6)]
             [DataType(DataType.Password)]
+            [Display(Name = "新しいパスワード")]
             public string Password { get; set; }
 
             /// <summary>
@@ -59,8 +61,8 @@ namespace TimeLedger.Areas.Identity.Pages.Account
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
             [DataType(DataType.Password)]
-            [Display(Name = "Confirm password")]
-            [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+            [Display(Name = "新しいパスワード（確認）")]
+            [Compare("Password", ErrorMessage = "パスワードが一致しません。")]
             public string ConfirmPassword { get; set; }
 
             /// <summary>
@@ -76,7 +78,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account
         {
             if (code == null)
             {
-                return BadRequest("A code must be supplied for password reset.");
+                return BadRequest("パスワードリセットにはコードが必要です。");
             }
             else
             {
