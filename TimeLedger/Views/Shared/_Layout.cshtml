@@ -3,6 +3,8 @@
    主な構成: ナビ（ロール別リンク制御あり）、モバイルメニュー、RenderBody/RenderSection。
    依存: Bootstrap, FontAwesome, site.css, 個別セクションの Styles/Scripts。 *@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using Microsoft.EntityFrameworkCore
+@inject TimeLedger.Data.ApplicationDbContext Db
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -25,8 +27,20 @@
 @{
     var bodyClass = (ViewData["BodyClass"] as string)?.Trim();
     var bodyClasses = string.IsNullOrWhiteSpace(bodyClass) ? "app-body" : $"app-body {bodyClass}";
+    var latestNotice = await Db.AppNotices
+        .AsNoTracking()
+        .OrderByDescending(n => n.CreatedAtUtc)
+        .ThenByDescending(n => n.OccurredAt)
+        .Select(n => new { n.Id, n.Kind, n.CreatedAtUtc })
+        .FirstOrDefaultAsync();
+    var latestNoticeKey = latestNotice?.Id ?? string.Empty;
+    var latestNoticeKind = latestNotice?.Kind.ToString() ?? string.Empty;
+    var privacyUrl = Url.Action("Privacy", "Home") ?? "/Home/Privacy";
 }
-<body class="@bodyClasses">
+<body class="@bodyClasses"
+      data-app-notice-key="@latestNoticeKey"
+      data-app-notice-kind="@latestNoticeKind"
+      data-app-notice-url="@privacyUrl">
     <header class="app-header">
         <div class="container-xl">
             <nav class="app-nav" aria-label="グローバルナビゲーション">
@@ -60,6 +74,7 @@
 
     <div class="app-main container-xl">
         <main role="main" class="app-content">
+            <div id="appNoticeBannerHost" aria-live="polite"></div>
             @if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
             {
                 <div class="alert alert-warning" role="alert" style="margin-bottom:16px;">

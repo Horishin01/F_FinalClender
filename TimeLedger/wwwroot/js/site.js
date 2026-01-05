@@ -6,6 +6,74 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     console.info('[site.js] loaded');
+    const noticeKey = document.body?.dataset.appNoticeKey;
+    const noticeKind = document.body?.dataset.appNoticeKind;
+    const noticeBaseUrl = document.body?.dataset.appNoticeUrl || '/Home/Privacy';
+    if (noticeKey) {
+        const storageKey = 'timeledger.notice.lastSeen';
+        let lastSeen = null;
+        try {
+            lastSeen = localStorage.getItem(storageKey);
+        } catch (err) {
+            console.warn('[site.js] localStorage unavailable for notice tracking', err);
+        }
+
+        if (lastSeen !== noticeKey) {
+            const anchor = noticeKind === 'Incident' ? '#policy-incidents' : '#policy-updates';
+            const noticeUrl = `${noticeBaseUrl}${anchor}`;
+            const noticeHost = document.getElementById('appNoticeBannerHost');
+
+            if (noticeHost) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning app-notice-alert';
+                alert.setAttribute('role', 'alert');
+                alert.style.margin = '12px 0';
+
+                const strong = document.createElement('strong');
+                strong.textContent = 'お知らせ:';
+                alert.appendChild(strong);
+                alert.appendChild(document.createTextNode(' 不具合・アップデートが確認されています。'));
+
+                const link = document.createElement('a');
+                link.href = noticeUrl;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = '詳細を見る';
+                link.style.marginLeft = '8px';
+                alert.appendChild(link);
+
+                noticeHost.appendChild(alert);
+            }
+
+            let isPrivacyPage = false;
+            try {
+                const privacyPath = new URL(noticeBaseUrl, window.location.origin).pathname.toLowerCase();
+                isPrivacyPage = location.pathname.toLowerCase() === privacyPath;
+            } catch (err) {
+                console.warn('[site.js] privacy URL parse failed', err);
+            }
+
+            if (isPrivacyPage) {
+                const target = document.querySelector(anchor);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } else {
+                const opened = window.open(noticeUrl, '_blank');
+                if (opened) {
+                    opened.opener = null;
+                    opened.focus();
+                }
+            }
+
+            try {
+                localStorage.setItem(storageKey, noticeKey);
+            } catch (err) {
+                console.warn('[site.js] localStorage write failed for notice tracking', err);
+            }
+        }
+    }
+
     const nav = document.querySelector('.app-nav');
     const toggle = document.querySelector('.nav-toggle');
     const navBlock = nav?.querySelector('.app-nav-block');

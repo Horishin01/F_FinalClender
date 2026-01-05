@@ -96,6 +96,7 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - **レイアウト (`Views/Shared/_Layout.cshtml` + `wwwroot/css/site.css`):**
   - 画面全体にグラデーション背景を敷き、ガラス調ナビゲーション (ブランドピル + 丸型メニュー) を配置。
   - `.app-hero` と `.app-content` でカードが背景から浮き上がる構成。
+  - AppNotice の最新投稿を検知した場合、初回アクセス時に「不具合・アップデートが確認されています」の通知バナーを表示し、Privacy の該当セクションを別タブで開く（既読は localStorage で保持）。
 - **カレンダー (`Views/Events/Index.cshtml` + `wwwroot/css/calendar-ui.css` + `wwwroot/css/events-integrated.css` + `wwwroot/js/events-integrated.js`):**
   - 左サイドでソース/カテゴリのフィルター（カテゴリは DB マスタから動的生成）、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。
   - FullCalendar に拡張メタを渡し、フィルター/統計用に利用する。同期ボタンは `/Events/Sync` (iCloud) を AJAX 呼び出し、Outlook/Google 同期ボタンは `ExternalCalendars/Sync` へ POST。
