@@ -6,11 +6,21 @@
     ViewData["ActivePage"] = ManageNavPages.ExternalCalendarsOutlook;
     var statusClass = Model.Connection.HasError ? "error" : Model.Connection.IsConnected ? "success" : "muted";
     var scopeDisplay = string.IsNullOrWhiteSpace(Model.Connection.Scope) ? Model.DefaultScope : Model.Connection.Scope;
+    var lastSyncedJst = Model.Connection.LastSyncedAtUtc.ToJapanTimeString("yyyy/MM/dd HH:mm 'JST'");
+    var expiresJst = Model.Connection.ExpiresAtUtc.ToJapanTimeString("yyyy/MM/dd HH:mm 'JST'");
 }
 
 <div class="settings-card">
     <h2>@ViewData["Title"]</h2>
-    <p class="settings-description">Outlook (Microsoft 365 / Exchange Online) と安全に連携し、OAuth2 で取得したトークンをサーバー側で自動保存します。</p>
+    <p class="settings-description">Outlook (Microsoft 365 / Exchange Online) と連携します。現在は管理者のみ操作可能な開発中機能です。</p>
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="dev-guard">
+            <strong>開発中のため、管理者のみ操作できます。</strong>
+            <span>閲覧は可能ですが、接続や解除はできません。</span>
+        </div>
+    }
 
     <partial name="_StatusMessage" for="StatusMessage" />
 
@@ -23,24 +33,32 @@
             </div>
             <div>
                 <p class="meta-label">最終同期</p>
-                <p class="meta-value">@((Model.Connection.LastSyncedAtUtc.HasValue ? Model.Connection.LastSyncedAtUtc.Value.ToString("yyyy/MM/dd HH:mm 'UTC'") : "未同期"))</p>
+                <p class="meta-value">@(string.IsNullOrEmpty(lastSyncedJst) ? "未同期" : lastSyncedJst)</p>
             </div>
             <div>
                 <p class="meta-label">スコープ</p>
                 <p class="meta-value">@scopeDisplay</p>
             </div>
             <div>
-                <p class="meta-label">有効期限 (UTC)</p>
-                <p class="meta-value">@((Model.Connection.ExpiresAtUtc.HasValue ? Model.Connection.ExpiresAtUtc.Value.ToString("yyyy/MM/dd HH:mm 'UTC'") : "未取得"))</p>
+                <p class="meta-label">有効期限 (日本時間)</p>
+                <p class="meta-value">@(string.IsNullOrEmpty(expiresJst) ? "未取得" : expiresJst)</p>
             </div>
         </div>
     </div>
 
     <div class="form-actions">
-        <a class="btn-primary-modern" href="/auth/outlook/connect">Outlook と連携</a>
-        <form method="post" asp-page-handler="Disconnect" class="inline-form" onsubmit="return confirm('Outlook との連携を解除しますか？');">
-            <button class="btn-outline" type="submit" @(Model.Connection.IsConnected ? "" : "disabled")>連携解除</button>
-        </form>
+        @if (Model.IsReadOnly)
+        {
+            <button class="btn-primary-modern" type="button" disabled>Outlook と連携（管理者専用）</button>
+            <button class="btn-outline" type="button" disabled>連携解除</button>
+        }
+        else
+        {
+            <a class="btn-primary-modern" href="/auth/outlook/connect">Outlook と連携</a>
+            <form method="post" asp-page-handler="Disconnect" class="inline-form" onsubmit="return confirm('Outlook との連携を解除しますか？');">
+                <button class="btn-outline" type="submit" @(Model.Connection.IsConnected ? "" : "disabled")>連携解除</button>
+            </form>
+        }
     </div>
 
     @if (!Model.IsOAuthConfigured)
@@ -99,6 +117,16 @@
         }
         .inline-form {
             display: inline-block;
+        }
+        .dev-guard {
+            border: 1px dashed #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.8rem;
+            display: grid;
+            gap: 0.2rem;
         }
     </style>
 }

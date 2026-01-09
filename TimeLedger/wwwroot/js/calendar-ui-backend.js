@@ -11,6 +11,12 @@
 
 (function () {
     function $(s, r = document) { return r.querySelector(s); }
+    function formatLocalDateTime(value) {
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
 
     document.addEventListener('DOMContentLoaded', function () {
         const el = $('#calendar');
@@ -87,8 +93,8 @@
                     startDate = new Date(info.date);
                     endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
                 }
-                const start = startDate.toISOString();
-                const end = endDate.toISOString();
+                const start = formatLocalDateTime(startDate) || startDate.toISOString();
+                const end = formatLocalDateTime(endDate) || endDate.toISOString();
                 window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
             },
             eventClick(info) {
@@ -97,8 +103,8 @@
             },
             selectable: true,
             select(info) {
-                const start = info.startStr;
-                const end = info.endStr;
+                const start = formatLocalDateTime(info.start) || info.startStr;
+                const end = formatLocalDateTime(info.end) || info.endStr;
                 window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
             }
         });
@@ -155,7 +161,9 @@
                 e.preventDefault();
                 const now = new Date();
                 const end = new Date(now.getTime() + 60 * 60 * 1000);
-                window.location.href = `/Events/Create?startDate=${now.toISOString()}&endDate=${end.toISOString()}`;
+                const start = formatLocalDateTime(now) || now.toISOString();
+                const finish = formatLocalDateTime(end) || end.toISOString();
+                window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(finish)}`;
             });
         }
     });

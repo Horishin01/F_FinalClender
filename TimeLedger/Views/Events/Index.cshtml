@@ -1,6 +1,7 @@
 @{
     ViewData["Title"] = "統合カレンダー管理";
     ViewData["BodyClass"] = "events-page";
+    var isAdmin = User.IsInRole(TimeLedger.Models.RoleNames.Admin);
 }
 
 @if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
@@ -61,13 +62,16 @@
                         </span>
                         <span class="count" id="srcGoogle">0</span>
                     </button>
-                    <button class="ic-list-item" data-source="ICloud">
-                        <span class="ic-list-label">
-                            <span class="ic-list-icon icon-icloud">☁️</span>
-                            <span>iCloud Calendar</span>
-                        </span>
-                        <span class="count" id="srcICloud">0</span>
-                    </button>
+                    @if (isAdmin)
+                    {
+                        <button class="ic-list-item" data-source="ICloud">
+                            <span class="ic-list-label">
+                                <span class="ic-list-icon icon-icloud">☁️</span>
+                                <span>iCloud Calendar</span>
+                            </span>
+                            <span class="count" id="srcICloud">0</span>
+                        </button>
+                    }
                     <button class="ic-list-item" data-source="Outlook">
                         <span class="ic-list-label">
                             <span class="ic-list-icon icon-outlook">📧</span>

@@ -8,14 +8,29 @@
 
 <div class="settings-card">
     <h2>@ViewData["Title"]</h2>
-    <p class="settings-description">ICカードを読み取ることで本人確認や開錠処理に利用できます。</p>
+    <p class="settings-description">ICカードを読み取ることで本人確認や開錠処理に利用できます。現在は管理者のみ操作可能な開発中機能です。</p>
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="dev-guard">
+            <strong>開発中のため、管理者のみ操作できます。</strong>
+            <span>カードの登録・削除はできません。</span>
+        </div>
+    }
 
     <partial name="_StatusMessage" for="StatusMessage" />
 
     <div class="form-actions">
-        <form method="post" asp-page-handler="Read">
-            <button type="submit" class="btn-primary-modern">カードを読み取って登録／更新</button>
-        </form>
+        @if (Model.IsReadOnly)
+        {
+            <button type="button" class="btn-primary-modern" disabled>登録／更新（管理者専用）</button>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Read">
+                <button type="submit" class="btn-primary-modern">カードを読み取って登録／更新</button>
+            </form>
+        }
     </div>
 
     @if (Model.Card is not null)
@@ -24,9 +39,16 @@
             <label>登録済み UID</label>
             <code class="fs-5 text-danger">@Model.Card.Uid</code>
             <div class="form-actions mt-3">
-                <form method="post" asp-page-handler="Delete">
-                    <button type="submit" class="btn-outline">登録を削除</button>
-                </form>
+                @if (Model.IsReadOnly)
+                {
+                    <button type="button" class="btn-outline" disabled>登録を削除</button>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Delete">
+                        <button type="submit" class="btn-outline">登録を削除</button>
+                    </form>
+                }
             </div>
         </div>
     }
@@ -35,3 +57,18 @@
         <p class="hint-text mt-3">登録済みの IC カードはありません。カードをリーダーにタッチして登録してください。</p>
     }
 </div>
+
+@section ManageStyles {
+    <style>
+        .dev-guard {
+            border: 1px dashed #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.8rem;
+            display: grid;
+            gap: 0.2rem;
+        }
+    </style>
+}

@@ -6,15 +6,7 @@
     const STORAGE_CARD_KEY = 'pit2hi-preview-card';
     const LAYOUT_STORAGE_KEY = 'pit2hi-preview-layout';
     const FLOW_STORAGE_KEY = 'pit2hi-preview-flow';
-    const FLOW_SUGGESTIONS = [
-        { text: 'スマホ開く前に深呼吸', context: 'プライベート' },
-        { text: '水を飲む', context: '健康' },
-        { text: 'ベッドメイキング', context: 'プライベート' },
-        { text: '歯磨き', context: '健康' },
-        { text: 'カーテンを開ける', context: 'プライベート' },
-        { text: '今から集中タイム開始', context: '仕事' },
-        { text: '1on1 の準備メモを書く', context: '仕事' }
-    ];
+    const JAPAN_TIMEZONE = 'Asia/Tokyo';
     const LEGACY_SAMPLE_TITLES = new Set([
         'スプリントレビュー',
         '歩いてランチ',
@@ -101,7 +93,6 @@
             flowContext: document.getElementById('flowContext'),
             flowAddButton: document.getElementById('btnAddFlow'),
             flowList: document.getElementById('flowList'),
-            flowSuggestionChips: document.getElementById('flowSuggestionChips'),
             flowCountToday: document.getElementById('flowCountToday'),
             flowCountWeek: document.getElementById('flowCountWeek'),
             flowStreak: document.getElementById('flowStreak'),
@@ -133,7 +124,7 @@
 
         const calendar = new FullCalendar.Calendar(calendarEl, {
             locale: 'ja',
-            timeZone: 'local',
+            timeZone: JAPAN_TIMEZONE,
             initialView: 'dayGridMonth',
             headerToolbar: false,
             height: 'auto',
@@ -167,7 +158,7 @@
                 }
                 const summary = [
                     `タイトル: ${ev.title}`,
-                    `時間: ${info.event.allDay ? '終日' : `${ev.start?.toLocaleString('ja-JP')} - ${ev.end?.toLocaleString('ja-JP')}`}`,
+                    `時間: ${info.event.allDay ? '終日' : `${ev.start?.toLocaleString('ja-JP', { timeZone: JAPAN_TIMEZONE })} - ${ev.end?.toLocaleString('ja-JP', { timeZone: JAPAN_TIMEZONE })}`}`,
                     props.location ? `場所: ${props.location}` : null,
                     props.tags?.length ? `タグ: ${props.tags.join(', ')}` : null,
                     props.note ? `メモ: ${props.note}` : null
@@ -601,23 +592,8 @@
             });
         });
 
-        renderFlowSuggestions(els, addEntry);
         renderFlowList(currentState, els);
         renderFlowMiniInsights(currentState.flowEntries, els);
-    }
-
-    function renderFlowSuggestions(els, addEntry) {
-        const container = els.flowSuggestionChips;
-        if (!container) return;
-        container.innerHTML = '';
-        FLOW_SUGGESTIONS.forEach(item => {
-            const chip = document.createElement('button');
-            chip.type = 'button';
-            chip.className = 'idea-chip';
-            chip.textContent = `${item.text} (${item.context})`;
-            chip.addEventListener('click', () => addEntry(item.text, item.context));
-            container.appendChild(chip);
-        });
     }
 
     function renderFlowList(currentState, els) {
@@ -747,8 +723,20 @@
     }
 
     function toInputValue(date) {
-        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-        return local.toISOString().slice(0, 16);
+        const formatter = new Intl.DateTimeFormat('ja-JP', {
+            timeZone: JAPAN_TIMEZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(date).reduce((acc, part) => {
+            acc[part.type] = part.value;
+            return acc;
+        }, {});
+        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
     }
 
     function uid() {
@@ -1126,7 +1114,7 @@
     }
 
     function formatTime(date) {
-        return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString('ja-JP', { timeZone: JAPAN_TIMEZONE, hour: '2-digit', minute: '2-digit' });
     }
 
     function nextEvent(events, predicate) {
@@ -1305,7 +1293,7 @@
         if (!value) return '--';
         const d = new Date(value);
         if (Number.isNaN(d.getTime())) return '--';
-        return d.toLocaleString('ja-JP', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleString('ja-JP', { timeZone: JAPAN_TIMEZONE, weekday: 'short', hour: '2-digit', minute: '2-digit' });
     }
 
     function exportIcs(events) {

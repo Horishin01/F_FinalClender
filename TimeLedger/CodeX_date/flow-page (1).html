@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowリストで「いま」を小さく残す - TIMELEDGER</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #fff9c4 100%);
+            min-height: 100vh;
+            color: #2c3e50;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #667eea;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-hello {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .user-email {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .logout-btn {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .hero {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem 2rem;
+            text-align: center;
+        }
+
+        .page-tag {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            line-height: 1.3;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            color: #666;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 3rem;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e0e6ed;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.03), rgba(118, 75, 162, 0.03));
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* ビュー切替 */
+        .view-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: #f5f7fa;
+            padding: 0.4rem;
+            border-radius: 12px;
+        }
+
+        .view-tab {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .view-tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .view-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* ナビゲーション */
+        .period-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f5f7fa;
+            border-radius: 12px;
+        }
+
+        .nav-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #667eea;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .period-display {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        /* Flow記録エリア */
+        .flow-input-section {
+            margin-bottom: 2rem;
+        }
+
+        .flow-input-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-input-subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .flow-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e0e6ed;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .flow-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .flow-actions {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1rem;
+        }
+
+        .flow-context-select {
+            padding: 0.9rem 1rem;
+            border: 2px solid #e0e6ed;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .flow-context-select:hover {
+            border-color: #667eea;
+        }
+
+        .flow-submit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.9rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .flow-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        }
+
+        .flow-helper {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            line-height: 1.6;
+        }
+
+        /* フィルターとタグ */
+        .flow-tags {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .flow-tag {
+            padding: 0.6rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid;
+        }
+
+        .flow-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .flow-tag.work {
+            background: rgba(66, 153, 225, 0.1);
+            color: #2c5282;
+            border-color: #4299e1;
+        }
+
+        .flow-tag.health {
+            background: rgba(72, 187, 120, 0.1);
+            color: #2d7d32;
+            border-color: #48bb78;
+        }
+
+        .flow-tag.life {
+            background: rgba(237, 137, 54, 0.1);
+            color: #c05621;
+            border-color: #ed8936;
+        }
+
+        .flow-tag.study {
+            background: rgba(156, 39, 176, 0.1);
+            color: #7b1fa2;
+            border-color: #9c27b0;
+        }
+
+        .flow-tag.memo {
+            background: rgba(128, 90, 213, 0.1);
+            color: #553c9a;
+            border-color: #805ad5;
+        }
+
+        /* Flowリスト */
+        .flow-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .flow-group {
+            margin-bottom: 2rem;
+        }
+
+        .flow-group-header {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #667eea;
+            padding: 0.5rem 1rem;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .flow-group-count {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .flow-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e0e6ed;
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+            transition: all 0.3s;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .flow-item:hover {
+            background: rgba(102, 126, 234, 0.03);
+        }
+
+        .flow-item-check {
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+            background: linear-gradient(135deg, #38ef7d, #11998e);
+            box-shadow: 0 2px 8px rgba(56, 239, 125, 0.3);
+        }
+
+        .flow-item-check::after {
+            content: '✓';
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .flow-item-content {
+            flex: 1;
+        }
+
+        .flow-item-text {
+            font-size: 1rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .flow-item-meta {
+            display: flex;
+            gap: 0.6rem;
+            font-size: 0.8rem;
+            color: #666;
+            align-items: center;
+        }
+
+        .flow-item-delete {
+            padding: 0.3rem 0.6rem;
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .flow-item:hover .flow-item-delete {
+            opacity: 1;
+        }
+
+        .flow-item-delete:hover {
+            background: #e74c3c;
+            color: white;
+        }
+
+        /* グラフエリア */
+        .chart-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .chart-canvas {
+            max-height: 300px;
+        }
+
+        /* サイドパネル */
+        .stats-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stats-date {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .stats-streak {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .stats-count {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-label {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: #e0e6ed;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .info-note {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.7;
+            padding: 1rem;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+        }
+
+        .quick-action-btn {
+            padding: 0.8rem;
+            border: 2px solid #e0e6ed;
+            background: white;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .quick-action-btn:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state-text {
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-mini-card {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+        }
+
+        .stat-mini-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-mini-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.3rem;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 1.8rem;
+            }
+
+            .flow-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .view-tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <span>TIMELEDGER</span>
+            <span class="logo-badge">CALENDAR</span>
+        </div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Privacy</a></li>
+                <li><a href="#">カレンダー</a></li>
+                <li><a href="#" class="active">FLOW LOG</a></li>
+            </ul>
+        </nav>
+        <div class="user-section">
+            <div class="user-info">
+                <div class="user-hello">HELLO</div>
+                <div class="user-email">admin@admin.admin</div>
+            </div>
+            <a href="#" class="logout-btn">🚪 Logout</a>
+        </div>
+    </header>
+
+    <div class="hero">
+        <div class="page-tag">FLOW LOG / FRONTEND ONLY</div>
+        <h1 class="hero-title">Flowリストで「いま」を小さく残す</h1>
+        <p class="hero-subtitle">
+            ToDoではなく「やったこと」を記録するページ。ブラウザのlocalStorageのみに保存するフロントエンド専用機能なので、気軽に書き続けてください。
+        </p>
+    </div>
+
+    <div class="container">
+        <!-- メインエリア -->
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span>📝 記録する</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="flow-input-section">
+                        <div class="flow-input-header">いまやったことを書く</div>
+                        <div class="flow-input-subtitle">ローカル保存のみ</div>
+                        
+                        <input 
+                            type="text" 
+                            class="flow-input" 
+                            id="flowInput" 
+                            placeholder="例: 歯磨き"
+                            autocomplete="off"
+                        >
+                        
+                        <div class="flow-actions">
+                            <select class="flow-context-select" id="flowContext">
+                                <option value="work">💼 仕事</option>
+                                <option value="health">❤️ 健康</option>
+                                <option value="life">😄 暮らし</option>
+                                <option value="study">📚 学び</option>
+                                <option value="memo">💭 メモ</option>
+                            </select>
+                            <button class="flow-submit-btn" onclick="addFlow()">記録する</button>
+                        </div>
+                        
+                        <div class="flow-helper">
+                            思いついた瞬間に書くのがコツ。完了するたびに書くことで、自己効力感が生まれてきます。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span>📊 傾向分析</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="contextChart" class="chart-canvas"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="timeChart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span>📋 記録一覧</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="view-tabs">
+                        <button class="view-tab active" data-view="day" onclick="switchView('day')">📅 日</button>
+                        <button class="view-tab" data-view="week" onclick="switchView('week')">📊 週</button>
+                        <button class="view-tab" data-view="month" onclick="switchView('month')">📆 月</button>
+                    </div>
+
+                    <div class="period-nav">
+                        <button class="nav-btn" onclick="navigatePeriod(-1)">‹</button>
+                        <div class="period-display" id="periodDisplay">2025年11月17日</div>
+                        <button class="nav-btn" onclick="navigatePeriod(1)">›</button>
+                    </div>
+
+                    <div class="flow-tags">
+                        <div class="flow-tag work" onclick="filterByContext('work')">💼 仕事</div>
+                        <div class="flow-tag health" onclick="filterByContext('health')">❤️ 健康</div>
+                        <div class="flow-tag life" onclick="filterByContext('life')">😄 暮らし</div>
+                        <div class="flow-tag study" onclick="filterByContext('study')">📚 学び</div>
+                        <div class="flow-tag memo" onclick="filterByContext('memo')">💭 メモ</div>
+                    </div>
+
+                    <div class="flow-list" id="flowList">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <div class="empty-state-text">
+                                まだ何も記録されていません。<br>
+                                最初の一歩を記録してみましょう！
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- サイドパネル -->
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">今日の積み上げ</div>
+                </div>
+                <div class="card-body">
+                    <div class="stats-section">
+                        <div class="stats-header">
+                            <div class="stats-date" id="todayDate"></div>
+                            <div class="stats-streak">連続<span id="streakCount">0</span>日</div>
+                        </div>
+                        
+                        <div class="stats-count" id="todayCount">0</div>
+                        <div class="stats-label">件</div>
+                    </div>
+
+                    <div class="progress-section">
+                        <div class="progress-header">
+                            <span>今日の目安</span>
+                            <span id="progressText">0/5</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="info-note">
+                        目安は5件。無理せず「いま」を残すだけでOK。
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <div class="card-title">📊 統計</div>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-mini-card">
+                            <div class="stat-mini-value" id="weekCount">0</div>
+                            <div class="stat-mini-label">今週</div>
+                        </div>
+                        <div class="stat-mini-card">
+                            <div class="stat-mini-value" id="monthCount">0</div>
+                            <div class="stat-mini-label">今月</div>
+                        </div>
+                        <div class="stat-mini-card">
+                            <div class="stat-mini-value" id="totalCount">0</div>
+                            <div class="stat-mini-label">合計</div>
+                        </div>
+                        <div class="stat-mini-card">
+                            <div class="stat-mini-value" id="avgCount">0</div>
+                            <div class="stat-mini-label">1日平均</div>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="exportFlows()">📥 エクスポート</button>
+                        <button class="quick-action-btn" onclick="clearAllFlows()">🗑️ すべて削除</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <div class="card-title">💡 使い方のヒント</div>
+                </div>
+                <div class="card-body">
+                    <div style="font-size: 0.85rem; color: #666; line-height: 1.8;">
+                        <p style="margin-bottom: 0.8rem;"><strong>1. いまやったことを1行で書く</strong><br>
+                        「歯磨き」「水飲む」「スマホ開く」など</p>
+                        
+                        <p style="margin-bottom: 0.8rem;"><strong>2. コンテキストを選ぶ</strong><br>
+                        後で振り返りやすくなります</p>
+                        
+                        <p style="margin-bottom: 0;"><strong>3. 週・月ビューで傾向を把握</strong><br>
+                        グラフで可視化して行動パターンを発見</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <script>
+        const STORAGE_KEY = 'timeledger_flows';
+        const TODAY_GOAL = 5;
+        const CONTEXTS = {
+            work: { label: '仕事', emoji: '💼', color: '#4299e1' },
+            health: { label: '健康', emoji: '❤️', color: '#48bb78' },
+            life: { label: '暮らし', emoji: '😄', color: '#ed8936' },
+            study: { label: '学び', emoji: '📚', color: '#9c27b0' },
+            memo: { label: 'メモ', emoji: '💭', color: '#805ad5' }
+        };
+        const CONTEXT_ORDER = ['work', 'health', 'life', 'study', 'memo'];
+
+        let flows = [];
+        let currentView = 'day';
+        let currentDate = new Date();
+        let currentContext = null;
+        let contextChart = null;
+        let timeChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFlows();
+            currentDate = startOfDay(new Date());
+            const input = document.getElementById('flowInput');
+            if (input) {
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addFlow();
+                    }
+                });
+            }
+            updateViewTabs();
+            updateContextTags();
+            renderAll();
+        });
+
+        function loadFlows() {
+            flows = [];
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) return;
+                const parsed = JSON.parse(stored);
+                if (!Array.isArray(parsed)) return;
+                flows = parsed
+                    .map(item => ({
+                        id: item.id || generateId(),
+                        text: String(item.text || '').trim(),
+                        context: CONTEXTS[item.context] ? item.context : 'memo',
+                        timestamp: new Date(item.timestamp || item.createdAt || Date.now())
+                    }))
+                    .filter(item => item.text && !Number.isNaN(item.timestamp.getTime()));
+            } catch (err) {
+                flows = [];
+            }
+        }
+
+        function saveFlows() {
+            const payload = flows.map(item => ({
+                id: item.id,
+                text: item.text,
+                context: item.context,
+                timestamp: item.timestamp.toISOString()
+            }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        }
+
+        function addFlow() {
+            const input = document.getElementById('flowInput');
+            const contextSelect = document.getElementById('flowContext');
+            if (!input || !contextSelect) return;
+            const text = input.value.trim();
+            if (!text) return;
+            const context = contextSelect.value || 'memo';
+            flows.unshift({
+                id: generateId(),
+                text,
+                context: CONTEXTS[context] ? context : 'memo',
+                timestamp: new Date()
+            });
+            saveFlows();
+            input.value = '';
+            input.focus();
+            renderAll();
+        }
+
+        function removeFlow(id) {
+            flows = flows.filter(item => item.id !== id);
+            saveFlows();
+            renderAll();
+        }
+
+        function switchView(view) {
+            currentView = view;
+            updateViewTabs();
+            renderAll();
+        }
+
+        function navigatePeriod(step) {
+            const next = new Date(currentDate);
+            if (currentView === 'day') {
+                next.setDate(next.getDate() + step);
+            } else if (currentView === 'week') {
+                next.setDate(next.getDate() + step * 7);
+            } else if (currentView === 'month') {
+                next.setMonth(next.getMonth() + step);
+            }
+            currentDate = startOfDay(next);
+            renderAll();
+        }
+
+        function filterByContext(contextKey) {
+            if (currentContext === contextKey) {
+                currentContext = null;
+            } else {
+                currentContext = contextKey;
+            }
+            updateContextTags();
+            renderAll();
+        }
+
+        function exportFlows() {
+            if (!flows.length) {
+                alert('エクスポートするデータがありません。');
+                return;
+            }
+            const data = flows
+                .slice()
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .map(item => ({
+                    id: item.id,
+                    text: item.text,
+                    context: item.context,
+                    timestamp: item.timestamp.toISOString()
+                }));
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `flow-export-${compactDate(new Date())}.json`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAllFlows() {
+            if (!flows.length) return;
+            const ok = confirm('すべてのFlowを削除しますか？');
+            if (!ok) return;
+            flows = [];
+            saveFlows();
+            renderAll();
+        }
+
+        function renderAll() {
+            updatePeriodDisplay();
+            updateStats();
+            renderFlowList();
+            updateCharts();
+        }
+
+        function renderFlowList() {
+            const list = document.getElementById('flowList');
+            if (!list) return;
+            const visibleFlows = getFilteredFlows();
+            list.innerHTML = '';
+
+            if (!visibleFlows.length) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <div class="empty-state-text">
+                            まだ何も記録されていません。<br>
+                            最初の一歩を記録してみましょう！
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const countsByDate = visibleFlows.reduce((acc, item) => {
+                const key = dateKey(item.timestamp);
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+
+            let currentKey = '';
+            let group = null;
+
+            visibleFlows.forEach(item => {
+                const key = dateKey(item.timestamp);
+                if (key !== currentKey) {
+                    group = document.createElement('div');
+                    group.className = 'flow-group';
+                    const header = document.createElement('div');
+                    header.className = 'flow-group-header';
+                    header.innerHTML = `
+                        <span>${formatGroupLabel(item.timestamp)}</span>
+                        <span class="flow-group-count">${countsByDate[key]}件</span>
+                    `;
+                    group.appendChild(header);
+                    list.appendChild(group);
+                    currentKey = key;
+                }
+
+                const flowItem = document.createElement('div');
+                flowItem.className = 'flow-item';
+                const contextLabel = formatContextLabel(item.context);
+                flowItem.innerHTML = `
+                    <div class="flow-item-check" aria-hidden="true"></div>
+                    <div class="flow-item-content">
+                        <div class="flow-item-text">${escapeHtml(item.text)}</div>
+                        <div class="flow-item-meta">
+                            <span>${escapeHtml(contextLabel)}</span>
+                            <span>${formatTime(item.timestamp)}</span>
+                        </div>
+                    </div>
+                    <button class="flow-item-delete" type="button" aria-label="記録を削除">削除</button>
+                `;
+                const deleteBtn = flowItem.querySelector('.flow-item-delete');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', () => removeFlow(item.id));
+                }
+                group.appendChild(flowItem);
+            });
+        }
+
+        function updateStats() {
+            const today = startOfDay(new Date());
+            const todayKey = dateKey(today);
+            const todayCount = flows.filter(item => dateKey(item.timestamp) === todayKey).length;
+            const weekStart = startOfWeek(today);
+            const weekEnd = addDays(weekStart, 7);
+            const weekCount = flows.filter(item => {
+                const t = startOfDay(item.timestamp);
+                return t >= weekStart && t < weekEnd;
+            }).length;
+            const monthCount = flows.filter(item => {
+                const t = item.timestamp;
+                return t.getFullYear() === today.getFullYear() && t.getMonth() === today.getMonth();
+            }).length;
+            const totalCount = flows.length;
+            const avgCount = totalCount ? (totalCount / countRangeDays(flows, today)) : 0;
+            const streak = calculateStreak(flows);
+
+            setText('todayDate', formatFullDate(today));
+            setText('todayCount', todayCount);
+            setText('streakCount', streak);
+            setText('progressText', `${todayCount}/${TODAY_GOAL}`);
+            setText('weekCount', weekCount);
+            setText('monthCount', monthCount);
+            setText('totalCount', totalCount);
+            setText('avgCount', avgCount ? avgCount.toFixed(1) : '0');
+
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) {
+                const ratio = Math.min(1, todayCount / TODAY_GOAL);
+                progressFill.style.width = `${ratio * 100}%`;
+            }
+        }
+
+        function updateCharts() {
+            if (typeof Chart === 'undefined') return;
+            const visibleFlows = getFilteredFlows();
+
+            const contextCanvas = document.getElementById('contextChart');
+            if (contextCanvas) {
+                const counts = CONTEXT_ORDER.map(key => visibleFlows.filter(item => item.context === key).length);
+                const hasData = counts.some(count => count > 0);
+                const labels = hasData ? CONTEXT_ORDER.map(key => CONTEXTS[key].label) : ['データなし'];
+                const data = hasData ? counts : [1];
+                const colors = hasData
+                    ? CONTEXT_ORDER.map(key => CONTEXTS[key].color)
+                    : ['#e0e6ed'];
+                if (contextChart) {
+                    contextChart.destroy();
+                }
+                contextChart = new Chart(contextCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data,
+                            backgroundColor: colors,
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            const timeCanvas = document.getElementById('timeChart');
+            if (timeCanvas) {
+                const hourCounts = new Array(24).fill(0);
+                visibleFlows.forEach(item => {
+                    hourCounts[item.timestamp.getHours()] += 1;
+                });
+                const labels = hourCounts.map((_, idx) => `${idx}時`);
+                if (timeChart) {
+                    timeChart.destroy();
+                }
+                timeChart = new Chart(timeCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: hourCounts,
+                            backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateViewTabs() {
+            const tabs = document.querySelectorAll('.view-tab');
+            tabs.forEach(tab => {
+                const view = tab.getAttribute('data-view');
+                if (view === currentView) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+        }
+
+        function updateContextTags() {
+            const tags = document.querySelectorAll('.flow-tag');
+            tags.forEach(tag => {
+                const contextKey = CONTEXT_ORDER.find(key => tag.classList.contains(key));
+                if (!contextKey) return;
+                if (contextKey === currentContext) {
+                    tag.classList.add('active');
+                } else {
+                    tag.classList.remove('active');
+                }
+            });
+        }
+
+        function updatePeriodDisplay() {
+            const display = document.getElementById('periodDisplay');
+            if (!display) return;
+            if (currentView === 'day') {
+                display.textContent = formatDateOnly(currentDate);
+                return;
+            }
+            if (currentView === 'week') {
+                const start = startOfWeek(currentDate);
+                const end = addDays(start, 6);
+                display.textContent = formatRange(start, end);
+                return;
+            }
+            display.textContent = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`;
+        }
+
+        function getFilteredFlows() {
+            let list = flows.slice();
+            if (currentContext) {
+                list = list.filter(item => item.context === currentContext);
+            }
+            if (currentView === 'day') {
+                const dayKey = dateKey(currentDate);
+                list = list.filter(item => dateKey(item.timestamp) === dayKey);
+            } else if (currentView === 'week') {
+                const start = startOfWeek(currentDate);
+                const end = addDays(start, 7);
+                list = list.filter(item => {
+                    const t = startOfDay(item.timestamp);
+                    return t >= start && t < end;
+                });
+            } else if (currentView === 'month') {
+                list = list.filter(item => {
+                    const t = item.timestamp;
+                    return t.getFullYear() === currentDate.getFullYear() && t.getMonth() === currentDate.getMonth();
+                });
+            }
+            return list.sort((a, b) => b.timestamp - a.timestamp);
+        }
+
+        function countRangeDays(items, today) {
+            if (!items.length) return 1;
+            const earliest = items.reduce((min, item) => {
+                return item.timestamp < min ? item.timestamp : min;
+            }, items[0].timestamp);
+            const diff = startOfDay(today).getTime() - startOfDay(earliest).getTime();
+            return Math.max(1, Math.floor(diff / 86400000) + 1);
+        }
+
+        function calculateStreak(items) {
+            if (!items.length) return 0;
+            const keys = new Set(items.map(item => dateKey(item.timestamp)));
+            let streak = 0;
+            const cursor = startOfDay(new Date());
+            while (keys.has(dateKey(cursor))) {
+                streak += 1;
+                cursor.setDate(cursor.getDate() - 1);
+            }
+            return streak;
+        }
+
+        function startOfDay(value) {
+            const d = new Date(value);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        function startOfWeek(value) {
+            const d = startOfDay(value);
+            const day = d.getDay();
+            const diff = day === 0 ? -6 : 1 - day;
+            d.setDate(d.getDate() + diff);
+            return d;
+        }
+
+        function addDays(value, amount) {
+            const d = new Date(value);
+            d.setDate(d.getDate() + amount);
+            return d;
+        }
+
+        function dateKey(value) {
+            const d = startOfDay(value);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function formatTime(value) {
+            const d = new Date(value);
+            const h = String(d.getHours()).padStart(2, '0');
+            const m = String(d.getMinutes()).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        function formatDateOnly(value) {
+            const d = new Date(value);
+            return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+        }
+
+        function formatFullDate(value) {
+            const d = new Date(value);
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 (${days[d.getDay()]})`;
+        }
+
+        function formatRange(start, end) {
+            const sameYear = start.getFullYear() === end.getFullYear();
+            if (sameYear) {
+                return `${formatDateOnly(start)} - ${end.getMonth() + 1}月${end.getDate()}日`;
+            }
+            return `${formatDateOnly(start)} - ${formatDateOnly(end)}`;
+        }
+
+        function formatGroupLabel(value) {
+            const today = new Date();
+            const yesterday = addDays(today, -1);
+            const key = dateKey(value);
+            if (key === dateKey(today)) return '今日';
+            if (key === dateKey(yesterday)) return '昨日';
+            return formatFullDate(value);
+        }
+
+        function formatContextLabel(key) {
+            const ctx = CONTEXTS[key] || CONTEXTS.memo;
+            return `${ctx.emoji} ${ctx.label}`;
+        }
+
+        function compactDate(value) {
+            const d = new Date(value);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}${m}${day}`;
+        }
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char] || char));
+        }
+
+        function generateId() {
+            return `flow-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+    </script>
+</body>
+</html>

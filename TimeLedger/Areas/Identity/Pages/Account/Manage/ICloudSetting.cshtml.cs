@@ -41,8 +41,10 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
 
         public async Task<IActionResult> OnGetAsync()
         {
+            if (!AlphaFeatureFlags.AccountAlphaFeatures) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Challenge();
+            if (!await IsAdminAsync(user)) return Forbid();
 
             Setting = await _db.ICloudSettings.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.UserId == user.Id);
@@ -57,8 +59,10 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
 
         public async Task<IActionResult> OnPostSaveAsync()
         {
+            if (!AlphaFeatureFlags.AccountAlphaFeatures) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Challenge();
+            if (!await IsAdminAsync(user)) return Forbid();
 
             // 既存取得
             var setting = await _db.ICloudSettings
@@ -108,8 +112,10 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
 
         public async Task<IActionResult> OnPostDeleteAsync()
         {
+            if (!AlphaFeatureFlags.AccountAlphaFeatures) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Challenge();
+            if (!await IsAdminAsync(user)) return Forbid();
 
             var setting = await _db.ICloudSettings
                 .FirstOrDefaultAsync(x => x.UserId == user.Id);
@@ -122,5 +128,8 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
             }
             return RedirectToPage();
         }
+
+        private Task<bool> IsAdminAsync(ApplicationUser user)
+            => _userManager.IsInRoleAsync(user, RoleNames.Admin);
     }
 }

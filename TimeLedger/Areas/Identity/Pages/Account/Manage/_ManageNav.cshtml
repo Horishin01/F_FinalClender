@@ -1,6 +1,8 @@
+@using TimeLedger.Models
 @inject SignInManager<ApplicationUser> SignInManager
 @{
     var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+    var isAdmin = User.IsInRole(RoleNames.Admin);
 }
 
 <ul>
@@ -43,28 +45,47 @@
             個人データ
         </a>
     </li>
-    <li>
-        <a class="@ManageNavPages.ICCardsNavClass(ViewContext)" asp-page="./ICCards">
-            <span>拡張機能</span>
-            ICカード
-        </a>
-    </li>
-    <li>
-        <a class="@ManageNavPages.ICloudSettingNavClass(ViewContext)" asp-page="./ICloudSetting">
-            <span>同期</span>
-            iCloud設定
-        </a>
-    </li>
-    <li>
-        <a class="@ManageNavPages.ExternalCalendarsOutlookNavClass(ViewContext)" asp-page="./ExternalCalendarsOutlook">
-            <span>同期</span>
-            Outlook
-        </a>
-    </li>
-    <li>
-        <a class="@ManageNavPages.ExternalCalendarsGoogleNavClass(ViewContext)" asp-page="./ExternalCalendarsGoogle">
-            <span>同期</span>
-            Google
-        </a>
-    </li>
+    @if (AlphaFeatureFlags.AccountAlphaFeatures)
+    {
+        <li>
+            <a class="@ManageNavPages.ICCardsNavClass(ViewContext)" asp-page="./ICCards">
+                <span>拡張機能</span>
+                ICカード <small class="dev-pill">開発中</small>
+            </a>
+        </li>
+        @if (isAdmin)
+        {
+            <li>
+                <a class="@ManageNavPages.ICloudSettingNavClass(ViewContext)" asp-page="./ICloudSetting">
+                    <span>同期</span>
+                    iCloud設定
+                </a>
+            </li>
+        }
+        <li>
+            <a class="@ManageNavPages.ExternalCalendarsOutlookNavClass(ViewContext)" asp-page="./ExternalCalendarsOutlook">
+                <span>同期</span>
+                Outlook <small class="dev-pill">開発中</small>
+            </a>
+        </li>
+        <li>
+            <a class="@ManageNavPages.ExternalCalendarsGoogleNavClass(ViewContext)" asp-page="./ExternalCalendarsGoogle">
+                <span>同期</span>
+                Google <small class="dev-pill">開発中</small>
+            </a>
+        </li>
+    }
 </ul>
+
+<style>
+    .dev-pill {
+        display: inline-block;
+        margin-left: 0.35rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 999px;
+        background: rgba(99, 102, 241, 0.12);
+        color: #4f46e5;
+        font-weight: 700;
+        font-size: 0.75rem;
+    }
+</style>

@@ -6,6 +6,7 @@
     const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
     const viewport = window.appViewport || createViewportFallback();
     const root = document.documentElement;
+    const JAPAN_TIMEZONE = 'Asia/Tokyo';
     let hasAutoFocusedCalendar = false;
 
     const state = {
@@ -78,6 +79,26 @@
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
     const pad2 = (v) => String(v).padStart(2, '0');
+
+    function formatLocalDateTime(value) {
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '';
+        const formatter = new Intl.DateTimeFormat('ja-JP', {
+            timeZone: JAPAN_TIMEZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(d).reduce((acc, part) => {
+            acc[part.type] = part.value;
+            return acc;
+        }, {});
+        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+    }
 
     function addDays(date, days) {
         const d = new Date(date);
@@ -367,7 +388,7 @@
     }
 
     function formatTime(date) {
-        return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString('ja-JP', { timeZone: JAPAN_TIMEZONE, hour: '2-digit', minute: '2-digit' });
     }
 
     function normalizeEventRange(evt) {
@@ -839,7 +860,7 @@
         const calendar = new FullCalendar.Calendar(calEl, {
             headerToolbar: false,
             locale: 'ja',
-            timeZone: 'local',
+            timeZone: JAPAN_TIMEZONE,
             buttonText: { month: '月', week: '週', day: '日' },
             nowIndicator: true,
             scrollTime,
@@ -907,8 +928,8 @@
                     startDate = new Date(info.date);
                     endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
                 }
-                const start = startDate.toISOString();
-                const end = endDate.toISOString();
+                const start = formatLocalDateTime(startDate) || startDate.toISOString();
+                const end = formatLocalDateTime(endDate) || endDate.toISOString();
                 window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
             },
             eventClick(info) {
@@ -923,8 +944,8 @@
             },
             selectable: true,
             select(info) {
-                const start = info.startStr;
-                const end = info.endStr;
+                const start = formatLocalDateTime(info.start) || info.startStr;
+                const end = formatLocalDateTime(info.end) || info.endStr;
                 window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
             }
         });

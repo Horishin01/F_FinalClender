@@ -556,6 +556,7 @@ select.form-control {
     margin: 0;
     color: var(--ev-dark);
     line-height: 1.65;
+    white-space: pre-line;
 }
 
 .detail-meta-grid {

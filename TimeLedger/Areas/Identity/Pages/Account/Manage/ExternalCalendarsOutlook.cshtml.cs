@@ -30,15 +30,18 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
         public string DefaultScope => string.Join(" ", CalendarAuthDefaults.OutlookScopes);
 
         public bool IsOAuthConfigured { get; private set; }
+        public bool IsReadOnly { get; private set; }
 
         [TempData]
         public string? StatusMessage { get; set; }
 
         public async Task<IActionResult> OnGetAsync()
         {
+            if (!AlphaFeatureFlags.AccountAlphaFeatures) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Challenge();
 
+            IsReadOnly = !await IsAdminAsync(user);
             IsOAuthConfigured = HasOAuthConfig();
             await LoadAsync(user.Id);
             return Page();
@@ -46,8 +49,10 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
 
         public async Task<IActionResult> OnPostDisconnectAsync()
         {
+            if (!AlphaFeatureFlags.AccountAlphaFeatures) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Challenge();
+            if (!await IsAdminAsync(user)) return Forbid();
 
             await _outlookCalendarService.RemoveConnectionAsync(user.Id);
             StatusMessage = "Outlook の連携を解除しました。";
@@ -66,6 +71,9 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
             var connection = await _outlookCalendarService.GetConnectionAsync(userId);
             Connection = ConnectionViewModel.From(connection);
         }
+
+        private Task<bool> IsAdminAsync(ApplicationUser user)
+            => _userManager.IsInRoleAsync(user, RoleNames.Admin);
 
         public class ConnectionViewModel
         {

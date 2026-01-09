@@ -28,12 +28,15 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
 
         // 画面右肩のステータス
         public string? StatusMessage { get; private set; }
+        public bool IsReadOnly { get; private set; }
 
         public async Task<IActionResult> OnGetAsync()
         {
+            if (!AlphaFeatureFlags.AccountAlphaFeatures) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Challenge();
 
+            IsReadOnly = !await IsAdminAsync(user);
             Card = await _db.ICCards.FirstOrDefaultAsync(x => x.UserId == user.Id);
             return Page();
         }
@@ -44,8 +47,10 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
         /// </summary>
         public async Task<IActionResult> OnPostReadAsync()
         {
+            if (!AlphaFeatureFlags.AccountAlphaFeatures) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Challenge();
+            if (!await IsAdminAsync(user)) return Forbid();
 
             try
             {
@@ -96,8 +101,10 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
         /// <summary>削除のみ許可（UIDの手入力更新は不可）</summary>
         public async Task<IActionResult> OnPostDeleteAsync()
         {
+            if (!AlphaFeatureFlags.AccountAlphaFeatures) return NotFound();
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Challenge();
+            if (!await IsAdminAsync(user)) return Forbid();
 
             var card = await _db.ICCards.FirstOrDefaultAsync(x => x.UserId == user.Id);
             if (card is not null)
@@ -114,6 +121,9 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
         // ===== ヘルパ =====
         private async Task LoadCardAsync(string userId)
             => Card = await _db.ICCards.FirstOrDefaultAsync(x => x.UserId == userId);
+
+        private Task<bool> IsAdminAsync(ApplicationUser user)
+            => _userManager.IsInRoleAsync(user, RoleNames.Admin);
 
         /// <summary>PC/SCでUIDを取得（環境に合わせてAPDUは必要に応じて調整）</summary>
         private static string ReadCardUid()

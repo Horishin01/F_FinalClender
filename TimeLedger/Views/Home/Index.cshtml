@@ -18,11 +18,11 @@
 
 <section class="preview-hero glass">
     <div class="hero-copy">
-        <p class="eyebrow">開発プレビュー</p>
+        <p class="eyebrow">プレビュー版</p>
         <h1>仕事と暮らしを同じ地図で捉える新しいカレンダー</h1>
         <p class="lede">
-            iCloud 同期だけでなく、基本的なイベント管理・余白の可視化・フォーカス支援までをフロントで検証できるプレイグラウンドです。
-            ここでの操作はブラウザー内にのみ保存され、バックエンド処理や DB への書き込みは行いません。
+            iCloud 同期だけでなく、予定管理・余白の見える化・フォーカス支援までまとめて試せるお試し版です。
+            ここでの操作はこのブラウザにのみ保存され、クラウドには送信されません。
         </p>
         <div class="hero-tags">
             <span class="chip">CalDAV preview</span>
@@ -77,7 +77,7 @@
             <div>
                 <p class="eyebrow">基本カレンダー機能</p>
                 <h2 id="calendar-panel-title">マルチビュー &amp; フィルター</h2>
-                <p class="sub">ホームのプレビューは DB の Events を即時読み込みし、ページ遷移なしで俯瞰できます。</p>
+                <p class="sub">サインインすると予定をすぐに読み込み、ページを移動せず俯瞰できます。</p>
             </div>
         </header>
 
@@ -87,7 +87,7 @@
             </span>
             <p>
                 詳細編集・共有は <a asp-area="" asp-controller="Events" asp-action="Index">Events ページ</a> で行ってください。
-                ここでは実データを元にした俯瞰と簡易プレビューのみ提供します。
+                ここでは予定の俯瞰と簡易プレビューを表示します。
             </p>
             <div class="status-links">
                 <a class="btn ghost small" asp-area="" asp-controller="Events" asp-action="Index">
@@ -249,16 +249,16 @@
             <div>
                 <p class="eyebrow">習慣ハック</p>
                 <h2 id="panel-flow-title">Flowリスト（やったことログ）</h2>
-                <p class="sub">ToDoを溜めず「今やった／今やる」ことだけを書く、持ち越さないリスト。</p>
+                <p class="sub">やったことを素早く書き出し、持ち越さないためのシンプルなリストです。</p>
             </div>
             <div class="flow-badges">
                 <span class="badge ghost">持ち越さない</span>
-                <span class="badge ghost">フロントのみ</span>
+                <span class="badge ghost">ブラウザ保存</span>
             </div>
         </header>
 
         <div class="flow-form">
-            <input type="text" id="flowInput" placeholder="今やったことを書く (例: スマホ開く前に深呼吸)" maxlength="80">
+            <input type="text" id="flowInput" placeholder="今やったことを書く (例: スマホを開く前に深呼吸)" maxlength="80">
             <div class="flow-inline">
                 <select id="flowContext" aria-label="カテゴリ">
                     <option value="仕事">仕事</option>
@@ -268,9 +268,7 @@
                 <button type="button" class="btn primary" id="btnAddFlow">記録する</button>
             </div>
         </div>
-        <p class="annotation">docs/新しい機能　検討.txt のコンセプトをフロントだけで体験できるモックです。</p>
-
-        <div class="suggestion-chips" id="flowSuggestionChips"></div>
+        <p class="annotation">記録はこのブラウザに保存され、いつでもリセットできます。</p>
 
         <div class="flow-stats-grid">
             <div class="flow-stat">
@@ -323,13 +321,13 @@
             <div>
                 <p class="eyebrow">ICカード連携</p>
                 <h2 id="panel-card-title">タッチで予定をホールド</h2>
-                <p class="sub">フロントエンド上で IC カード登録とテンプレート実行をシミュレーションできます。</p>
+                <p class="sub">このページ上で IC カード登録とテンプレート実行を試せます。</p>
             </div>
-            <span class="badge ghost">モックのみ</span>
+            <span class="badge ghost">お試し表示</span>
         </header>
 
         <div class="card-status">
-            <p id="cardStatusText">ICカードは未登録です。モック UID を入力するか自動発行で連携できます。</p>
+            <p id="cardStatusText">ICカードは未登録です。サンプル UID を入力するか自動発行で試せます。</p>
             <div class="card-meta">
                 <span class="card-state" id="cardStateBadge" data-state="disconnected">未登録</span>
                 <span class="card-uid">UID: <strong id="cardUidLabel">--</strong></span>
@@ -338,7 +336,7 @@
 
         <div class="card-actions">
             <label>
-                フロント用 UID
+                お試し用 UID
                 <input type="text" id="icCardUid" placeholder="例) F0-22-IC-8841" maxlength="32" />
             </label>
             <div class="card-action-buttons">
@@ -385,7 +383,7 @@
         <div class="tap-history-wrap">
             <div class="tap-history-head">
                 <h3>最近のタッチ履歴</h3>
-                <span class="annotation">※ フロント側 localStorage にのみ保存</span>
+                <span class="annotation">※ このブラウザだけに保存されます</span>
             </div>
             <ul class="tap-history" id="tapHistory">
                 <li class="empty">まだ履歴がありません。</li>
@@ -405,7 +403,7 @@
             </div>
             <div class="actions">
                 <button type="button" class="btn ghost small" id="btnExport">ICS 風エクスポート</button>
-                <button type="button" class="btn ghost small" id="btnMockShare">共有リンク (モック)</button>
+                <button type="button" class="btn ghost small" id="btnMockShare">共有リンク（サンプル）</button>
             </div>
         </header>
         <ol class="timeline" id="upcomingList" aria-live="polite"></ol>
@@ -486,7 +484,7 @@
                     <p class="eyebrow">移動アシスト</p>
                     <h3>Smart Commute</h3>
                 </div>
-                <span class="badge ghost">モック</span>
+                <span class="badge ghost">お試し</span>
             </div>
             <div class="travel-body">
                 <h4 id="travelTitle">移動予定は未計測</h4>
@@ -514,8 +512,7 @@
 </section>
 
 <p class="preview-note">
-    このページは UI/UX 検証用のプレビューです。フォームから作成したデータは localStorage のみに保存され、
-    本番 API や DB へは送信されません。必要に応じてブラウザーを更新して状態をリセットできます。
+    このページはお試し版です。フォームから作成したデータはこのブラウザにのみ保存され、サインインしている場合を除き外部には送信されません。必要に応じてブラウザを更新して状態をリセットできます。
 </p>
 
 @section Styles {

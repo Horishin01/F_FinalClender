@@ -1,145 +1,221 @@
 @* Flowリスト (フロントのみ) UI
    目的: localStorage にのみ保存するフロントエンド専用の Flow リスト画面。
-   主な構成: ヒーロー（概要/カウンター）、入力フォーム＋提案チップ、統計表示、フィルタ、ログ表示。
+   主な構成: ヒーロー（概要/カウンター）、入力フォーム、統計表示、フィルタ、ログ表示。
    依存: flow.css / flow.js（ローカル保存・フィルタ・連続日数など）。 *@
 @{
     ViewData["Title"] = "Flowリスト (フロントのみ)";
 }
 
-<section class="flow-hero container-xl">
+<section class="flow-hero container-xl flow-hero--single">
     <div class="flow-hero-copy">
-        <p class="eyebrow">Flow Log / Frontend Only</p>
+        <p class="eyebrow">Flowリスト / このブラウザに保存</p>
         <h1>Flowリストで「いま」を小さく残す</h1>
         <p class="lede">
-            ToDo ではなく「やったこと」を即メモするページ。ブラウザの localStorage のみに保存するフロントエンド専用機能なので、気軽に書き捨てできます。
+            ToDo ではなく「やったこと」をすぐにメモするページです。記録はこのブラウザにだけ残り、気軽に書き捨てできます。
         </p>
         <div class="hero-badges">
-            <span class="chip">フロントのみ</span>
-            <span class="chip">localStorage</span>
+            <span class="chip">ブラウザ保存</span>
+            <span class="chip">オフラインOK</span>
             <span class="chip">今日に集中</span>
         </div>
         <ol class="flow-steps">
-            <li>いまやったことを 1 行で書く</li>
-            <li>コンテキスト（仕事/健康など）を選ぶ</li>
+            <li>いまやったことを1行で書く</li>
+            <li>コンテキスト（仕事・健康など）を選ぶ</li>
             <li>今日ビューで日次、全体ビューで連続性を振り返る</li>
         </ol>
-    </div>
-    <div class="flow-hero-card glass">
-        <p class="eyebrow">今日の積み上げ</p>
-        <h2 id="flowHeroCount">0 件</h2>
-        <p id="flowHeroStreak" class="annotation">連続 0 日目</p>
-        <p class="hero-note">記録はこのブラウザだけに保存されます。リロードやオフラインでも残りますが、別端末には同期されません。</p>
-        <div class="flow-progress">
-            <div class="flow-progress-head">
-                <span>今日の目安</span>
-                <span id="flowProgressLabel">0/5</span>
-            </div>
-            <div class="flow-progress-bar" aria-hidden="true">
-                <span id="flowProgressValue"></span>
-            </div>
-            <p class="annotation">目安は 5 件。無理せず「いま」を残すだけでOK。</p>
-        </div>
     </div>
 </section>
 
 <section class="flow-main container-xl">
-    <article class="flow-card glass">
-        <header class="flow-card-head">
-            <div>
-                <p class="eyebrow">記録する</p>
-                <h2>いまやったことを書く</h2>
-            </div>
-            <span class="badge ghost">ローカル保存のみ</span>
-        </header>
+    <div class="flow-stack">
+        <article class="flow-card glass">
+            <header class="flow-card-head">
+                <div>
+                    <p class="eyebrow">記録する</p>
+                    <h2>いまやったことを書く</h2>
+                </div>
+                <span class="badge ghost">このブラウザに保存</span>
+            </header>
 
-        <div class="flow-form">
-            <input type="text" id="flowInput" placeholder="例: スマホ開く前に深呼吸した" maxlength="80" autocomplete="off">
-            <div class="flow-inline">
-                <select id="flowContext" aria-label="カテゴリ">
-                    <option value="仕事">仕事</option>
-                    <option value="プライベート">プライベート</option>
-                    <option value="健康">健康</option>
-                    <option value="学び">学び</option>
-                    <option value="メモ">メモ</option>
-                </select>
-                <button type="button" class="btn primary" id="btnAddFlow">記録する</button>
+            <div class="flow-form">
+                <input type="text" id="flowInput" placeholder="例: スマホを開く前に深呼吸した" maxlength="80" autocomplete="off">
+                <div class="flow-inline">
+                    <select id="flowContext" aria-label="カテゴリ">
+                        <option value="仕事">仕事</option>
+                        <option value="プライベート">プライベート</option>
+                        <option value="健康">健康</option>
+                        <option value="学び">学び</option>
+                        <option value="メモ">メモ</option>
+                    </select>
+                    <button type="button" class="btn primary" id="btnAddFlow">記録する</button>
+                </div>
             </div>
-        </div>
 
-        <p class="annotation">思いついた瞬間に書くのがコツ。未完了を持ち越さず「Done」を積み上げます。</p>
+            <p class="annotation">思いついた瞬間に書くのがコツ。未完了を持ち越さず、やったことだけを積み上げます。</p>
 
-        <div class="flow-controls">
-            <div class="pill-group flow-filter" role="group" aria-label="表示切替">
-                <button type="button" class="pill active" data-filter="today">今日</button>
-                <button type="button" class="pill" data-filter="week">今週</button>
-                <button type="button" class="pill" data-filter="all">全期間</button>
-            </div>
-            <div class="flow-filters">
-                <label class="visually-hidden" for="flowFilterContext">コンテキスト</label>
+            <div class="flow-controls">
+                <div class="pill-group flow-filter" role="group" aria-label="表示切替">
+                    <button type="button" class="pill active" data-filter="day">日</button>
+                    <button type="button" class="pill" data-filter="week">週</button>
+                    <button type="button" class="pill" data-filter="month">月</button>
+                    <button type="button" class="pill" data-filter="all">全期間</button>
+                </div>
+                <div class="flow-period" aria-label="期間移動">
+                    <button type="button" class="btn ghost small" id="flowPrevPeriod" aria-label="前の期間">◀</button>
+                    <span class="flow-period-label" id="flowPeriodLabel">--</span>
+                    <button type="button" class="btn ghost small" id="flowNextPeriod" aria-label="次の期間">▶</button>
+                </div>
+                <div class="flow-filters">
+                    <label class="visually-hidden" for="flowFilterContext">コンテキスト</label>
                 <select id="flowFilterContext">
                     <option value="all">すべてのコンテキスト</option>
                 </select>
                 <label class="visually-hidden" for="flowSearch">キーワード</label>
                 <input id="flowSearch" type="search" placeholder="キーワードで絞り込む">
-                <button type="button" class="btn ghost small" id="flowResetData">リセット</button>
+                <button type="button" class="btn ghost small" id="flowExportData">エクスポート</button>
+                <button type="button" class="btn ghost small" id="flowResetData">すべて削除</button>
             </div>
         </div>
 
-        <div class="flow-context-chips" id="flowContextChips" aria-label="コンテキストを素早く選ぶ"></div>
-        <div class="suggestion-chips" id="flowSuggestions"></div>
+            <div class="flow-context-chips" id="flowContextChips" aria-label="コンテキストを素早く選ぶ"></div>
+        </article>
 
-        <div class="flow-stats-grid">
-            <div class="flow-stat">
-                <p>今日</p>
-                <strong id="flowCountToday">0</strong>
-                <small>件</small>
-            </div>
-            <div class="flow-stat">
-                <p>今週</p>
-                <strong id="flowCountWeek">0</strong>
-                <small>件</small>
-            </div>
-            <div class="flow-stat">
-                <p>連続</p>
-                <strong id="flowStreak">0</strong>
-                <small>日</small>
-            </div>
-        </div>
-
-        <div class="flow-insights">
-            <div class="insight-card">
-                <div class="insight-head">
-                    <div>
-                        <p class="eyebrow">今週の偏り</p>
-                        <h3>よく出ているコンテキスト</h3>
-                    </div>
-                    <span class="badge ghost small">直近7日</span>
+        <article class="flow-card glass">
+            <div class="flow-stats-grid">
+                <div class="flow-stat">
+                    <p>今日</p>
+                    <strong id="flowCountToday">0</strong>
+                    <small>件</small>
                 </div>
-                <ul class="insight-list" id="flowTopContexts">
-                    <li class="flow-empty">データがありません。</li>
+                <div class="flow-stat">
+                    <p>今週</p>
+                    <strong id="flowCountWeek">0</strong>
+                    <small>件</small>
+                </div>
+                <div class="flow-stat">
+                    <p>今月</p>
+                    <strong id="flowCountMonth">0</strong>
+                    <small>件</small>
+                </div>
+                <div class="flow-stat">
+                    <p>合計</p>
+                    <strong id="flowCountTotal">0</strong>
+                    <small>件</small>
+                </div>
+                <div class="flow-stat">
+                    <p>1日平均</p>
+                    <strong id="flowCountAvg">0</strong>
+                    <small>件</small>
+                </div>
+                <div class="flow-stat">
+                    <p>連続</p>
+                    <strong id="flowStreak">0</strong>
+                    <small>日</small>
+                </div>
+            </div>
+
+            <div class="flow-insights">
+                <div class="insight-card">
+                    <div class="insight-head">
+                        <div>
+                            <p class="eyebrow">今週の偏り</p>
+                            <h3>よく出ているコンテキスト</h3>
+                        </div>
+                        <span class="badge ghost small">直近7日</span>
+                    </div>
+                    <ul class="insight-list" id="flowTopContexts">
+                        <li class="flow-empty">データがまだありません。</li>
+                    </ul>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-head">
+                        <div>
+                            <p class="eyebrow">直近7日</p>
+                            <h3>1日の件数ヒート</h3>
+                        </div>
+                        <span class="badge ghost small">目安: 5件/日</span>
+                    </div>
+                    <div class="heat-bars" id="flowHeatBars" aria-label="直近7日の件数">
+                        <p class="annotation">直近7日の記録はありません。</p>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-head">
+                        <div>
+                            <p class="eyebrow">コンテキスト</p>
+                            <h3>割合のバランス</h3>
+                        </div>
+                        <span class="badge ghost small">現在のビュー</span>
+                    </div>
+                    <div class="flow-chart">
+                        <canvas id="flowContextChart"></canvas>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-head">
+                        <div>
+                            <p class="eyebrow">時間帯</p>
+                            <h3>集中の時間帯</h3>
+                        </div>
+                        <span class="badge ghost small">0-23時</span>
+                    </div>
+                    <div class="flow-chart">
+                        <canvas id="flowTimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="flow-card glass">
+            <header class="flow-card-head">
+                <div>
+                    <p class="eyebrow">記録一覧</p>
+                    <h2>Flowログ</h2>
+                </div>
+            </header>
+            <div class="flow-log-container">
+                <ul id="flowList" class="flow-log" aria-live="polite">
+                    <li class="flow-empty">まだ記録がありません。まずは1件記録してみてください。</li>
                 </ul>
             </div>
-            <div class="insight-card">
-                <div class="insight-head">
-                    <div>
-                        <p class="eyebrow">直近7日</p>
-                        <h3>1日の件数ヒート</h3>
-                    </div>
-                    <span class="badge ghost small">目安 5 件/日</span>
+        </article>
+    </div>
+
+    <aside class="flow-sidebar">
+        <div class="flow-card glass flow-side-card">
+            <div class="flow-side-head">
+                <p class="eyebrow">今日の積み上げ</p>
+                <span class="badge ghost">このブラウザに保存</span>
+            </div>
+            <div class="flow-side-metrics">
+                <div class="flow-side-primary">
+                    <h3 id="flowHeroCount">0件</h3>
+                    <p id="flowHeroStreak" class="annotation">連続0日目</p>
                 </div>
-                <div class="heat-bars" id="flowHeatBars" aria-label="直近7日の件数">
-                    <p class="annotation">まだ記録がありません。</p>
+                <p class="hero-note">記録はこのブラウザだけに保存されます。再読み込みやオフラインでも残りますが、別の端末には同期されません。</p>
+                <div class="flow-progress">
+                    <div class="flow-progress-head">
+                        <span>今日の目安</span>
+                        <span id="flowProgressLabel">0/5</span>
+                    </div>
+                    <div class="flow-progress-bar" aria-hidden="true">
+                        <span id="flowProgressValue"></span>
+                    </div>
+                    <p class="annotation">目安は5件。無理せず「いま」を残すだけで OK です。</p>
                 </div>
             </div>
         </div>
 
-        <div class="flow-log-container">
-            <ul id="flowList" class="flow-log" aria-live="polite">
-                <li class="flow-empty">まだ記録がありません。ワンタップの提案を押してみてください。</li>
+        <div class="flow-card glass flow-side-card">
+            <p class="eyebrow">ヒント</p>
+            <ul class="flow-side-tips">
+                <li>1行で済ませる。後で直さない。</li>
+                <li>日/週/月ビューで偏りを見つける。</li>
+                <li>フィルターで文脈を切り替え、集中を戻す。</li>
+                <li>エクスポートで習慣の変化をバックアップ。</li>
             </ul>
         </div>
-    </article>
-
+    </aside>
 </section>
 
 @section Styles {
@@ -147,5 +223,6 @@
 }
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="~/js/flow.js" asp-append-version="true"></script>
 }
