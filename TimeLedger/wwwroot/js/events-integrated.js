@@ -7,6 +7,7 @@
     const viewport = window.appViewport || createViewportFallback();
     const root = document.documentElement;
     const JAPAN_TIMEZONE = 'Asia/Tokyo';
+    const JST_OFFSET = '+09:00';
     let hasAutoFocusedCalendar = false;
 
     const state = {
@@ -100,6 +101,26 @@
         return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
     }
 
+    function formatTokyoIso(date) {
+        const d = new Date(date);
+        if (Number.isNaN(d.getTime())) return '';
+        const formatter = new Intl.DateTimeFormat('ja-JP', {
+            timeZone: JAPAN_TIMEZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(d).reduce((acc, part) => {
+            acc[part.type] = part.value;
+            return acc;
+        }, {});
+        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${JST_OFFSET}`;
+    }
+
     function addDays(date, days) {
         const d = new Date(date);
         d.setDate(d.getDate() + days);
@@ -119,6 +140,38 @@
             d.setDate(targetDay);
         }
         return d;
+    }
+
+    function normalizeRangeForCreate(start, end, isAllDay) {
+        const startDate = new Date(start);
+        let endDate = end ? new Date(end) : null;
+
+        if (isAllDay) {
+            startDate.setHours(0, 0, 0, 0);
+            if (endDate) endDate.setHours(0, 0, 0, 0);
+            if (!endDate || endDate <= startDate) {
+                endDate = addDays(startDate, 1);
+            }
+        } else {
+            if (!endDate || endDate <= startDate) {
+                endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+            }
+        }
+
+        return { start: startDate, end: endDate };
+    }
+
+    function buildCreateUrl(start, end, isAllDay) {
+        const offsetMinutes = new Date().getTimezoneOffset();
+        const { start: normalizedStart, end: normalizedEnd } = normalizeRangeForCreate(start, end, isAllDay);
+        const startDate = new Date(normalizedStart);
+        const endDate = new Date(normalizedEnd);
+        const startStr = formatTokyoIso(startDate) || startDate.toISOString();
+        const endStr = formatTokyoIso(endDate) || endDate.toISOString();
+        const allDayFlag = isAllDay ? '&allDay=true' : '';
+        const startTicks = startDate.getTime();
+        const endTicks = endDate.getTime();
+        return `/Events/Create?startDate=${encodeURIComponent(startStr)}&endDate=${encodeURIComponent(endStr)}&startTicks=${startTicks}&endTicks=${endTicks}&offsetMinutes=${offsetMinutes}${allDayFlag}`;
     }
 
     function normalizeReminderValue(value) {
@@ -639,6 +692,36 @@
         }
     }
 
+    function getDefaultCreateRange(isAllDay = false) {
+        const baseDate = state.calendar?.getDate?.() ?? new Date();
+        const now = new Date();
+        const start = new Date(baseDate);
+        start.setHours(now.getHours(), now.getMinutes(), 0, 0);
+        const end = isAllDay ? addDays(start, 1) : new Date(start.getTime() + 60 * 60 * 1000);
+        return { start, end };
+    }
+
+    function bindCreateButtons() {
+        const goCreate = (isAllDay = false) => {
+            const { start, end } = getDefaultCreateRange(isAllDay);
+            const url = buildCreateUrl(start, end, isAllDay);
+            window.location.href = url;
+        };
+
+        qs('#createBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            goCreate(false);
+        });
+
+        qsa('[data-action="create-event"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                goCreate(false);
+                closeMobilePanels();
+            });
+        });
+    }
+
     function bindCalendarNav(calendar) {
         qs('#calPrev')?.addEventListener('click', () => calendar.prev());
         qs('#calNext')?.addEventListener('click', () => calendar.next());
@@ -917,20 +1000,25 @@
                 }
             },
             dateClick(info) {
-                let startDate;
+                const viewType = info.view?.type || '';
+                const isListView = viewType.startsWith('list');
+                const isMonthView = viewType === 'dayGridMonth';
+                const isAllDay = info.allDay && !isMonthView && !isListView;
+
+                let startDate = new Date(info.date);
                 let endDate;
-                if (info.view.type === 'dayGridMonth') {
+                if (isAllDay) {
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate = addDays(startDate, 1);
+                } else if (isMonthView || isListView) {
                     const now = new Date();
-                    startDate = new Date(info.date);
                     startDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
                     endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
                 } else {
-                    startDate = new Date(info.date);
                     endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
                 }
-                const start = formatLocalDateTime(startDate) || startDate.toISOString();
-                const end = formatLocalDateTime(endDate) || endDate.toISOString();
-                window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
+
+                window.location.href = buildCreateUrl(startDate, endDate, isAllDay);
             },
             eventClick(info) {
                 const props = info.event.extendedProps || {};
@@ -944,9 +1032,8 @@
             },
             selectable: true,
             select(info) {
-                const start = formatLocalDateTime(info.start) || info.startStr;
-                const end = formatLocalDateTime(info.end) || info.endStr;
-                window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
+                const isAllDay = info.allDay === true;
+                window.location.href = buildCreateUrl(info.start, info.end, isAllDay);
             }
         });
         calendar.render();
@@ -1011,6 +1098,7 @@
         initCalendar();
         rerender(true);
         bindCalendarNav(state.calendar);
+        bindCreateButtons();
         bindSync();
         bindExternalSyncButtons();
         bindStats();

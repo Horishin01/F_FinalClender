@@ -16,6 +16,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
+        private DbSet<ICCard> CardSet => _db.ICCards ?? throw new InvalidOperationException("ICCards DbSet is not configured.");
 
         public ICCardsModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
         {
@@ -37,7 +38,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
             if (user is null) return Challenge();
 
             IsReadOnly = !await IsAdminAsync(user);
-            Card = await _db.ICCards.FirstOrDefaultAsync(x => x.UserId == user.Id);
+            Card = await CardSet.FirstOrDefaultAsync(x => x.UserId == user.Id);
             return Page();
         }
 
@@ -57,7 +58,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
                 var uid = ReadCardUid();
 
                 // 他ユーザーが同じUIDを持っていないか軽く確認（必要に応じてユニーク制約も併用）
-                var duplicated = await _db.ICCards
+                var duplicated = await CardSet
                     .AnyAsync(x => x.Uid == uid && x.UserId != user.Id);
                 if (duplicated)
                 {
@@ -66,7 +67,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
                     return Page();
                 }
 
-                var card = await _db.ICCards.FirstOrDefaultAsync(x => x.UserId == user.Id);
+                var card = await CardSet.FirstOrDefaultAsync(x => x.UserId == user.Id);
                 if (card is null)
                 {
                     // 新規
@@ -76,7 +77,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
                         UserId = user.Id,
                         Uid = uid
                     };
-                    _db.ICCards.Add(card);
+                    CardSet.Add(card);
                     StatusMessage = "カードを登録しました。";
                 }
                 else
@@ -106,7 +107,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
             if (user is null) return Challenge();
             if (!await IsAdminAsync(user)) return Forbid();
 
-            var card = await _db.ICCards.FirstOrDefaultAsync(x => x.UserId == user.Id);
+            var card = await CardSet.FirstOrDefaultAsync(x => x.UserId == user.Id);
             if (card is not null)
             {
                 _db.ICCards.Remove(card);
@@ -120,7 +121,7 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
 
         // ===== ヘルパ =====
         private async Task LoadCardAsync(string userId)
-            => Card = await _db.ICCards.FirstOrDefaultAsync(x => x.UserId == userId);
+            => Card = await CardSet.FirstOrDefaultAsync(x => x.UserId == userId);
 
         private Task<bool> IsAdminAsync(ApplicationUser user)
             => _userManager.IsInRoleAsync(user, RoleNames.Admin);

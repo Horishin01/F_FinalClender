@@ -10,12 +10,46 @@
  */
 
 (function () {
+    const JAPAN_TIMEZONE = 'Asia/Tokyo';
+    const JST_OFFSET = '+09:00';
+
     function $(s, r = document) { return r.querySelector(s); }
     function formatLocalDateTime(value) {
         const d = new Date(value);
         if (isNaN(d.getTime())) return '';
-        const pad = (n) => String(n).padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        const formatter = new Intl.DateTimeFormat('ja-JP', {
+            timeZone: JAPAN_TIMEZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(d).reduce((acc, part) => {
+            acc[part.type] = part.value;
+            return acc;
+        }, {});
+        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+    }
+
+    function formatTokyoIso(date) {
+        const formatted = formatLocalDateTime(date);
+        return formatted ? `${formatted}${JST_OFFSET}` : '';
+    }
+
+    // α版の暫定対応: Create遷移URLを最新フォーマットに揃える（ticks + offset付き）
+    function buildCreateUrl(start, end, isAllDay = false) {
+        const offsetMinutes = new Date().getTimezoneOffset();
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const startStr = formatTokyoIso(startDate) || startDate.toISOString();
+        const endStr = formatTokyoIso(endDate) || endDate.toISOString();
+        const startTicks = startDate.getTime();
+        const endTicks = endDate.getTime();
+        const allDayFlag = isAllDay ? '&allDay=true' : '';
+        return `/Events/Create?startDate=${encodeURIComponent(startStr)}&endDate=${encodeURIComponent(endStr)}&startTicks=${startTicks}&endTicks=${endTicks}&offsetMinutes=${offsetMinutes}${allDayFlag}`;
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -95,7 +129,7 @@
                 }
                 const start = formatLocalDateTime(startDate) || startDate.toISOString();
                 const end = formatLocalDateTime(endDate) || endDate.toISOString();
-                window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
+                window.location.href = buildCreateUrl(start, end, false);
             },
             eventClick(info) {
                 const id = info.event.id;
@@ -105,7 +139,7 @@
             select(info) {
                 const start = formatLocalDateTime(info.start) || info.startStr;
                 const end = formatLocalDateTime(info.end) || info.endStr;
-                window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
+                window.location.href = buildCreateUrl(start, end, info.allDay);
             }
         });
 
@@ -161,9 +195,7 @@
                 e.preventDefault();
                 const now = new Date();
                 const end = new Date(now.getTime() + 60 * 60 * 1000);
-                const start = formatLocalDateTime(now) || now.toISOString();
-                const finish = formatLocalDateTime(end) || end.toISOString();
-                window.location.href = `/Events/Create?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(finish)}`;
+                window.location.href = buildCreateUrl(now, end, false);
             });
         }
     });

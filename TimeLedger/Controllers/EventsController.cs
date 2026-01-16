@@ -150,32 +150,137 @@ namespace TimeLedger.Controllers
             return Json(new { saved, scanned = pulled.Count, durationMs = sw.ElapsedMilliseconds });
         }
 
+        private static readonly string[] TokyoTimeZoneIds = new[] { "Asia/Tokyo", "Tokyo Standard Time" };
+        private static readonly TimeZoneInfo TokyoFallback =
+            TimeZoneInfo.CreateCustomTimeZone("Asia/Tokyo-Fallback", TimeSpan.FromHours(9), "Tokyo (Fallback)", "Tokyo (Fallback)");
+
+        private static TimeZoneInfo GetTokyoTimeZone()
+        {
+            foreach (var id in TokyoTimeZoneIds)
+            {
+                try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+                catch (TimeZoneNotFoundException) { }
+                catch (InvalidTimeZoneException) { }
+            }
+            return TokyoFallback;
+        }
+
+        private static bool HasExplicitOffset(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            var tPos = value.IndexOf('T');
+            if (tPos < 0) return false;
+            // オフセットが含まれるケース: 末尾のZ、または時間部以降に + / -
+            if (value.EndsWith("Z", StringComparison.OrdinalIgnoreCase)) return true;
+            var tail = value.Substring(tPos + 1);
+            return tail.Contains("+") || tail.LastIndexOf('-') > tail.IndexOf(':');
+        }
+
+        private static DateTime? ParseAsTokyo(string? value, int? clientOffsetMinutes)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            var tz = GetTokyoTimeZone();
+            var clientOffset = clientOffsetMinutes.HasValue ? TimeSpan.FromMinutes(-clientOffsetMinutes.Value) : tz.GetUtcOffset(DateTime.Now);
+
+            // オフセット付きの場合はまずそのまま解釈し、Z かつクライアントオフセットがある場合は「同じ壁時計時刻をクライアントオフセットで再解釈」も試す
+            if (HasExplicitOffset(value) &&
+                DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dtoWithOffset))
+            {
+                var jst = TimeZoneInfo.ConvertTime(dtoWithOffset, tz);
+                // もし UTC (Z) で渡ってきたがクライアントオフセットが非0なら、壁時計時刻をクライアントオフセットとみなして再解釈してみる
+                if (dtoWithOffset.Offset == TimeSpan.Zero && clientOffset != TimeSpan.Zero)
+                {
+                    var dtoAsClient = new DateTimeOffset(dtoWithOffset.DateTime, clientOffset);
+                    var jstFromClient = TimeZoneInfo.ConvertTime(dtoAsClient, tz);
+                    return jstFromClient.DateTime;
+                }
+                return jst.DateTime;
+            }
+
+            // オフセット情報がない場合は「クライアントのローカル時間」とみなし、offsetMinutes を適用して東京時間へ
+            if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var localLike))
+            {
+                var dtoLocal = new DateTimeOffset(localLike, clientOffset);
+                var jst = TimeZoneInfo.ConvertTime(dtoLocal, tz);
+                return jst.DateTime;
+            }
+
+            return null;
+        }
+
+        private static DateTimeOffset? FromUnixMillis(long? millis, TimeZoneInfo tz)
+        {
+            if (!millis.HasValue) return null;
+            try
+            {
+                var dto = DateTimeOffset.FromUnixTimeMilliseconds(millis.Value);
+                return TimeZoneInfo.ConvertTime(dto, tz);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         [HttpGet]
-        public async Task<IActionResult> Create(string? startDate = null, string? endDate = null)
+        public async Task<IActionResult> Create(string? startDate = null, string? endDate = null, bool? allDay = null)
         {
             var model = new Event { Id = Guid.NewGuid().ToString("N") };
             var currentUser = await _userManager.GetUserAsync(User);
             model.UserId = currentUser?.Id ?? string.Empty;
 
+            int? clientOffsetMinutes = null;
+            if (int.TryParse(Request.Query["offsetMinutes"], out var parsedOffset))
+                clientOffsetMinutes = parsedOffset;
+
+            var tz = GetTokyoTimeZone();
+            long? startTicks = long.TryParse(Request.Query["startTicks"], out var st) ? st : null;
+            long? endTicks = long.TryParse(Request.Query["endTicks"], out var et) ? et : null;
+
+            // 文字列（オフセット付き）を最優先で東京時間に変換し、ダメなら ticks を使う。
             if (!string.IsNullOrEmpty(startDate))
             {
-                if (DateTimeOffset.TryParse(startDate, out var dtoStart))
-                    model.StartDate = dtoStart.LocalDateTime;
-                else if (DateTime.TryParse(startDate, out var parsedStart))
-                    model.StartDate = parsedStart;
+                model.StartDate = ParseAsTokyo(startDate, clientOffsetMinutes);
             }
             if (model.StartDate == null)
-                model.StartDate = DateTime.Now;
+            {
+                var startFromTicks = FromUnixMillis(startTicks, tz);
+                if (startFromTicks.HasValue)
+                    model.StartDate = startFromTicks.Value.DateTime;
+            }
+            if (model.StartDate == null)
+            {
+                // α版の暫定対応: 初期値も東京時間で設定
+                model.StartDate = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz).DateTime;
+            }
 
             if (!string.IsNullOrEmpty(endDate))
             {
-                if (DateTimeOffset.TryParse(endDate, out var dtoEnd))
-                    model.EndDate = dtoEnd.LocalDateTime;
-                else if (DateTime.TryParse(endDate, out var parsedEnd))
-                    model.EndDate = parsedEnd;
+                model.EndDate = ParseAsTokyo(endDate, clientOffsetMinutes);
+            }
+            if (model.EndDate == null)
+            {
+                var endFromTicks = FromUnixMillis(endTicks, tz);
+                if (endFromTicks.HasValue)
+                    model.EndDate = endFromTicks.Value.DateTime;
             }
             if (model.EndDate == null && model.StartDate.HasValue)
                 model.EndDate = model.StartDate.Value.AddHours(1);
+
+            if (allDay == true)
+            {
+                model.AllDay = true;
+                model.StartDate = model.StartDate?.Date ?? DateTime.Today;
+                if (model.EndDate.HasValue)
+                {
+                    model.EndDate = model.EndDate.Value.Date;
+                }
+                if (model.StartDate.HasValue)
+                {
+                    if (!model.EndDate.HasValue || model.EndDate.Value <= model.StartDate.Value)
+                        model.EndDate = model.StartDate.Value.AddDays(1);
+                }
+            }
 
             await PopulateCategoriesAsync();
             return View(model);
@@ -196,6 +301,8 @@ namespace TimeLedger.Controllers
                 if (currentUser == null) return Unauthorized();
                 model.UserId = currentUser.Id;
                 model.LastModified = DateTime.UtcNow;
+
+                NormalizeAllDayRange(model);
 
                 _context.Events.Add(model);
                 await _context.SaveChangesAsync();
@@ -261,6 +368,8 @@ namespace TimeLedger.Controllers
                     existing.Source = EventSource.ICloud;
                 }
                 existing.UserId = currentUser.Id;
+
+                NormalizeAllDayRange(existing);
 
                 try
                 {
@@ -474,6 +583,24 @@ namespace TimeLedger.Controllers
                 .Where(kvp => kvp.Value?.Errors?.Count > 0)
                 .Select(kvp => $"{kvp.Key}: {string.Join(", ", kvp.Value!.Errors.Select(e => e.ErrorMessage))}");
             _logger.LogWarning("ModelState invalid: {Errors}", string.Join(" | ", errors));
+        }
+
+        private void NormalizeAllDayRange(Event ev)
+        {
+            if (ev == null) return;
+            if (!ev.AllDay || !ev.StartDate.HasValue) return;
+
+            ev.StartDate = ev.StartDate.Value.Date;
+            if (ev.EndDate.HasValue)
+            {
+                ev.EndDate = ev.EndDate.Value.Date;
+                if (ev.EndDate <= ev.StartDate)
+                    ev.EndDate = ev.StartDate.Value.AddDays(1);
+            }
+            else
+            {
+                ev.EndDate = ev.StartDate.Value.AddDays(1);
+            }
         }
     }
 }

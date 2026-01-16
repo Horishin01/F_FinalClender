@@ -6,5 +6,6 @@ namespace TimeLedger.Models;
 /// </summary>
 public static class AlphaFeatureFlags
 {
-    public const bool AccountAlphaFeatures = true;
+    // const にすると呼び出し側の分岐がコンパイル時に折りたたまれ、CS0162（到達不能）が発生するため非 const にする
+    public static bool AccountAlphaFeatures { get; set; } = true;
 }

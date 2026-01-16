@@ -31,7 +31,7 @@ namespace TimeLedger.Services
             IcalCalendar cal;
             try
             {
-                cal = IcalCalendar.Load(icsData);
+                cal = IcalCalendar.Load(icsData) ?? new IcalCalendar();
             }
             catch (Exception ex)
             {

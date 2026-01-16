@@ -23,6 +23,9 @@
     </div>
 
     <div class="mobile-quick-actions" aria-label="モバイル用のショートカット">
+        <button type="button" class="ic-btn primary mini" data-action="create-event">
+            <i class="fa-solid fa-plus"></i> 追加
+        </button>
         <button type="button" class="ic-btn ghost mini" data-action="scroll-calendar">
             <i class="fa-solid fa-calendar-day"></i> カレンダーへ
         </button>
@@ -122,6 +125,9 @@
                     <button id="viewDay" class="view-btn">日</button>
                 </div>
                 <div class="ic-main-actions">
+                    <a id="createBtn" class="ic-btn primary" asp-controller="Events" asp-action="Create">
+                        <i class="fa-solid fa-plus"></i> 新規追加
+                    </a>
                     <button id="calToday" class="ic-btn ghost"><i class="fa-solid fa-calendar-day"></i> 今日</button>
                     <form id="syncForm" method="post">
                         @Html.AntiForgeryToken()

@@ -68,7 +68,14 @@ namespace TimeLedger.Controllers
                 var user = await UserManager.FindByIdAsync(model.UserId);
                 var role = await RoleManager.FindByIdAsync(model.RoleId);
 
-                var result = await UserManager.AddToRoleAsync(user, role.Name);
+                if (user is null || role is null)
+                {
+                    throw new InvalidOperationException("指定されたユーザーまたはロールが見つかりません。");
+                }
+
+                var roleName = role.Name ?? throw new InvalidOperationException("ロール名が設定されていません。");
+
+                var result = await UserManager.AddToRoleAsync(user, roleName);
                 if (!result.Succeeded) { throw new InvalidOperationException(result.ToString()); }
                 return RedirectToAction(nameof(Index));
             }
@@ -113,6 +120,13 @@ namespace TimeLedger.Controllers
                 if (!(model.UserId == userId)) { throw new ArgumentException(string.Empty, nameof(id)); }
                 if (!(model.RoleId == roleId)) { throw new ArgumentException(string.Empty, nameof(id2)); }
 
+                var user = await UserManager.FindByIdAsync(model.UserId);
+                var role = await RoleManager.FindByIdAsync(model.RoleId);
+                if (user is null || role is null)
+                {
+                    throw new InvalidOperationException("指定されたユーザーまたはロールが見つかりません。");
+                }
+
                 Context.Update(model);
                 await Context.SaveChangesAsync();
 
@@ -145,7 +159,14 @@ namespace TimeLedger.Controllers
                 var user = await UserManager.FindByIdAsync(userId);
                 var role = await RoleManager.FindByIdAsync(roleId);
 
-                var result = await UserManager.RemoveFromRoleAsync(user, role.Name);
+                if (user is null || role is null)
+                {
+                    throw new InvalidOperationException("指定されたユーザーまたはロールが見つかりません。");
+                }
+
+                var roleName = role.Name ?? throw new InvalidOperationException("ロール名が設定されていません。");
+
+                var result = await UserManager.RemoveFromRoleAsync(user, roleName);
                 if (!result.Succeeded) { throw new InvalidOperationException(result.ToString()); }
 
                 return RedirectToAction(nameof(Index));
