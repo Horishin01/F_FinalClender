@@ -774,6 +774,73 @@ body.mobile-lock {
     animation: sync-spin 0.9s linear infinite;
 }
 
+.ic-main-actions #createBtn {
+    display: none; /* PC 表示では非表示 */
+}
+
+.ic-sync-chips {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    padding-left: 0.2rem;
+}
+
+.ic-sync-chips form {
+    margin: 0;
+    display: flex;
+}
+
+.ic-btn.sync-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 14px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: #fff;
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    box-shadow: 0 12px 26px rgba(0,0,0,0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.ic-btn.sync-chip i {
+    margin-right: 0;
+}
+
+.sync-chip-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+.sync-chip-label {
+    line-height: 1;
+}
+
+.ic-btn.sync-chip.outlook {
+    background: linear-gradient(135deg, #2d7bd8, #1450b0);
+}
+
+.ic-btn.sync-chip.google {
+    background: linear-gradient(135deg, #fbbc04, #ea4335);
+}
+
+.ic-btn.sync-chip:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.16);
+}
+
+.ic-btn.sync-chip:active {
+    transform: translateY(1px);
+}
+
 .sync-visual {
     display: inline-flex;
     align-items: center;
@@ -1218,6 +1285,9 @@ body.mobile-lock {
         justify-content: flex-start;
         flex-wrap: wrap;
     }
+    :root:not(.force-desktop) .ic-main-actions #createBtn {
+        display: inline-flex; /* タブレット・スマホで再表示 */
+    }
     :root:not(.force-desktop) .sync-visual {
         width: 100%;
         justify-content: flex-start;
@@ -1370,6 +1440,17 @@ body.mobile-lock {
         flex-wrap: wrap;
         justify-content: center;
         gap: 0.5rem;
+    }
+    .ic-sync-chips {
+        width: 100%;
+        justify-content: center;
+    }
+    .ic-sync-chips form {
+        flex: 1 1 150px;
+    }
+    .ic-sync-chips .ic-btn {
+        width: 100%;
+        justify-content: center;
     }
     .sync-visual {
         width: 100%;

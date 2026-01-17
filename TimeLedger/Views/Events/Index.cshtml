@@ -133,16 +133,24 @@
                         @Html.AntiForgeryToken()
                         <button type="button" class="ic-btn sync" id="syncBtn"><i class="fa-solid fa-arrows-rotate"></i> すべて同期</button>
                     </form>
-                    <form asp-controller="ExternalCalendars" asp-action="Sync" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="provider" value="Outlook" />
-                        <button type="submit" class="ic-btn ghost" data-sync-provider="Outlook"><i class="fa-brands fa-microsoft"></i> Outlook同期</button>
-                    </form>
-                    <form asp-controller="ExternalCalendars" asp-action="Sync" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="provider" value="Google" />
-                        <button type="submit" class="ic-btn ghost" data-sync-provider="Google"><i class="fa-brands fa-google"></i> Google同期</button>
-                    </form>
+                    <div class="ic-sync-chips" role="group" aria-label="外部カレンダーとの同期">
+                        <form asp-controller="ExternalCalendars" asp-action="Sync" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="provider" value="Outlook" />
+                            <button type="submit" class="ic-btn sync-chip outlook" data-sync-provider="Outlook" aria-label="Outlook カレンダーを同期" title="Outlook カレンダーを同期">
+                                <span class="sync-chip-icon"><i class="fa-brands fa-microsoft"></i></span>
+                                <span class="sync-chip-label">同期</span>
+                            </button>
+                        </form>
+                        <form asp-controller="ExternalCalendars" asp-action="Sync" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="provider" value="Google" />
+                            <button type="submit" class="ic-btn sync-chip google" data-sync-provider="Google" aria-label="Google カレンダーを同期" title="Google カレンダーを同期">
+                                <span class="sync-chip-icon"><i class="fa-brands fa-google"></i></span>
+                                <span class="sync-chip-label">同期</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
             <div class="ic-calendar-wrap">

@@ -9,6 +9,10 @@
     const JAPAN_TIMEZONE = 'Asia/Tokyo';
     const JST_OFFSET = '+09:00';
     let hasAutoFocusedCalendar = false;
+    const CAL_VIEW_STORAGE_KEYS = {
+        view: 'events:lastView',
+        date: 'events:lastDate'
+    };
 
     const state = {
         allEvents: [],
@@ -68,6 +72,48 @@
 
     const isDesktopMode = () => viewport.isDesktop();
     const isMobileMode = () => viewport.isMobile() || (viewport.isTablet && viewport.isTablet());
+    const getViewportMode = () => {
+        if (typeof viewport?.current === 'function') return viewport.current();
+        return isMobileMode() ? 'mobile' : 'desktop';
+    };
+
+    const isMobileLike = (mode) => mode === 'mobile' || mode === 'tablet';
+
+    function loadCalendarViewState() {
+        try {
+            const view = localStorage.getItem(CAL_VIEW_STORAGE_KEYS.view) || null;
+            const dateStr = localStorage.getItem(CAL_VIEW_STORAGE_KEYS.date) || null;
+            const date = dateStr ? new Date(dateStr) : null;
+            return {
+                view,
+                date: date && !Number.isNaN(date.getTime()) ? date : null
+            };
+        } catch {
+            return { view: null, date: null };
+        }
+    }
+
+    function saveCalendarViewState(view, date) {
+        try {
+            if (view) localStorage.setItem(CAL_VIEW_STORAGE_KEYS.view, view);
+            if (date instanceof Date && !Number.isNaN(date.getTime())) {
+                localStorage.setItem(CAL_VIEW_STORAGE_KEYS.date, date.toISOString());
+            }
+        } catch {
+            /* storage が使えない場合は無視 */
+        }
+    }
+
+    function normalizeViewForMode(view, mode) {
+        if (!view) return null;
+        const mobile = isMobileLike(mode);
+        const weekViews = ['timeGridWeek', 'listWeek'];
+        const dayViews = ['timeGridDay', 'listDay'];
+        if (view === 'dayGridMonth') return 'dayGridMonth';
+        if (weekViews.includes(view)) return mobile ? 'listWeek' : 'timeGridWeek';
+        if (dayViews.includes(view)) return 'timeGridDay';
+        return null;
+    }
 
     const recurrenceLabelMap = {
         None: '',
@@ -937,7 +983,10 @@
     function initCalendar() {
         const calEl = qs('#calendar');
         const period = qs('#calPeriod');
-        const initialView = isMobileMode() ? 'listWeek' : 'dayGridMonth';
+        const mode = getViewportMode();
+        const persisted = loadCalendarViewState();
+        const initialView = normalizeViewForMode(persisted.view, mode) || (isMobileMode() ? 'listWeek' : 'dayGridMonth');
+        const initialDate = persisted.date && !Number.isNaN(persisted.date.getTime()) ? persisted.date : new Date();
         const now = new Date();
         const scrollTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
         const calendar = new FullCalendar.Calendar(calEl, {
@@ -951,6 +1000,7 @@
             expandRows: false,
             dayMaxEvents: true,
             initialView,
+            initialDate,
             events: mapToFc(state.filtered),
             eventClassNames(arg) {
                 const props = arg.event.extendedProps || {};
@@ -995,6 +1045,9 @@
             },
             datesSet(info) {
                 if (period) period.textContent = info.view.title;
+                const currentDate = state.calendar?.getDate?.() || info.start;
+                saveCalendarViewState(info.view.type, currentDate);
+                setActiveViewButton(info.view.type);
                 if (updateViewRange(info.start, info.end)) {
                     rerender(true);
                 }
@@ -1042,13 +1095,19 @@
 
         const handleMobileView = (mode) => {
             if (!state.calendar) return;
-            const isMobile = mode === 'mobile';
+            const isMobile = isMobileLike(mode);
+            const currentType = state.calendar.view?.type;
             if (isMobile) {
-                state.calendar.changeView('listWeek');
-                setActiveViewButton('listWeek');
-            } else if (state.focusStat !== 'week' && state.focusStat !== 'today') {
-                state.calendar.changeView('dayGridMonth');
-                setActiveViewButton('dayGridMonth');
+                const target = normalizeViewForMode(currentType, mode) || 'listWeek';
+                if (currentType !== target) {
+                    state.calendar.changeView(target);
+                    setActiveViewButton(target);
+                }
+            } else {
+                if (currentType === 'listWeek') {
+                    state.calendar.changeView('timeGridWeek');
+                    setActiveViewButton('timeGridWeek');
+                }
             }
             if (!isMobile) closeMobilePanels();
             refreshCalendarHeight();
