@@ -80,6 +80,10 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+//================ カレンダータイムゾーン設定 ===============
+builder.Services.Configure<CalendarSettings>(builder.Configuration.GetSection("Calendar"));
+builder.Services.AddSingleton<ICalendarTimeZoneService, CalendarTimeZoneService>();
+
 //================ IHttpContextAccessor登録 ===============
 builder.Services.AddHttpContextAccessor();
 

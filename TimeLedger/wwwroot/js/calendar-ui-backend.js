@@ -10,42 +10,165 @@
  */
 
 (function () {
-    const JAPAN_TIMEZONE = 'Asia/Tokyo';
-    const JST_OFFSET = '+09:00';
+    const APP_TIMEZONE = resolveTimeZone(document.body?.dataset?.appTimezone || 'Asia/Tokyo');
+    const APP_LOCALE = document.documentElement?.lang ? (document.documentElement.lang === 'ja' ? 'ja-JP' : document.documentElement.lang) : 'ja-JP';
+    const ISO_NO_TZ_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,7}))?)?)?$/;
+    const APP_PARTS_FORMATTER = new Intl.DateTimeFormat(APP_LOCALE, {
+        timeZone: APP_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    const pad2 = (v) => String(v).padStart(2, '0');
+
+    function resolveTimeZone(timeZoneId) {
+        if (!timeZoneId) return 'UTC';
+        try {
+            new Intl.DateTimeFormat('en-US', { timeZone: timeZoneId }).format(new Date());
+            return timeZoneId;
+        } catch {
+            return 'UTC';
+        }
+    }
 
     function $(s, r = document) { return r.querySelector(s); }
+    function hasExplicitOffset(value) {
+        if (typeof value !== 'string') return false;
+        const tPos = value.indexOf('T');
+        if (tPos < 0) return false;
+        if (value.endsWith('Z') || value.endsWith('z')) return true;
+        const tail = value.slice(tPos + 1);
+        if (tail.includes('+')) return true;
+        const lastDash = tail.lastIndexOf('-');
+        return lastDash > tail.indexOf(':');
+    }
+
+    function getTimeZoneOffsetMinutes(date) {
+        const parts = APP_PARTS_FORMATTER.formatToParts(date).reduce((acc, part) => {
+            acc[part.type] = part.value;
+            return acc;
+        }, {});
+        const asUtc = Date.UTC(
+            Number(parts.year),
+            Number(parts.month) - 1,
+            Number(parts.day),
+            Number(parts.hour),
+            Number(parts.minute),
+            Number(parts.second)
+        );
+        return (asUtc - date.getTime()) / 60000;
+    }
+
+    function zonedTimeToUtc(parts) {
+        const year = Number(parts.year);
+        const month = Number(parts.month) - 1;
+        const day = Number(parts.day);
+        const hour = Number(parts.hour || 0);
+        const minute = Number(parts.minute || 0);
+        const second = Number(parts.second || 0);
+        const millisecond = Number(parts.millisecond || 0);
+        const utcGuess = Date.UTC(year, month, day, hour, minute, second, millisecond);
+        let offset = getTimeZoneOffsetMinutes(new Date(utcGuess));
+        let utcMs = utcGuess - offset * 60000;
+        const offset2 = getTimeZoneOffsetMinutes(new Date(utcMs));
+        if (offset2 !== offset) {
+            offset = offset2;
+            utcMs = utcGuess - offset * 60000;
+        }
+        return new Date(utcMs);
+    }
+
+    function parseZonedDate(value) {
+        if (value instanceof Date) return new Date(value.getTime());
+        if (typeof value === 'number') {
+            const d = new Date(value);
+            return isNaN(d.getTime()) ? null : d;
+        }
+        if (typeof value !== 'string') return null;
+        const raw = value.trim();
+        if (!raw) return null;
+        if (hasExplicitOffset(raw)) {
+            let normalized = raw;
+            const fracMatch = raw.match(/\.(\d{3})\d+(?=[+-]|Z|z)/);
+            if (fracMatch) normalized = raw.replace(/\.(\d{3})\d+(?=[+-]|Z|z)/, `.${fracMatch[1]}`);
+            const d = new Date(normalized);
+            return isNaN(d.getTime()) ? null : d;
+        }
+        const match = ISO_NO_TZ_RE.exec(raw);
+        if (match) {
+            const year = Number(match[1]);
+            const month = Number(match[2]);
+            const day = Number(match[3]);
+            const hour = match[4] ? Number(match[4]) : 0;
+            const minute = match[5] ? Number(match[5]) : 0;
+            const second = match[6] ? Number(match[6]) : 0;
+            const frac = match[7] ? match[7].slice(0, 3).padEnd(3, '0') : '000';
+            const ms = Number(frac);
+            return zonedTimeToUtc({
+                year,
+                month,
+                day,
+                hour,
+                minute,
+                second,
+                millisecond: ms
+            });
+        }
+        const d = new Date(raw);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    function getZonedNumericParts(value) {
+        const d = parseZonedDate(value);
+        if (!d) return null;
+        const parts = APP_PARTS_FORMATTER.formatToParts(d).reduce((acc, part) => {
+            acc[part.type] = part.value;
+            return acc;
+        }, {});
+        return {
+            year: Number(parts.year),
+            month: Number(parts.month),
+            day: Number(parts.day),
+            hour: Number(parts.hour),
+            minute: Number(parts.minute),
+            second: Number(parts.second)
+        };
+    }
+
     function formatLocalDateTime(value) {
-        const d = new Date(value);
-        if (isNaN(d.getTime())) return '';
-        const formatter = new Intl.DateTimeFormat('ja-JP', {
-            timeZone: JAPAN_TIMEZONE,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        });
-        const parts = formatter.formatToParts(d).reduce((acc, part) => {
+        const d = parseZonedDate(value);
+        if (!d) return '';
+        const parts = APP_PARTS_FORMATTER.formatToParts(d).reduce((acc, part) => {
             acc[part.type] = part.value;
             return acc;
         }, {});
         return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
     }
 
-    function formatTokyoIso(date) {
-        const formatted = formatLocalDateTime(date);
-        return formatted ? `${formatted}${JST_OFFSET}` : '';
+    function formatZonedIso(date) {
+        const d = parseZonedDate(date);
+        if (!d) return '';
+        const formatted = formatLocalDateTime(d);
+        if (!formatted) return '';
+        const offsetMinutes = getTimeZoneOffsetMinutes(d);
+        const sign = offsetMinutes >= 0 ? '+' : '-';
+        const abs = Math.abs(offsetMinutes);
+        const offHours = pad2(Math.floor(abs / 60));
+        const offMinutes = pad2(abs % 60);
+        return `${formatted}${sign}${offHours}:${offMinutes}`;
     }
 
     // α版の暫定対応: Create遷移URLを最新フォーマットに揃える（ticks + offset付き）
     function buildCreateUrl(start, end, isAllDay = false) {
-        const offsetMinutes = new Date().getTimezoneOffset();
+        const offsetMinutes = -getTimeZoneOffsetMinutes(parseZonedDate(start) || new Date());
         const startDate = new Date(start);
         const endDate = new Date(end);
-        const startStr = formatTokyoIso(startDate) || startDate.toISOString();
-        const endStr = formatTokyoIso(endDate) || endDate.toISOString();
+        const startStr = formatZonedIso(startDate) || startDate.toISOString();
+        const endStr = formatZonedIso(endDate) || endDate.toISOString();
         const startTicks = startDate.getTime();
         const endTicks = endDate.getTime();
         const allDayFlag = isAllDay ? '&allDay=true' : '';
@@ -61,7 +184,7 @@
             initialView: 'dayGridMonth',
             headerToolbar: false,          // 内蔵ヘッダは使わない
             locale: 'ja',
-            timeZone: 'Asia/Tokyo',
+            timeZone: APP_TIMEZONE,
             buttonText: { today: '今日', month: '月', week: '週', day: '日' },
 
             // ← “親の高さ”に依存しないよう auto を採用
@@ -119,9 +242,22 @@
                 let startDate;
                 let endDate;
                 if (info.view.type === 'dayGridMonth') {
-                    const now = new Date();
                     startDate = new Date(info.date);
-                    startDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+                    const baseParts = getZonedNumericParts(startDate);
+                    const nowParts = getZonedNumericParts(new Date());
+                    if (baseParts && nowParts) {
+                        startDate = zonedTimeToUtc({
+                            year: baseParts.year,
+                            month: baseParts.month,
+                            day: baseParts.day,
+                            hour: nowParts.hour,
+                            minute: nowParts.minute,
+                            second: 0
+                        });
+                    } else {
+                        const now = new Date();
+                        startDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+                    }
                     endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
                 } else {
                     startDate = new Date(info.date);

@@ -1,13 +1,15 @@
 @page
 @model TimeLedger.Areas.Identity.Pages.Account.Manage.ExternalCalendarsGoogleModel
 @using TimeLedger.Areas.Identity.Pages.Account.Manage
+@inject TimeLedger.Services.ICalendarTimeZoneService CalendarTimeZone
 @{
     ViewData["Title"] = "Google カレンダー連携";
     ViewData["ActivePage"] = ManageNavPages.ExternalCalendarsGoogle;
     var statusClass = Model.Connection.HasError ? "error" : Model.Connection.IsConnected ? "success" : "muted";
     var scopeDisplay = string.IsNullOrWhiteSpace(Model.Connection.Scope) ? Model.DefaultScope : Model.Connection.Scope;
-    var lastSyncedJst = Model.Connection.LastSyncedAtUtc.ToJapanTimeString("yyyy/MM/dd HH:mm 'JST'");
-    var expiresJst = Model.Connection.ExpiresAtUtc.ToJapanTimeString("yyyy/MM/dd HH:mm 'JST'");
+    var timeZoneLabel = CalendarTimeZone.DisplayName;
+    var lastSyncedLocal = CalendarTimeZone.FormatUtc(Model.Connection.LastSyncedAtUtc, "yyyy/MM/dd HH:mm");
+    var expiresLocal = CalendarTimeZone.FormatUtc(Model.Connection.ExpiresAtUtc, "yyyy/MM/dd HH:mm");
 }
 
 <div class="settings-card">
@@ -33,15 +35,15 @@
             </div>
             <div>
                 <p class="meta-label">最終同期</p>
-                <p class="meta-value">@(string.IsNullOrEmpty(lastSyncedJst) ? "未同期" : lastSyncedJst)</p>
+                <p class="meta-value">@(string.IsNullOrEmpty(lastSyncedLocal) ? "未同期" : lastSyncedLocal)</p>
             </div>
             <div>
                 <p class="meta-label">スコープ</p>
                 <p class="meta-value">@scopeDisplay</p>
             </div>
             <div>
-                <p class="meta-label">有効期限 (日本時間)</p>
-                <p class="meta-value">@(string.IsNullOrEmpty(expiresJst) ? "未取得" : expiresJst)</p>
+                <p class="meta-label">有効期限 (@timeZoneLabel)</p>
+                <p class="meta-value">@(string.IsNullOrEmpty(expiresLocal) ? "未取得" : expiresLocal)</p>
             </div>
         </div>
     </div>

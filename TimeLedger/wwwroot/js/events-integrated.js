@@ -6,8 +6,8 @@
     const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
     const viewport = window.appViewport || createViewportFallback();
     const root = document.documentElement;
-    const JAPAN_TIMEZONE = 'Asia/Tokyo';
-    const JST_OFFSET = '+09:00';
+    const APP_TIMEZONE = resolveTimeZone(document.body?.dataset?.appTimezone || 'Asia/Tokyo');
+    const APP_LOCALE = root?.lang ? (root.lang === 'ja' ? 'ja-JP' : root.lang) : 'ja-JP';
     let hasAutoFocusedCalendar = false;
     const CAL_VIEW_STORAGE_KEYS = {
         view: 'events:lastView',
@@ -77,6 +77,16 @@
         return isMobileMode() ? 'mobile' : 'desktop';
     };
 
+    function resolveTimeZone(timeZoneId) {
+        if (!timeZoneId) return 'UTC';
+        try {
+            new Intl.DateTimeFormat('en-US', { timeZone: timeZoneId }).format(new Date());
+            return timeZoneId;
+        } catch {
+            return 'UTC';
+        }
+    }
+
     const isMobileLike = (mode) => mode === 'mobile' || mode === 'tablet';
 
     function loadCalendarViewState() {
@@ -124,96 +134,237 @@
     };
 
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    const ISO_NO_TZ_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,7}))?)?)?$/;
+    const APP_PARTS_FORMATTER = new Intl.DateTimeFormat(APP_LOCALE, {
+        timeZone: APP_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
 
     const pad2 = (v) => String(v).padStart(2, '0');
 
-    function formatLocalDateTime(value) {
-        const d = new Date(value);
-        if (Number.isNaN(d.getTime())) return '';
-        const formatter = new Intl.DateTimeFormat('ja-JP', {
-            timeZone: JAPAN_TIMEZONE,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        });
-        const parts = formatter.formatToParts(d).reduce((acc, part) => {
+    function hasExplicitOffset(value) {
+        if (typeof value !== 'string') return false;
+        const tPos = value.indexOf('T');
+        if (tPos < 0) return false;
+        if (value.endsWith('Z') || value.endsWith('z')) return true;
+        const tail = value.slice(tPos + 1);
+        if (tail.includes('+')) return true;
+        const lastDash = tail.lastIndexOf('-');
+        return lastDash > tail.indexOf(':');
+    }
+
+    function getTimeZoneOffsetMinutes(date) {
+        const parts = APP_PARTS_FORMATTER.formatToParts(date).reduce((acc, part) => {
             acc[part.type] = part.value;
             return acc;
         }, {});
-        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+        const asUtc = Date.UTC(
+            Number(parts.year),
+            Number(parts.month) - 1,
+            Number(parts.day),
+            Number(parts.hour),
+            Number(parts.minute),
+            Number(parts.second)
+        );
+        return (asUtc - date.getTime()) / 60000;
     }
 
-    function formatTokyoIso(date) {
-        const d = new Date(date);
-        if (Number.isNaN(d.getTime())) return '';
-        const formatter = new Intl.DateTimeFormat('ja-JP', {
-            timeZone: JAPAN_TIMEZONE,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        });
-        const parts = formatter.formatToParts(d).reduce((acc, part) => {
+    function getZonedPartStrings(value) {
+        const d = parseZonedDate(value);
+        if (!d) return null;
+        return APP_PARTS_FORMATTER.formatToParts(d).reduce((acc, part) => {
             acc[part.type] = part.value;
             return acc;
         }, {});
-        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${JST_OFFSET}`;
     }
 
-    function addDays(date, days) {
-        const d = new Date(date);
-        d.setDate(d.getDate() + days);
-        return d;
+    function getZonedNumericParts(value) {
+        const parts = getZonedPartStrings(value);
+        if (!parts) return null;
+        return {
+            year: Number(parts.year),
+            month: Number(parts.month),
+            day: Number(parts.day),
+            hour: Number(parts.hour),
+            minute: Number(parts.minute),
+            second: Number(parts.second)
+        };
     }
 
-    function addMonthsPreserveDay(date, months, anchorDay) {
-        const d = new Date(date);
-        const targetDay = anchorDay ?? d.getDate();
-        d.setDate(1);
-        d.setMonth(d.getMonth() + months);
-        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        if (targetDay > lastDay) {
-            // 月末までしかない場合はその月の最終日に合わせる
-            d.setDate(lastDay);
-        } else {
-            d.setDate(targetDay);
+    function getZonedWeekday(value) {
+        const parts = getZonedNumericParts(value);
+        if (!parts) return new Date(value).getDay();
+        return new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay();
+    }
+
+    function getZonedDayNumber(value) {
+        const parts = getZonedNumericParts(value);
+        if (!parts) return null;
+        return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / MS_PER_DAY);
+    }
+
+    function zonedTimeToUtc(parts) {
+        const year = Number(parts.year);
+        const month = Number(parts.month) - 1;
+        const day = Number(parts.day);
+        const hour = Number(parts.hour || 0);
+        const minute = Number(parts.minute || 0);
+        const second = Number(parts.second || 0);
+        const millisecond = Number(parts.millisecond || 0);
+        const utcGuess = Date.UTC(year, month, day, hour, minute, second, millisecond);
+        let offset = getTimeZoneOffsetMinutes(new Date(utcGuess));
+        let utcMs = utcGuess - offset * 60000;
+        const offset2 = getTimeZoneOffsetMinutes(new Date(utcMs));
+        if (offset2 !== offset) {
+            offset = offset2;
+            utcMs = utcGuess - offset * 60000;
         }
-        return d;
+        return new Date(utcMs);
+    }
+
+    // 指定タイムゾーンを基準に「タイムゾーンなし」を解釈して時刻ずれを防ぐ
+    function parseZonedDate(value) {
+        if (value instanceof Date) return new Date(value.getTime());
+        if (typeof value === 'number') {
+            const d = new Date(value);
+            return Number.isNaN(d.getTime()) ? null : d;
+        }
+        if (typeof value !== 'string') return null;
+        const raw = value.trim();
+        if (!raw) return null;
+        if (hasExplicitOffset(raw)) {
+            let normalized = raw;
+            const fracMatch = raw.match(/\.(\d{3})\d+(?=[+-]|Z|z)/);
+            if (fracMatch) normalized = raw.replace(/\.(\d{3})\d+(?=[+-]|Z|z)/, `.${fracMatch[1]}`);
+            const d = new Date(normalized);
+            return Number.isNaN(d.getTime()) ? null : d;
+        }
+        const match = ISO_NO_TZ_RE.exec(raw);
+        if (match) {
+            const year = Number(match[1]);
+            const month = Number(match[2]);
+            const day = Number(match[3]);
+            const hour = match[4] ? Number(match[4]) : 0;
+            const minute = match[5] ? Number(match[5]) : 0;
+            const second = match[6] ? Number(match[6]) : 0;
+            const frac = match[7] ? match[7].slice(0, 3).padEnd(3, '0') : '000';
+            const ms = Number(frac);
+            return zonedTimeToUtc({
+                year,
+                month,
+                day,
+                hour,
+                minute,
+                second,
+                millisecond: ms
+            });
+        }
+        const d = new Date(raw);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function stripOffsetSuffix(value) {
+        if (typeof value !== 'string') return value;
+        return value.replace(/([+-]\d{2}:\d{2}|Z)$/i, '');
+    }
+
+    function parseCalendarWallTime(value) {
+        if (value instanceof Date) return new Date(value.getTime());
+        if (typeof value === 'string') {
+            const raw = stripOffsetSuffix(value.trim());
+            return parseZonedDate(raw);
+        }
+        return parseZonedDate(value);
+    }
+
+    function formatZonedIso(date) {
+        const d = parseZonedDate(date);
+        if (!d) return '';
+        const parts = getZonedPartStrings(d);
+        if (!parts) return '';
+        const offsetMinutes = getTimeZoneOffsetMinutes(d);
+        const sign = offsetMinutes >= 0 ? '+' : '-';
+        const abs = Math.abs(offsetMinutes);
+        const offHours = pad2(Math.floor(abs / 60));
+        const offMinutes = pad2(abs % 60);
+        return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${sign}${offHours}:${offMinutes}`;
+    }
+
+    function createZonedDateFromParts(parts) {
+        return zonedTimeToUtc(parts);
+    }
+
+    function addDaysInZone(date, days) {
+        const parts = getZonedNumericParts(date);
+        if (!parts) return new Date(date);
+        return zonedTimeToUtc({
+            year: parts.year,
+            month: parts.month,
+            day: parts.day + days,
+            hour: parts.hour,
+            minute: parts.minute,
+            second: parts.second
+        });
+    }
+
+    function addMonthsPreserveDayInZone(date, months, anchorDay) {
+        const parts = getZonedNumericParts(date);
+        if (!parts) return new Date(date);
+        const targetDay = anchorDay ?? parts.day;
+        const baseMonth = parts.month - 1;
+        let totalMonths = (parts.year * 12 + baseMonth) + months;
+        let year = Math.floor(totalMonths / 12);
+        let monthIndex = totalMonths % 12;
+        if (monthIndex < 0) {
+            monthIndex += 12;
+            year -= 1;
+        }
+        const month = monthIndex + 1;
+        const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+        const day = Math.min(targetDay, lastDay);
+        return createZonedDateFromParts({
+            year,
+            month,
+            day,
+            hour: parts.hour,
+            minute: parts.minute,
+            second: parts.second
+        });
     }
 
     function normalizeRangeForCreate(start, end, isAllDay) {
-        const startDate = new Date(start);
-        let endDate = end ? new Date(end) : null;
+        const startDate = parseCalendarWallTime(start) ?? new Date(start);
+        let endDate = end ? (parseCalendarWallTime(end) ?? new Date(end)) : null;
 
         if (isAllDay) {
-            startDate.setHours(0, 0, 0, 0);
-            if (endDate) endDate.setHours(0, 0, 0, 0);
-            if (!endDate || endDate <= startDate) {
-                endDate = addDays(startDate, 1);
+            const startDay = startOfDay(startDate);
+            let endDay = endDate ? startOfDay(endDate) : null;
+            if (!endDay || endDay <= startDay) {
+                endDay = addDaysInZone(startDay, 1);
             }
-        } else {
-            if (!endDate || endDate <= startDate) {
-                endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-            }
+            return { start: startDay, end: endDay };
+        }
+
+        if (!endDate || endDate <= startDate) {
+            endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
         }
 
         return { start: startDate, end: endDate };
     }
 
     function buildCreateUrl(start, end, isAllDay) {
-        const offsetMinutes = new Date().getTimezoneOffset();
         const { start: normalizedStart, end: normalizedEnd } = normalizeRangeForCreate(start, end, isAllDay);
         const startDate = new Date(normalizedStart);
         const endDate = new Date(normalizedEnd);
-        const startStr = formatTokyoIso(startDate) || startDate.toISOString();
-        const endStr = formatTokyoIso(endDate) || endDate.toISOString();
+        const offsetMinutes = -getTimeZoneOffsetMinutes(startDate);
+        const startStr = formatZonedIso(startDate) || startDate.toISOString();
+        const endStr = formatZonedIso(endDate) || endDate.toISOString();
         const allDayFlag = isAllDay ? '&allDay=true' : '';
         const startTicks = startDate.getTime();
         const endTicks = endDate.getTime();
@@ -244,8 +395,15 @@
     }
 
     function getDayKey(val) {
-        const d = parseDate(val);
-        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+        return toZonedDateKey(val);
+    }
+
+    function toZonedDateKey(val) {
+        const d = parseZonedDate(val);
+        if (!d) return '';
+        const parts = getZonedNumericParts(d);
+        if (!parts) return '';
+        return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
     }
 
     function renderBadges(evt, compact = false) {
@@ -290,7 +448,7 @@
                 id: `holiday-${date}`,
                 title: `${name}`,
                 start: date,
-                end: addDays(date, 1),
+                end: addDaysInZone(date, 1),
                 allDay: true,
                 source: 'Holiday',
                 type: '',
@@ -319,8 +477,7 @@
         if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
             return date.slice(0, 10);
         }
-        const d = new Date(date);
-        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+        return toZonedDateKey(date);
     }
 
     function isHolidayDate(date) {
@@ -430,14 +587,21 @@
             const li = document.createElement('li');
             const start = item.start;
             const end = item.end;
-            const dayLabel = `${start.getMonth() + 1}/${start.getDate()} (${dayNames[start.getDay()]})`;
+            const parts = getZonedNumericParts(start);
+            const dayIndex = parts
+                ? new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay()
+                : start.getDay();
+            const month = parts ? parts.month : (start.getMonth() + 1);
+            const day = parts ? parts.day : start.getDate();
+            const dayLabel = `${month}/${day} (${dayNames[dayIndex]})`;
             const timeLabel = item.allDay ? '終日' : `${formatTime(start)} - ${end ? formatTime(end) : ''}`.trim();
             const badges = renderBadges(item.event, true);
+            const metaBase = [item.event.source || '', item.event.type || ''].filter(Boolean).join(' / ');
+            const metaLine = badges ? `${metaBase ? `${metaBase} / ` : ''}${badges}` : metaBase;
             li.innerHTML = `
                 <div class="date">${dayLabel} ${timeLabel}</div>
                 <div class="ttl">${item.event.title}</div>
-                <div class="meta">${item.event.source || ''} / ${item.event.type || ''}</div>
-                ${badges ? `<div class="ic-badges">${badges}</div>` : ''}
+                <div class="meta">${metaLine}</div>
             `;
             list.appendChild(li);
         });
@@ -449,45 +613,65 @@
     }
 
     function parseDate(val) {
-        if (!val) return new Date();
-        const d = new Date(val);
-        return isNaN(d) ? new Date() : d;
+        const d = parseZonedDate(val);
+        return d ?? new Date();
     }
 
     function parseDateStrict(val) {
-        if (!val) return null;
-        const d = new Date(val);
-        return isNaN(d) ? null : d;
+        return parseZonedDate(val);
     }
 
     function startOfDay(date) {
-        const d = new Date(date);
-        d.setHours(0, 0, 0, 0);
-        return d;
+        const parts = getZonedNumericParts(date);
+        if (!parts) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+        return zonedTimeToUtc({
+            year: parts.year,
+            month: parts.month,
+            day: parts.day,
+            hour: 0,
+            minute: 0,
+            second: 0,
+            millisecond: 0
+        });
     }
 
     function startOfWeek(date) {
+        const day = getZonedWeekday(date);
         const d = startOfDay(date);
-        const day = d.getDay();
-        d.setDate(d.getDate() - day);
-        return d;
+        return addDaysInZone(d, -day);
     }
 
     function endOfWeek(date) {
-        const d = startOfWeek(date);
-        d.setDate(d.getDate() + 6);
-        d.setHours(23, 59, 59, 999);
-        return d;
+        const d = addDaysInZone(startOfWeek(date), 6);
+        return endOfDay(d);
     }
 
     function endOfDay(date) {
-        const d = startOfDay(date);
-        d.setHours(23, 59, 59, 999);
+        const parts = getZonedNumericParts(date);
+        if (!parts) {
+            const d = startOfDay(date);
+            d.setHours(23, 59, 59, 999);
+            return d;
+        }
+        const d = zonedTimeToUtc({
+            year: parts.year,
+            month: parts.month,
+            day: parts.day,
+            hour: 23,
+            minute: 59,
+            second: 59,
+            millisecond: 0
+        });
+        d.setMilliseconds(999);
         return d;
     }
 
     function formatTime(date) {
-        return date.toLocaleTimeString('ja-JP', { timeZone: JAPAN_TIMEZONE, hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString(APP_LOCALE, { timeZone: APP_TIMEZONE, hour: '2-digit', minute: '2-digit' });
     }
 
     function normalizeEventRange(evt) {
@@ -503,9 +687,7 @@
     }
 
     function isSameDay(a, b) {
-        return a.getFullYear() === b.getFullYear() &&
-            a.getMonth() === b.getMonth() &&
-            a.getDate() === b.getDate();
+        return toZonedDateKey(a) === toZonedDateKey(b);
     }
 
     function detectDup(events) {
@@ -536,17 +718,20 @@
         const end = new Date(rangeEnd);
         const expanded = [];
 
-        const pushOccurrence = (evt, startDate, durationMs) => {
-            const endDate = durationMs ? new Date(startDate.getTime() + durationMs) : (evt.end ? new Date(evt.end) : null);
+        const pushOccurrence = (evt, startDate, durationMs, hasEnd) => {
+            const endDate = hasEnd ? new Date(startDate.getTime() + durationMs) : null;
             const key = getDayKey(startDate);
             const skipList = evt.recurrenceExceptions || [];
             if (shouldSkipDate(skipList, key)) return;
+            const startOut = formatZonedIso(startDate);
+            if (!startOut) return;
+            const endOut = endDate ? formatZonedIso(endDate) : null;
             expanded.push({
                 ...evt,
                 id: `${evt.id || 'evt'}__r${expanded.length}`,
                 baseId: evt.baseId || evt.id,
-                start: new Date(startDate),
-                end: endDate
+                start: startOut,
+                end: endOut
             });
         };
 
@@ -563,33 +748,44 @@
                 continue;
             }
             const anchorEnd = parseDateStrict(evt.end);
+            const hasEnd = !!anchorEnd;
             const durationMs = anchorEnd ? (anchorEnd.getTime() - anchorStart.getTime()) : 0;
 
             if (recurrence === 'Daily' || recurrence === 'Weekly' || recurrence === 'Biweekly') {
                 const interval = recurrence === 'Daily' ? 1 : (recurrence === 'Weekly' ? 7 : 14);
                 let current = new Date(anchorStart);
                 if (current < start) {
-                    const diffDays = Math.floor((start.getTime() - current.getTime()) / MS_PER_DAY);
-                    const steps = Math.floor(diffDays / interval);
-                    current = addDays(current, steps * interval);
-                    while (current < start) current = addDays(current, interval);
+                    const startDay = getZonedDayNumber(start);
+                    const currentDay = getZonedDayNumber(current);
+                    if (startDay !== null && currentDay !== null) {
+                        const diffDays = startDay - currentDay;
+                        const steps = Math.floor(diffDays / interval);
+                        current = addDaysInZone(current, steps * interval);
+                        while (current < start) current = addDaysInZone(current, interval);
+                    } else {
+                        const diffDays = Math.floor((start.getTime() - current.getTime()) / MS_PER_DAY);
+                        const steps = Math.floor(diffDays / interval);
+                        current = addDaysInZone(current, steps * interval);
+                        while (current < start) current = addDaysInZone(current, interval);
+                    }
                 }
                 while (current <= end) {
-                    pushOccurrence(evt, current, durationMs);
-                    current = addDays(current, interval);
+                    pushOccurrence(evt, current, durationMs, hasEnd);
+                    current = addDaysInZone(current, interval);
                 }
                 continue;
             }
 
             if (recurrence === 'Monthly') {
                 let current = new Date(anchorStart);
-                const anchorDay = anchorStart.getDate();
+                const anchorParts = getZonedNumericParts(anchorStart);
+                const anchorDay = anchorParts ? anchorParts.day : anchorStart.getDate();
                 while (current < start) {
-                    current = addMonthsPreserveDay(current, 1, anchorDay);
+                    current = addMonthsPreserveDayInZone(current, 1, anchorDay);
                 }
                 while (current <= end) {
-                    pushOccurrence(evt, current, durationMs);
-                    current = addMonthsPreserveDay(current, 1, anchorDay);
+                    pushOccurrence(evt, current, durationMs, hasEnd);
+                    current = addMonthsPreserveDayInZone(current, 1, anchorDay);
                 }
                 continue;
             }
@@ -740,10 +936,24 @@
 
     function getDefaultCreateRange(isAllDay = false) {
         const baseDate = state.calendar?.getDate?.() ?? new Date();
-        const now = new Date();
-        const start = new Date(baseDate);
-        start.setHours(now.getHours(), now.getMinutes(), 0, 0);
-        const end = isAllDay ? addDays(start, 1) : new Date(start.getTime() + 60 * 60 * 1000);
+        const baseParts = getZonedNumericParts(baseDate);
+        const nowParts = getZonedNumericParts(new Date());
+        let start;
+        if (baseParts && nowParts) {
+            start = zonedTimeToUtc({
+                year: baseParts.year,
+                month: baseParts.month,
+                day: baseParts.day,
+                hour: nowParts.hour,
+                minute: nowParts.minute,
+                second: 0
+            });
+        } else {
+            const now = new Date();
+            start = new Date(baseDate);
+            start.setHours(now.getHours(), now.getMinutes(), 0, 0);
+        }
+        const end = isAllDay ? addDaysInZone(start, 1) : new Date(start.getTime() + 60 * 60 * 1000);
         return { start, end };
     }
 
@@ -812,7 +1022,8 @@
             const dupIds = findDuplicateIds(state.filteredBase);
             if (dupIds.size > 0) {
                 const first = state.filteredBase.find(e => dupIds.has(e.id));
-                if (first?.start) state.calendar.gotoDate(new Date(first.start));
+                const firstDate = first?.start ? parseZonedDate(first.start) : null;
+                if (firstDate) state.calendar.gotoDate(firstDate);
             }
             state.calendar.changeView('dayGridMonth');
             setActiveViewButton('dayGridMonth');
@@ -938,13 +1149,13 @@
 
     function getExpansionRange() {
         const today = startOfDay(new Date());
-        const fallbackStart = addDays(startOfWeek(today), -30);
-        const fallbackEnd = addDays(endOfWeek(today), 180);
+        const fallbackStart = addDaysInZone(startOfWeek(today), -30);
+        const fallbackEnd = addDaysInZone(endOfWeek(today), 180);
         const baseStart = state.viewRange?.start ?? fallbackStart;
         const baseEnd = state.viewRange?.end ?? fallbackEnd;
         return {
             start: baseStart,
-            end: addDays(baseEnd, 60) // ビュー範囲より先まで少し広げて直近予定を埋める
+            end: addDaysInZone(baseEnd, 60) // ビュー範囲より先まで少し広げて直近予定を埋める
         };
     }
 
@@ -988,11 +1199,14 @@
         const initialView = normalizeViewForMode(persisted.view, mode) || (isMobileMode() ? 'listWeek' : 'dayGridMonth');
         const initialDate = persisted.date && !Number.isNaN(persisted.date.getTime()) ? persisted.date : new Date();
         const now = new Date();
-        const scrollTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+        const nowParts = getZonedNumericParts(now);
+        const scrollTime = nowParts
+            ? `${pad2(nowParts.hour)}:${pad2(nowParts.minute)}:00`
+            : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
         const calendar = new FullCalendar.Calendar(calEl, {
             headerToolbar: false,
             locale: 'ja',
-            timeZone: JAPAN_TIMEZONE,
+            timeZone: APP_TIMEZONE,
             buttonText: { month: '月', week: '週', day: '日' },
             nowIndicator: true,
             scrollTime,
@@ -1021,6 +1235,7 @@
             },
             eventContent(arg) {
                 const props = arg.event.extendedProps || {};
+                const isHoliday = !!props.isHoliday;
                 const prioKey = (props.priority || '').toString().toLowerCase();
                 const prioLabel = { high: '高', normal: '通常', low: '低' }[prioKey] || '通常';
                 const prioTag = `<span class="ev-prio-dot prio-${prioKey || 'normal'}" title="優先度: ${prioLabel}" aria-label="優先度: ${prioLabel}"></span>`;
@@ -1035,13 +1250,27 @@
                     work: '<i class="fa-solid fa-building"></i>',
                     local: '<i class="fa-solid fa-database"></i>'
                 };
-                const source = props.source ? `<span class="ev-badge ev-source">${srcIcons[srcKey] ?? ''}</span>` : '';
-                const badges = renderBadges(props);
-                const badgeRow = badges ? `<div class="ev-meta-row">${badges}</div>` : '';
+                const sourceIcon = (!isHoliday && props.source)
+                    ? `<span class="ev-mini-icon source src-${srcKey}" title="${props.source}">${srcIcons[srcKey] ?? ''}</span>`
+                    : '';
+                const recurrenceIcon = (!isHoliday && props.recurrence && props.recurrence !== 'None')
+                    ? '<span class="ev-mini-icon repeat" title="繰り返し"><i class="fa-solid fa-arrows-rotate"></i></span>'
+                    : '';
+                const reminderIcon = (!isHoliday && normalizeReminderValue(props.reminder) !== null)
+                    ? '<span class="ev-mini-icon reminder" title="リマインダー"><i class="fa-solid fa-bell"></i></span>'
+                    : '';
+                const metaIcons = [sourceIcon, recurrenceIcon, reminderIcon].filter(Boolean).join('');
+                const metaLine = metaIcons ? `<div class="ev-meta-inline">${metaIcons}</div>` : '';
                 if (isListView) {
-                    return { html: `<div class="ev-row wrap list-view"><span class="ev-title">${arg.event.title}</span>${source}</div>${badgeRow}` };
+                    if (isHoliday) {
+                        return { html: `<div class="ev-row wrap list-view"><span class="ev-title">${arg.event.title}</span></div>` };
+                    }
+                    return { html: `<div class="ev-row wrap list-view"><span class="ev-title">${arg.event.title}</span>${metaLine}</div>` };
                 }
-                return { html: `<div class="ev-row wrap">${prioTag}${time}<span class="ev-title">${arg.event.title}</span>${source}</div>${badgeRow}` };
+                if (isHoliday) {
+                    return { html: `<div class="ev-row wrap"><span class="ev-title">${arg.event.title}</span></div>` };
+                }
+                return { html: `<div class="ev-row wrap">${prioTag}${time}<span class="ev-title">${arg.event.title}</span></div>${metaLine}` };
             },
             datesSet(info) {
                 if (period) period.textContent = info.view.title;
@@ -1058,14 +1287,27 @@
                 const isMonthView = viewType === 'dayGridMonth';
                 const isAllDay = info.allDay && !isMonthView && !isListView;
 
-                let startDate = new Date(info.date);
+                let startDate = parseCalendarWallTime(info.dateStr || info.date) ?? new Date(info.date);
                 let endDate;
                 if (isAllDay) {
-                    startDate.setHours(0, 0, 0, 0);
-                    endDate = addDays(startDate, 1);
+                    startDate = startOfDay(startDate);
+                    endDate = addDaysInZone(startDate, 1);
                 } else if (isMonthView || isListView) {
-                    const now = new Date();
-                    startDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+                    const nowParts = getZonedNumericParts(new Date());
+                    const baseParts = getZonedNumericParts(startDate);
+                    if (nowParts && baseParts) {
+                        startDate = zonedTimeToUtc({
+                            year: baseParts.year,
+                            month: baseParts.month,
+                            day: baseParts.day,
+                            hour: nowParts.hour,
+                            minute: nowParts.minute,
+                            second: 0
+                        });
+                    } else {
+                        const now = new Date();
+                        startDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+                    }
                     endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
                 } else {
                     endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
@@ -1080,13 +1322,15 @@
                     return;
                 }
                 const baseId = props.baseId || info.event.id;
-                const occ = info.event.startStr;
+                const occ = formatZonedIso(info.event.start) || info.event.startStr;
                 if (baseId) window.location.href = `/Events/Details?id=${encodeURIComponent(baseId)}&occurrence=${encodeURIComponent(occ)}`;
             },
             selectable: true,
             select(info) {
                 const isAllDay = info.allDay === true;
-                window.location.href = buildCreateUrl(info.start, info.end, isAllDay);
+                const start = parseCalendarWallTime(info.startStr || info.start) ?? info.start;
+                const end = parseCalendarWallTime(info.endStr || info.end) ?? info.end;
+                window.location.href = buildCreateUrl(start, end, isAllDay);
             }
         });
         calendar.render();

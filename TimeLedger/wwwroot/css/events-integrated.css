@@ -1018,19 +1018,69 @@ body.mobile-lock {
     flex-wrap: wrap;
 }
 .fc .ev-row.list-view {
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
     width: 100%;
+    flex-direction: column;
 }
 .fc .ev-row.list-view .ev-title {
     font-weight: 800;
-    flex: 1 1 100%;
+    flex: 0 1 auto;
     min-width: 0;
-    text-align: center;
+    text-align: left;
+    width: 100%;
 }
-.fc .ev-row.list-view .ev-source {
-    margin-left: auto;
+.fc .ev-row.list-view .ev-source { display: none; }
+
+.fc .ev-meta-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.fc .ev-meta-text {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.fc .ev-meta-sep {
+    color: #cbd5e1;
+}
+
+.fc .ev-mini-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #1d4ed8;
+    font-size: 0.68rem;
+    border: 1px solid #dbeafe;
+}
+
+.fc .ev-mini-icon.source {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+
+.fc .ev-mini-icon.source.src-google { background: var(--src-google); color: #1a73e8; border-color: #cfe4ff; }
+.fc .ev-mini-icon.source.src-icloud { background: var(--src-icloud); color: #7f39fb; border-color: #e7ddff; }
+.fc .ev-mini-icon.source.src-outlook { background: var(--src-outlook); color: #0a66c2; border-color: #d7e6ff; }
+.fc .ev-mini-icon.source.src-work { background: var(--src-work); color: #0f766e; border-color: #cfeee9; }
+.fc .ev-mini-icon.source.src-local { background: var(--src-local); color: #0284c7; border-color: #cfe9ff; }
+
+.fc .ev-mini-icon.reminder {
+    background: #fff7ed;
+    color: #c2410c;
+    border-color: #fed7aa;
 }
 
 @media (max-width: 1024px) {
@@ -1619,4 +1669,13 @@ body.mobile-lock {
     border: 1px solid rgba(239, 68, 68, 0.35);
     color: #b91c1c;
     pointer-events: none;
+}
+
+.fc .fc-list-event.is-holiday .fc-list-event-graphic,
+.fc .fc-list-event.is-holiday .fc-list-event-dot {
+    display: none;
+}
+
+.fc .fc-daygrid-event.is-holiday .fc-daygrid-event-dot {
+    display: none;
 }

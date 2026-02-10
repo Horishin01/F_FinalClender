@@ -3,6 +3,18 @@
 
 ﻿(function () {
     document.addEventListener('DOMContentLoaded', function () {
+        function resolveTimeZone(timeZoneId) {
+            if (!timeZoneId) return 'UTC';
+            try {
+                new Intl.DateTimeFormat('en-US', { timeZone: timeZoneId }).format(new Date());
+                return timeZoneId;
+            } catch {
+                return 'UTC';
+            }
+        }
+
+        const APP_TIMEZONE = resolveTimeZone(document.body?.dataset?.appTimezone || 'Asia/Tokyo');
+        const APP_LOCALE = document.documentElement?.lang ? (document.documentElement.lang === 'ja' ? 'ja-JP' : document.documentElement.lang) : 'ja-JP';
         const titleInput = document.querySelector('[name="Title"]');
         const startInput = document.querySelector('[name="StartDate"]');
         const previewTitle = document.getElementById('prevTitle');
@@ -11,15 +23,14 @@
         const colorInput = document.getElementById('evColor');
         const swatches = document.querySelectorAll('.swatches .sw');
 
-        function pad(n) {
-            return ('0' + n).slice(-2);
-        }
-
         function formatTime(value) {
             if (!value) return '--:--';
-            const dt = new Date(value);
+            const raw = String(value);
+            const match = raw.match(/T(\d{2}):(\d{2})/);
+            if (match) return `${match[1]}:${match[2]}`;
+            const dt = new Date(raw);
             if (Number.isNaN(dt.getTime())) return '--:--';
-            return pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+            return dt.toLocaleTimeString(APP_LOCALE, { timeZone: APP_TIMEZONE, hour: '2-digit', minute: '2-digit' });
         }
 
         function updatePreview() {

@@ -6,6 +6,7 @@
 @using Microsoft.EntityFrameworkCore
 @using TimeLedger.Models
 @inject TimeLedger.Data.ApplicationDbContext Db
+@inject TimeLedger.Services.ICalendarTimeZoneService CalendarTimeZone
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -41,7 +42,8 @@
 <body class="@bodyClasses"
       data-app-notice-key="@latestNoticeKey"
       data-app-notice-kind="@latestNoticeKind"
-      data-app-notice-url="@privacyUrl">
+      data-app-notice-url="@privacyUrl"
+      data-app-timezone="@CalendarTimeZone.ClientTimeZoneId">
     <header class="app-header">
         <div class="container-xl">
             <nav class="app-nav" aria-label="グローバルナビゲーション">

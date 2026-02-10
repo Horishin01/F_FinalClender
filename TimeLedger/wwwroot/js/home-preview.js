@@ -6,7 +6,8 @@
     const STORAGE_CARD_KEY = 'pit2hi-preview-card';
     const LAYOUT_STORAGE_KEY = 'pit2hi-preview-layout';
     const FLOW_STORAGE_KEY = 'pit2hi-preview-flow';
-    const JAPAN_TIMEZONE = 'Asia/Tokyo';
+    const APP_TIMEZONE = resolveTimeZone(document.body?.dataset?.appTimezone || 'Asia/Tokyo');
+    const APP_LOCALE = document.documentElement?.lang ? (document.documentElement.lang === 'ja' ? 'ja-JP' : document.documentElement.lang) : 'ja-JP';
     const LEGACY_SAMPLE_TITLES = new Set([
         'スプリントレビュー',
         '歩いてランチ',
@@ -33,6 +34,131 @@
         learning: '#0ea5e9',
         focus: '#14b8a6'
     };
+
+    function resolveTimeZone(timeZoneId) {
+        if (!timeZoneId) return 'UTC';
+        try {
+            new Intl.DateTimeFormat('en-US', { timeZone: timeZoneId }).format(new Date());
+            return timeZoneId;
+        } catch {
+            return 'UTC';
+        }
+    }
+
+    const ISO_NO_TZ_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,7}))?)?)?$/;
+    const APP_PARTS_FORMATTER = new Intl.DateTimeFormat(APP_LOCALE, {
+        timeZone: APP_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+
+    function hasExplicitOffset(value) {
+        if (typeof value !== 'string') return false;
+        const tPos = value.indexOf('T');
+        if (tPos < 0) return false;
+        if (value.endsWith('Z') || value.endsWith('z')) return true;
+        const tail = value.slice(tPos + 1);
+        if (tail.includes('+')) return true;
+        const lastDash = tail.lastIndexOf('-');
+        return lastDash > tail.indexOf(':');
+    }
+
+    function getTimeZoneOffsetMinutes(date) {
+        const parts = APP_PARTS_FORMATTER.formatToParts(date).reduce((acc, part) => {
+            acc[part.type] = part.value;
+            return acc;
+        }, {});
+        const asUtc = Date.UTC(
+            Number(parts.year),
+            Number(parts.month) - 1,
+            Number(parts.day),
+            Number(parts.hour),
+            Number(parts.minute),
+            Number(parts.second)
+        );
+        return (asUtc - date.getTime()) / 60000;
+    }
+
+    function zonedTimeToUtc(parts) {
+        const year = Number(parts.year);
+        const month = Number(parts.month) - 1;
+        const day = Number(parts.day);
+        const hour = Number(parts.hour || 0);
+        const minute = Number(parts.minute || 0);
+        const second = Number(parts.second || 0);
+        const millisecond = Number(parts.millisecond || 0);
+        const utcGuess = Date.UTC(year, month, day, hour, minute, second, millisecond);
+        let offset = getTimeZoneOffsetMinutes(new Date(utcGuess));
+        let utcMs = utcGuess - offset * 60000;
+        const offset2 = getTimeZoneOffsetMinutes(new Date(utcMs));
+        if (offset2 !== offset) {
+            offset = offset2;
+            utcMs = utcGuess - offset * 60000;
+        }
+        return new Date(utcMs);
+    }
+
+    function parseZonedDate(value) {
+        if (value instanceof Date) return new Date(value.getTime());
+        if (typeof value === 'number') {
+            const d = new Date(value);
+            return Number.isNaN(d.getTime()) ? null : d;
+        }
+        if (typeof value !== 'string') return null;
+        const raw = value.trim();
+        if (!raw) return null;
+        if (hasExplicitOffset(raw)) {
+            let normalized = raw;
+            const fracMatch = raw.match(/\.(\d{3})\d+(?=[+-]|Z|z)/);
+            if (fracMatch) normalized = raw.replace(/\.(\d{3})\d+(?=[+-]|Z|z)/, `.${fracMatch[1]}`);
+            const d = new Date(normalized);
+            return Number.isNaN(d.getTime()) ? null : d;
+        }
+        const match = ISO_NO_TZ_RE.exec(raw);
+        if (match) {
+            const year = Number(match[1]);
+            const month = Number(match[2]);
+            const day = Number(match[3]);
+            const hour = match[4] ? Number(match[4]) : 0;
+            const minute = match[5] ? Number(match[5]) : 0;
+            const second = match[6] ? Number(match[6]) : 0;
+            const frac = match[7] ? match[7].slice(0, 3).padEnd(3, '0') : '000';
+            const ms = Number(frac);
+            return zonedTimeToUtc({
+                year,
+                month,
+                day,
+                hour,
+                minute,
+                second,
+                millisecond: ms
+            });
+        }
+        const d = new Date(raw);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function getZonedNumericParts(value) {
+        const d = parseZonedDate(value);
+        if (!d) return null;
+        const parts = APP_PARTS_FORMATTER.formatToParts(d).reduce((acc, part) => {
+            acc[part.type] = part.value;
+            return acc;
+        }, {});
+        return {
+            year: Number(parts.year),
+            month: Number(parts.month),
+            day: Number(parts.day),
+            hour: Number(parts.hour),
+            minute: Number(parts.minute),
+            second: Number(parts.second)
+        };
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         if (typeof FullCalendar === 'undefined') return;
@@ -124,7 +250,7 @@
 
         const calendar = new FullCalendar.Calendar(calendarEl, {
             locale: 'ja',
-            timeZone: JAPAN_TIMEZONE,
+            timeZone: APP_TIMEZONE,
             initialView: 'dayGridMonth',
             headerToolbar: false,
             height: 'auto',
@@ -158,7 +284,7 @@
                 }
                 const summary = [
                     `タイトル: ${ev.title}`,
-                    `時間: ${info.event.allDay ? '終日' : `${ev.start?.toLocaleString('ja-JP', { timeZone: JAPAN_TIMEZONE })} - ${ev.end?.toLocaleString('ja-JP', { timeZone: JAPAN_TIMEZONE })}`}`,
+                    `時間: ${info.event.allDay ? '終日' : `${ev.start?.toLocaleString(APP_LOCALE, { timeZone: APP_TIMEZONE })} - ${ev.end?.toLocaleString(APP_LOCALE, { timeZone: APP_TIMEZONE })}`}`,
                     props.location ? `場所: ${props.location}` : null,
                     props.tags?.length ? `タグ: ${props.tags.join(', ')}` : null,
                     props.note ? `メモ: ${props.note}` : null
@@ -366,7 +492,13 @@
                 alert('必須項目が未入力です。');
                 return null;
             }
-            if (new Date(end) <= new Date(start)) {
+            const startDate = parseZonedDate(start);
+            const endDate = parseZonedDate(end);
+            if (!startDate || !endDate) {
+                alert('開始/終了日時の形式が正しくありません。');
+                return null;
+            }
+            if (endDate <= startDate) {
                 alert('終了時間は開始より後にしてください。');
                 return null;
             }
@@ -382,8 +514,8 @@
             return {
                 id: uid(),
                 title,
-                start: new Date(start).toISOString(),
-                end: new Date(end).toISOString(),
+                start: startDate.toISOString(),
+                end: endDate.toISOString(),
                 allDay,
                 color,
                 category,
@@ -537,12 +669,28 @@
     }
 
     function startOfDay(date) {
-        const d = new Date(date);
-        d.setHours(0, 0, 0, 0);
-        return d;
+        const parts = getZonedNumericParts(date);
+        if (!parts) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+        return zonedTimeToUtc({
+            year: parts.year,
+            month: parts.month,
+            day: parts.day,
+            hour: 0,
+            minute: 0,
+            second: 0,
+            millisecond: 0
+        });
     }
 
     function dateKey(value) {
+        const parts = getZonedNumericParts(value);
+        if (parts) {
+            return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+        }
         const d = startOfDay(value);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
@@ -724,7 +872,7 @@
 
     function toInputValue(date) {
         const formatter = new Intl.DateTimeFormat('ja-JP', {
-            timeZone: JAPAN_TIMEZONE,
+            timeZone: APP_TIMEZONE,
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -1114,7 +1262,7 @@
     }
 
     function formatTime(date) {
-        return date.toLocaleTimeString('ja-JP', { timeZone: JAPAN_TIMEZONE, hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString(APP_LOCALE, { timeZone: APP_TIMEZONE, hour: '2-digit', minute: '2-digit' });
     }
 
     function nextEvent(events, predicate) {
@@ -1293,7 +1441,7 @@
         if (!value) return '--';
         const d = new Date(value);
         if (Number.isNaN(d.getTime())) return '--';
-        return d.toLocaleString('ja-JP', { timeZone: JAPAN_TIMEZONE, weekday: 'short', hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleString(APP_LOCALE, { timeZone: APP_TIMEZONE, weekday: 'short', hour: '2-digit', minute: '2-digit' });
     }
 
     function exportIcs(events) {
@@ -1382,9 +1530,10 @@
 
     function mapServerEvent(raw) {
         if (!raw || !raw.start) return null;
-        const start = new Date(raw.start);
-        if (Number.isNaN(start.getTime())) return null;
-        const end = raw.end ? new Date(raw.end) : new Date(start.getTime() + 60 * 60 * 1000);
+        const start = parseZonedDate(raw.start);
+        if (!start) return null;
+        const parsedEnd = raw.end ? parseZonedDate(raw.end) : null;
+        const end = parsedEnd ?? new Date(start.getTime() + 60 * 60 * 1000);
         const text = `${raw.title || ''} ${raw.description || ''}`;
         const category = detectCategory(text);
         return {

@@ -4,7 +4,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -29,6 +28,7 @@ namespace TimeLedger.Controllers
         private readonly ILogger<EventsController> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMemoryCache _cache;
+        private readonly ICalendarTimeZoneService _timeZone;
 
         public EventsController(
             ApplicationDbContext context,
@@ -37,7 +37,8 @@ namespace TimeLedger.Controllers
             IcalParserService icalParserService,
             ILogger<EventsController> logger,
             IHttpContextAccessor httpContextAccessor,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            ICalendarTimeZoneService timeZone)
         {
             _context = context;
             _userManager = userManager;
@@ -46,6 +47,7 @@ namespace TimeLedger.Controllers
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
             _cache = cache;
+            _timeZone = timeZone;
         }
 
         public async Task<IActionResult> Index()
@@ -83,8 +85,8 @@ namespace TimeLedger.Controllers
             {
                 id = e.Id,
                 title = e.Title,
-                start = e.StartDate?.ToString("o", CultureInfo.InvariantCulture),
-                end = e.EndDate?.ToString("o", CultureInfo.InvariantCulture),
+                start = _timeZone.ToOffsetIso(e.StartDate),
+                end = _timeZone.ToOffsetIso(e.EndDate),
                 description = e.Description,
                 allDay = e.AllDay,
                 // 拡張メタをFullCalendarのextendedPropsに渡してUIで利用する
@@ -150,62 +152,28 @@ namespace TimeLedger.Controllers
             return Json(new { saved, scanned = pulled.Count, durationMs = sw.ElapsedMilliseconds });
         }
 
-        private static readonly string[] TokyoTimeZoneIds = new[] { "Asia/Tokyo", "Tokyo Standard Time" };
-        private static readonly TimeZoneInfo TokyoFallback =
-            TimeZoneInfo.CreateCustomTimeZone("Asia/Tokyo-Fallback", TimeSpan.FromHours(9), "Tokyo (Fallback)", "Tokyo (Fallback)");
+        private TimeZoneInfo AppTimeZone => _timeZone.AppTimeZone;
 
-        private static TimeZoneInfo GetTokyoTimeZone()
+        private DateTime? ParseClientDate(string? value, int? clientOffsetMinutes)
+            => _timeZone.ParseClientDate(value, clientOffsetMinutes);
+
+        private void ApplyFormDateOverrides(Event model)
         {
-            foreach (var id in TokyoTimeZoneIds)
+            if (model == null) return;
+
+            var startRaw = Request?.Form["StartDate"].ToString();
+            if (!string.IsNullOrWhiteSpace(startRaw))
             {
-                try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
-                catch (TimeZoneNotFoundException) { }
-                catch (InvalidTimeZoneException) { }
-            }
-            return TokyoFallback;
-        }
-
-        private static bool HasExplicitOffset(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return false;
-            var tPos = value.IndexOf('T');
-            if (tPos < 0) return false;
-            // オフセットが含まれるケース: 末尾のZ、または時間部以降に + / -
-            if (value.EndsWith("Z", StringComparison.OrdinalIgnoreCase)) return true;
-            var tail = value.Substring(tPos + 1);
-            return tail.Contains("+") || tail.LastIndexOf('-') > tail.IndexOf(':');
-        }
-
-        private static DateTime? ParseAsTokyo(string? value, int? clientOffsetMinutes)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return null;
-            var tz = GetTokyoTimeZone();
-            var clientOffset = clientOffsetMinutes.HasValue ? TimeSpan.FromMinutes(-clientOffsetMinutes.Value) : tz.GetUtcOffset(DateTime.Now);
-
-            // オフセット付きの場合はまずそのまま解釈し、Z かつクライアントオフセットがある場合は「同じ壁時計時刻をクライアントオフセットで再解釈」も試す
-            if (HasExplicitOffset(value) &&
-                DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dtoWithOffset))
-            {
-                var jst = TimeZoneInfo.ConvertTime(dtoWithOffset, tz);
-                // もし UTC (Z) で渡ってきたがクライアントオフセットが非0なら、壁時計時刻をクライアントオフセットとみなして再解釈してみる
-                if (dtoWithOffset.Offset == TimeSpan.Zero && clientOffset != TimeSpan.Zero)
-                {
-                    var dtoAsClient = new DateTimeOffset(dtoWithOffset.DateTime, clientOffset);
-                    var jstFromClient = TimeZoneInfo.ConvertTime(dtoAsClient, tz);
-                    return jstFromClient.DateTime;
-                }
-                return jst.DateTime;
+                var parsed = _timeZone.ParseClientDate(startRaw);
+                if (parsed.HasValue) model.StartDate = parsed.Value;
             }
 
-            // オフセット情報がない場合は「クライアントのローカル時間」とみなし、offsetMinutes を適用して東京時間へ
-            if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var localLike))
+            var endRaw = Request?.Form["EndDate"].ToString();
+            if (!string.IsNullOrWhiteSpace(endRaw))
             {
-                var dtoLocal = new DateTimeOffset(localLike, clientOffset);
-                var jst = TimeZoneInfo.ConvertTime(dtoLocal, tz);
-                return jst.DateTime;
+                var parsed = _timeZone.ParseClientDate(endRaw);
+                if (parsed.HasValue) model.EndDate = parsed.Value;
             }
-
-            return null;
         }
 
         private static DateTimeOffset? FromUnixMillis(long? millis, TimeZoneInfo tz)
@@ -233,44 +201,35 @@ namespace TimeLedger.Controllers
             if (int.TryParse(Request.Query["offsetMinutes"], out var parsedOffset))
                 clientOffsetMinutes = parsedOffset;
 
-            var tz = GetTokyoTimeZone();
+            var tz = AppTimeZone;
             long? startTicks = long.TryParse(Request.Query["startTicks"], out var st) ? st : null;
             long? endTicks = long.TryParse(Request.Query["endTicks"], out var et) ? et : null;
+            var startFromTicks = FromUnixMillis(startTicks, tz);
+            var endFromTicks = FromUnixMillis(endTicks, tz);
 
-            // 文字列（オフセット付き）を最優先で東京時間に変換し、ダメなら ticks を使う。
-            if (!string.IsNullOrEmpty(startDate))
-            {
-                model.StartDate = ParseAsTokyo(startDate, clientOffsetMinutes);
-            }
+            // ticks を優先し、なければ文字列（オフセット付き）をアプリ時間に変換する。
+            if (startFromTicks.HasValue)
+                model.StartDate = startFromTicks.Value.DateTime;
+            if (model.StartDate == null && !string.IsNullOrEmpty(startDate))
+                model.StartDate = ParseClientDate(startDate, clientOffsetMinutes);
             if (model.StartDate == null)
             {
-                var startFromTicks = FromUnixMillis(startTicks, tz);
-                if (startFromTicks.HasValue)
-                    model.StartDate = startFromTicks.Value.DateTime;
-            }
-            if (model.StartDate == null)
-            {
-                // α版の暫定対応: 初期値も東京時間で設定
+                // α版の暫定対応: 初期値もアプリ時間で設定
                 model.StartDate = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz).DateTime;
             }
 
-            if (!string.IsNullOrEmpty(endDate))
-            {
-                model.EndDate = ParseAsTokyo(endDate, clientOffsetMinutes);
-            }
-            if (model.EndDate == null)
-            {
-                var endFromTicks = FromUnixMillis(endTicks, tz);
-                if (endFromTicks.HasValue)
-                    model.EndDate = endFromTicks.Value.DateTime;
-            }
+            if (endFromTicks.HasValue)
+                model.EndDate = endFromTicks.Value.DateTime;
+            if (model.EndDate == null && !string.IsNullOrEmpty(endDate))
+                model.EndDate = ParseClientDate(endDate, clientOffsetMinutes);
             if (model.EndDate == null && model.StartDate.HasValue)
                 model.EndDate = model.StartDate.Value.AddHours(1);
 
             if (allDay == true)
             {
                 model.AllDay = true;
-                model.StartDate = model.StartDate?.Date ?? DateTime.Today;
+                var nowLocal = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz).DateTime;
+                model.StartDate = model.StartDate?.Date ?? nowLocal.Date;
                 if (model.EndDate.HasValue)
                 {
                     model.EndDate = model.EndDate.Value.Date;
@@ -290,6 +249,7 @@ namespace TimeLedger.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Event model)
         {
+            ApplyFormDateOverrides(model);
             if (ModelState.IsValid)
             {
                 if (string.IsNullOrEmpty(model.Id))
@@ -310,7 +270,7 @@ namespace TimeLedger.Controllers
                 return RedirectToAction(nameof(Index));
             }
             // モデルエラー時も時間フィールドが空にならないよう初期値を補完
-            if (!model.StartDate.HasValue) model.StartDate = DateTime.Now;
+            if (!model.StartDate.HasValue) model.StartDate = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, AppTimeZone).DateTime;
             if (!model.EndDate.HasValue && model.StartDate.HasValue) model.EndDate = model.StartDate.Value.AddHours(1);
             LogModelStateErrors();
             await PopulateCategoriesAsync(model.CategoryId);
@@ -334,6 +294,7 @@ namespace TimeLedger.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string id, Event model)
         {
+            ApplyFormDateOverrides(model);
             if (id != model.Id) return BadRequest("IDが一致しません。");
 
             if (ModelState.IsValid)
@@ -433,14 +394,15 @@ namespace TimeLedger.Controllers
                 {
                     if (mode.Equals("single", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (DateTime.TryParse(occurrence, out var occDate))
+                        var occDate = ParseOccurrenceDate(occurrence);
+                        if (occDate.HasValue)
                         {
                             var exceptions = (ev.RecurrenceExceptions ?? string.Empty)
                                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                                 .Select(x => x.Trim())
                                 .Where(x => !string.IsNullOrWhiteSpace(x))
                                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                            var key = occDate.Date.ToString("yyyy-MM-dd");
+                            var key = occDate.Value.Date.ToString("yyyy-MM-dd");
                             exceptions.Add(key);
                             ev.RecurrenceExceptions = string.Join(",", exceptions);
                             ev.LastModified = DateTime.UtcNow;
@@ -449,14 +411,15 @@ namespace TimeLedger.Controllers
                     }
                     else if (mode.Equals("future", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (DateTime.TryParse(occurrence, out var occDate))
+                        var occDate = ParseOccurrenceDate(occurrence);
+                        if (occDate.HasValue)
                         {
                             var exceptions = (ev.RecurrenceExceptions ?? string.Empty)
                                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                                 .Select(x => x.Trim())
                                 .Where(x => !string.IsNullOrWhiteSpace(x))
                                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                            var token = $">={occDate.Date:yyyy-MM-dd}";
+                            var token = $">={occDate.Value.Date:yyyy-MM-dd}";
                             exceptions.Add(token);
                             ev.RecurrenceExceptions = string.Join(",", exceptions);
                             ev.LastModified = DateTime.UtcNow;
@@ -487,9 +450,10 @@ namespace TimeLedger.Controllers
             if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(occurrenceDate))
                 return BadRequest("IDまたは日付が不正です。");
 
-            if (!DateTime.TryParse(occurrenceDate, out var parsedDate))
+            var parsedDate = ParseOccurrenceDate(occurrenceDate);
+            if (!parsedDate.HasValue)
                 return BadRequest("日付の形式が不正です。");
-            parsedDate = parsedDate.Date;
+            var parsedDay = parsedDate.Value.Date;
             var ev = await _context.Events.FirstOrDefaultAsync(e => e.Id == id && e.UserId == currentUser.Id);
             if (ev == null) return NotFound("対象イベントが存在しません。");
             if (ev.Recurrence == EventRecurrence.None) return BadRequest("繰り返しイベントではありません。");
@@ -500,7 +464,7 @@ namespace TimeLedger.Controllers
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var key = parsedDate.ToString("yyyy-MM-dd");
+            var key = parsedDay.ToString("yyyy-MM-dd");
             exceptions.Add(key);
             ev.RecurrenceExceptions = string.Join(",", exceptions);
             ev.LastModified = DateTime.UtcNow;
@@ -518,9 +482,10 @@ namespace TimeLedger.Controllers
             if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(occurrenceDate))
                 return BadRequest("IDまたは日付が不正です。");
 
-            if (!DateTime.TryParse(occurrenceDate, out var parsedDate))
+            var parsedDate = ParseOccurrenceDate(occurrenceDate);
+            if (!parsedDate.HasValue)
                 return BadRequest("日付の形式が不正です。");
-            parsedDate = parsedDate.Date;
+            var parsedDay = parsedDate.Value.Date;
 
             var ev = await _context.Events.FirstOrDefaultAsync(e => e.Id == id && e.UserId == currentUser.Id);
             if (ev == null) return NotFound("対象イベントが存在しません。");
@@ -532,7 +497,7 @@ namespace TimeLedger.Controllers
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var token = $">={parsedDate:yyyy-MM-dd}";
+            var token = $">={parsedDay:yyyy-MM-dd}";
             exceptions.Add(token);
             ev.RecurrenceExceptions = string.Join(",", exceptions);
             ev.LastModified = DateTime.UtcNow;
@@ -583,6 +548,12 @@ namespace TimeLedger.Controllers
                 .Where(kvp => kvp.Value?.Errors?.Count > 0)
                 .Select(kvp => $"{kvp.Key}: {string.Join(", ", kvp.Value!.Errors.Select(e => e.ErrorMessage))}");
             _logger.LogWarning("ModelState invalid: {Errors}", string.Join(" | ", errors));
+        }
+
+        private DateTime? ParseOccurrenceDate(string? occurrence)
+        {
+            if (string.IsNullOrWhiteSpace(occurrence)) return null;
+            return _timeZone.ParseClientDate(occurrence);
         }
 
         private void NormalizeAllDayRange(Event ev)
