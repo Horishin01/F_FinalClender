@@ -1260,17 +1260,17 @@
                     ? '<span class="ev-mini-icon reminder" title="リマインダー"><i class="fa-solid fa-bell"></i></span>'
                     : '';
                 const metaIcons = [sourceIcon, recurrenceIcon, reminderIcon].filter(Boolean).join('');
-                const metaLine = metaIcons ? `<div class="ev-meta-inline">${metaIcons}</div>` : '';
+                const iconRow = metaIcons ? `<span class="ev-inline-icons">${metaIcons}</span>` : '';
                 if (isListView) {
                     if (isHoliday) {
-                        return { html: `<div class="ev-row wrap list-view"><span class="ev-title">${arg.event.title}</span></div>` };
+                        return { html: `<div class="ev-row list-view"><span class="ev-title">${arg.event.title}</span></div>` };
                     }
-                    return { html: `<div class="ev-row wrap list-view"><span class="ev-title">${arg.event.title}</span>${metaLine}</div>` };
+                    return { html: `<div class="ev-row list-view"><span class="ev-title">${arg.event.title}</span>${iconRow}</div>` };
                 }
                 if (isHoliday) {
-                    return { html: `<div class="ev-row wrap"><span class="ev-title">${arg.event.title}</span></div>` };
+                    return { html: `<div class="ev-row"><span class="ev-title">${arg.event.title}</span></div>` };
                 }
-                return { html: `<div class="ev-row wrap">${prioTag}${time}<span class="ev-title">${arg.event.title}</span></div>${metaLine}` };
+                return { html: `<div class="ev-row">${prioTag}${time}<span class="ev-title">${arg.event.title}</span>${iconRow}</div>` };
             },
             datesSet(info) {
                 if (period) period.textContent = info.view.title;

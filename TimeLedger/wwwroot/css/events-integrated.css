@@ -1018,38 +1018,25 @@ body.mobile-lock {
     flex-wrap: wrap;
 }
 .fc .ev-row.list-view {
-    align-items: flex-start;
-    gap: 0.25rem;
+    align-items: center;
+    gap: 0.35rem;
     flex-wrap: nowrap;
     width: 100%;
-    flex-direction: column;
+    flex-direction: row;
 }
 .fc .ev-row.list-view .ev-title {
     font-weight: 800;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     min-width: 0;
     text-align: left;
-    width: 100%;
 }
 .fc .ev-row.list-view .ev-source { display: none; }
 
-.fc .ev-meta-inline {
-    display: flex;
+.fc .ev-inline-icons {
+    display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    flex-wrap: wrap;
-    font-size: 0.78rem;
-    color: #64748b;
-    margin-top: 0.2rem;
-}
-
-.fc .ev-meta-text {
-    font-weight: 600;
-    letter-spacing: 0.01em;
-}
-
-.fc .ev-meta-sep {
-    color: #cbd5e1;
+    flex-shrink: 0;
 }
 
 .fc .ev-mini-icon {
