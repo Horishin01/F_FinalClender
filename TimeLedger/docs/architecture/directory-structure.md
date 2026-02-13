@@ -10,7 +10,7 @@ TimeLedger/
 |-- CodeX_date/                      # カレンダー/フロー画面のHTML試作
 |-- Controllers/                     # MVCコントローラー
 |-- Data/                            # DbContextと初期データ
-|-- Extensions/                      # 拡張メソッド・ヘルパー
+|-- Extensions/                      # パ拡張メソッド・ヘルー
 |-- Middleware/                      # カスタムミドルウェア
 |-- Migrations/                      # EF Coreマイグレーション
 |-- Models/                          # ドメインモデル

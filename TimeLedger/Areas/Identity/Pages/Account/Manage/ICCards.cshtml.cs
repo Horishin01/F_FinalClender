@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using PCSC;
+using PCSC.Exceptions;
 using PCSC.Iso7816;
 using TimeLedger.Data;
 using TimeLedger.Models;
@@ -90,6 +91,26 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
 
                 await _db.SaveChangesAsync();
             }
+            catch (DllNotFoundException)
+            {
+                StatusMessage = BuildPcscMissingMessage();
+            }
+            catch (TypeInitializationException ex) when (ex.InnerException is DllNotFoundException)
+            {
+                StatusMessage = BuildPcscMissingMessage();
+            }
+            catch (NoReadersAvailableException)
+            {
+                StatusMessage = "カードリーダーが見つかりません。接続状態と pcscd の起動状態を確認してください。";
+            }
+            catch (NoServiceException)
+            {
+                StatusMessage = "PC/SC サービスが利用できません。pcscd が起動しているか確認してください。";
+            }
+            catch (PCSCException ex)
+            {
+                StatusMessage = $"カード読み取りエラー: {ex.Message}";
+            }
             catch (Exception ex)
             {
                 StatusMessage = $"読み取りに失敗しました: {ex.Message}";
@@ -152,5 +173,8 @@ namespace TimeLedger.Areas.Identity.Pages.Account.Manage
 
             return BitConverter.ToString(resp.GetData()).Replace("-", "");
         }
+
+        private static string BuildPcscMissingMessage()
+            => "PC/SC ライブラリ (libpcsclite.so.1) が見つかりません。サーバーに libpcsclite1 / pcscd をインストールしてから再実行してください。";
     }
 }

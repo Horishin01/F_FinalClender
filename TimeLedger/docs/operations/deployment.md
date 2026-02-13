@@ -3,6 +3,17 @@
 ## 前提
 - サーバーに .NET 8.0 ランタイムと PostgreSQL 14+ がインストール済み。
 - 逆プロキシ (例: Nginx/Apache) で TLS 終端し、アプリは Kestrel で稼働させる想定。
+- IC カード機能を使う場合は `pcsc-lite` の共有ライブラリとデーモン (`libpcsclite.so.1`, `pcscd`) をインストールする。
+
+### IC カード機能の追加依存
+- Debian / Ubuntu:
+  - `sudo apt-get update`
+  - `sudo apt-get install -y libpcsclite1 pcscd pcsc-tools`
+- RHEL / Rocky / AlmaLinux:
+  - `sudo dnf install -y pcsc-lite pcsc-lite-libs pcsc-lite-ccid`
+- サービス起動確認:
+  - `sudo systemctl enable --now pcscd`
+  - `systemctl status pcscd --no-pager`
 
 ## 必須設定（環境変数推奨）
 - `ConnectionStrings__DefaultConnection` : PostgreSQL 接続文字列
