@@ -1,32 +1,69 @@
-# 運用 Runbook（更新日: 2026-02-12）
+# 運用 Runbook（更新日: 2026-02-13）
+
+## 対象環境
+- Ubuntu サーバー
+- systemd サービス名: `timeledger`
+- デプロイ先: `/var/www/timeledger/app`
+- リポジトリ: `~/F_FinalClender`
 
 ## 目的
-本番/ステージングで障害が起きた際に、短時間で原因を切り分け復旧するための手順メモ。
+- 障害時に短時間で「アプリ起動問題」「DB問題」「外部連携問題」を切り分ける。
 
-## よく使うコマンド（例: systemd サービス名を `timeledger` とする場合）
-- ステータス確認: `sudo systemctl status timeledger`
-- 起動/停止/再起動: `sudo systemctl start|stop|restart timeledger`
-- ログ確認: `sudo journalctl -u timeledger -n 200 -f`
-- 公開ポート確認: `ss -lntp | grep dotnet`
+## 基本コマンド
+- ステータス: `sudo systemctl status timeledger`
+- 再起動: `sudo systemctl restart timeledger`
+- ログ追跡: `sudo journalctl -u timeledger -n 200 -f`
+- プロセス確認: `ss -lntp | grep dotnet`
 
-## ヘルスチェック
-- Web: 200 が返ることを確認 (`curl -I https://<host>/` → 200/302)。認証必須のためログイン画面または Home への 302 で OK。
-- DB: `psql "<conn-string>" -c "select 1"` で応答を確認。
-- 外部カレンダー連携: 管理画面で Outlook/Google の状態を確認し、`ExternalCalendars/Sync` ボタンで同期レスポンスをチェック。
+## デプロイ直後の確認
+- `systemctl status timeledger` で `active (running)` を確認。
+- `curl -I https://<host>/` で `200` または `302` を確認。
+- ログにマイグレーション/接続文字列エラーが出ていないことを確認。
 
-## データベース
+## アプリ別ヘルスチェック
+- `カレンダー（Events）`
+- ログイン後にイベント一覧が表示されること。
+- `Sync` 実行で 500 が連続しないこと。
+
+- `外部連携（Outlook/Google）`
+- 連携状態ページで接続状態が読み出せること。
+- 同期実行時に `LinkRequired` へ誤遷移しないこと（連携済みの場合）。
+
+- `iCloud`
+- 管理者アカウントで iCloud 設定ページを開けること。
+- 同期実行時に認証エラーが続く場合は Apple ID / アプリパスワードを再確認。
+
+- `ICカード`
+- 依存確認: `ldconfig -p | grep libpcsclite.so.1`
+- サービス確認: `sudo systemctl status pcscd --no-pager`
+- 読み取り失敗時は `pcscd` と USB リーダー接続状態を先に確認。
+
+## DB確認
+- 接続試験: `psql "<conn-string>" -c "select 1"`
 - バックアップ: `pg_dump -Fc -h <host> -U <user> <db> > backup.dump`
-- 復元: `pg_restore -c -d <db> backup.dump`
-- マイグレーション適用: `dotnet ef database update --project TimeLedger/TimeLedger.csproj --configuration Release`
+- 復旧: `pg_restore -c -d <db> backup.dump`
 
-## 典型的な障害と確認ポイント
-- **起動しない / すぐ終了する**: `journalctl` で接続文字列エラーやポート占有を確認。`ConnectionStrings__DefaultConnection` と DB 到達性を再確認。
-- **ログイン不可**: DB 応答、Email 確認ポリシー、ロール設定を確認。Admin シードを誤って削除した場合は一時的に Seed コードを有効にして再起動。
-- **外部カレンダー同期失敗**: トークン期限切れ・スコープ不足が多い。OAuth 設定値、`ExternalCalendar...` テーブルのトークン有効期限を確認し、再連携を促す。
-- **iCloud 同期遅延/失敗**: CalDAV はレート制限（60 秒クールダウン）あり。ログにエラーがないか確認し、Apple ID/アプリパスワードが変更されていないか確認。
+## 典型障害と一次対応
+- `起動失敗`
+- `journalctl` で接続文字列・権限・ポート競合を確認。
+- 必要に応じて `dotnet publish` の出力先権限を再確認。
+
+- `ログイン後に管理画面が見えない`
+- 対象ユーザーのロール（Admin）付与状態を確認。
+
+- `Outlook/Google 同期失敗`
+- OAuth クライアントID/Secretの設定値を確認。
+- トークン期限切れなら再連携を実施。
+
+- `iCloud 同期失敗`
+- Apple ID / アプリパスワード再設定、CalDAV 応答エラーをログで確認。
+
+- `ICカード読み取り失敗`
+- `pcscd` 起動状態、`libpcsclite.so.1`、カードリーダー接続を確認。
 
 ## ロールバック
-- デプロイ前に取得した DB バックアップへリストアし、前バージョンの publish ディレクトリに切り替える（シンボリックリンク運用が便利）。
+- リリース前バックアップ（DBダンプ）から復元。
+- 直前に稼働していた publish 内容へ戻して `sudo systemctl restart timeledger`。
 
-## 連絡・エスカレーション
-- セキュリティインシデントや P0 障害は関係者（運用/セキュリティ担当）へ即時連絡し、外部プロバイダーのトークン失効を最優先で実施する。
+## エスカレーション
+- P0（認証不能、データ消失、権限逸脱、トークン漏洩疑い）は即時連絡し、外部トークン失効を最優先で実施する。

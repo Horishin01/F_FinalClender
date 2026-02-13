@@ -1,36 +1,40 @@
-# セキュリティポリシー（更新日: 2026-02-12）
+# セキュリティポリシー（更新日: 2026-02-13）
 
-## 基本方針
-- 認証・認可をデフォルト必須とし、匿名許可は最小限に限定する。
-- 秘密情報（パスワード・トークン・接続文字列）はソースに含めず、環境変数や Secret Manager / 外部シークレットストアで管理する。
-- 外部カレンダーのトークンや iCloud 認証情報は必ず暗号化保存する（現状は未実装のため最優先で対応）。
+## 適用範囲
+- 本書は `TimeLedger` の全機能（カレンダー、外部連携、管理機能、Flow/Tools を含む）に適用する。
 
-## アカウント/認証
-- Identity でメール確認を必須化済み。パスワードポリシーはデフォルト値より強め（長さ 12 以上、記号必須）に設定することを推奨。
-- 初期 Admin (`admin@admin.admin` / `i2JvwXGn<>`) は開発専用。運用環境では初回ログイン後にパスワード変更し、必要なら Seed を無効化または構成化する。
-- 2FA は運用環境で有効化を検討する。
+## 認証・認可ポリシー
+- デフォルトは「認証必須」。
+- 匿名公開は `Home` / `Privacy` / `Flow` など明示された画面のみ許可する。
+- 一般ユーザー機能（イベント、カテゴリ、外部連携参照）は `[Authorize]` を必須とする。
+- 管理機能（`Admin` / `Analytics` / `AppNotices` / `Users` / `Roles` / `UserRoles` / `Tools`）は `[Authorize(Roles = "Admin")]` を必須とする。
+- 参照・更新・削除はすべてサーバー側で `UserId` 所有者照合を行う。
 
-## 認可
-- すべてのコントローラー/アクションに `[Authorize]` を付与し、公開が必要なものだけ `[AllowAnonymous]` とする。管理系は `[Authorize(Roles="Admin")]` を明示。
-- View 側でもボタン/リンク表示をロールに応じて制御する。
+## 秘密情報ポリシー
+- 接続文字列、OAuth クライアントシークレット、トークン、iCloud アプリパスワードは平文保存しない。
+- 保存時は暗号化を必須とし、鍵はアプリ外（例: Key Vault / Secret Manager / OS 保護ストア）で管理する。
+- ログ・ダンプ・バックアップへ秘密情報を出力しない。
 
-## 秘密情報・暗号化
-- `ConnectionStrings__DefaultConnection` などの機密値は環境変数 or Secret Manager で注入し、`appsettings.*.json` に平文を残さない。
-- 外部カレンダーのアクセストークン/リフレッシュトークン、iCloud のアプリパスワードを暗号化保存する。ASP.NET Core Data Protection + キー管理（KeyVault/DPAPI/ファイル共有）を利用し、DB には暗号化済み値のみを置く。
-- バックアップやログにトークン・パスワードが含まれないようフィルタリングする。
+## Web セキュリティポリシー
+- POST 系エンドポイントは CSRF 対策（`ValidateAntiForgeryToken`）を必須とする。
+- 本番は HTTPS 必須、`UseHsts()` を有効化する。
+- セキュリティヘッダーを付与する。
+- 対象ヘッダー: `Content-Security-Policy`, `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options`.
 
-## 通信・ヘッダー
-- すべて HTTPS 経由。逆プロキシで TLS を終端し、`UseHsts()` を維持。
-- 推奨ヘッダー: `Content-Security-Policy`、`Referrer-Policy=no-referrer`、`X-Content-Type-Options=nosniff`、`X-Frame-Options=DENY`。カスタムミドルウェアで追加する。
+## ログ・監査ポリシー
+- エラー詳細は内部ログに限定し、画面には汎用メッセージのみ返す。
+- 監査ログ（`UserAccessLog`）は保持期間と削除方針を定める。
+- 重大インシデント時はトークン失効と強制再認証を優先する。
 
-## ログ・監視
-- `Information` 以上を基本とし、PII・トークン・パスワードをログに出力しない。
-- 例外はスタックトレースを内部ログにのみ記録し、ユーザーには汎用メッセージを返す。
-- アクセスログは `UserAccessLog` に保存されるため、保持期間を決め定期パージを行う。
+## デプロイ前セキュリティゲート
+- 以下を満たさない場合は本番反映しない。
+- 管理系エンドポイントのロール制御が有効。
+- 主要更新 API の所有者照合が有効。
+- 平文保存される秘密情報がない。
+- 既知の高リスク項目がトラッキングされ、回避策が運用に反映済み。
 
-## パッチと依存関係
-- 毎月パッケージ更新を確認し、セキュリティ修正は最優先で適用。npm 依存 (`fullcalendar`) も同様に `npm audit` で確認。
-
-## インシデント対応
-- トークン漏洩が疑われる場合: 外部プロバイダーで該当トークンを失効させ、DB から該当レコードを削除した上で再認可を要求。
-- 不正アクセスが疑われる場合: アカウントをロックし、`UserAccessLog` と外部ログを照合して影響範囲を特定、パスワードリセットを強制する。
+## 現状ギャップ（2026-02-13 時点）
+- `UsersController` / `RolesController` / `UserRolesController` の管理者制御が未適用。
+- `EventsController` / `CategoriesController` で一部所有者照合が不十分。
+- iCloud/OAuth トークンが実質平文で保存されている。
+- 旧 `ICloudSettingController` が残置されている。
