@@ -121,7 +121,7 @@
         const dayViews = ['timeGridDay', 'listDay'];
         if (view === 'dayGridMonth') return 'dayGridMonth';
         if (weekViews.includes(view)) return mobile ? 'listWeek' : 'timeGridWeek';
-        if (dayViews.includes(view)) return 'timeGridDay';
+        if (dayViews.includes(view)) return mobile ? 'listDay' : 'timeGridDay';
         return null;
     }
 
@@ -986,7 +986,7 @@
         const views = {
             viewMonth: { desktop: 'dayGridMonth', mobile: 'dayGridMonth' },
             viewWeek: { desktop: 'timeGridWeek', mobile: 'listWeek' },
-            viewDay: { desktop: 'timeGridDay', mobile: 'timeGridDay' }
+            viewDay: { desktop: 'timeGridDay', mobile: 'listDay' }
         };
         Object.entries(views).forEach(([id, viewSet]) => {
             qs('#' + id)?.addEventListener('click', () => {
@@ -1011,8 +1011,9 @@
         const now = new Date();
         if (kind === 'today') {
             state.calendar.gotoDate(now);
-            state.calendar.changeView('timeGridDay');
-            setActiveViewButton('timeGridDay');
+            const view = isMobileMode() ? 'listDay' : 'timeGridDay';
+            state.calendar.changeView(view);
+            setActiveViewButton(view);
         } else if (kind === 'week') {
             state.calendar.gotoDate(now);
             const view = isMobileMode() ? 'listWeek' : 'timeGridWeek';
@@ -1213,6 +1214,10 @@
             height: getCalendarHeight(),
             expandRows: false,
             dayMaxEvents: true,
+            views: {
+                timeGridWeek: { slotEventOverlap: false },
+                timeGridDay: { slotEventOverlap: false }
+            },
             initialView,
             initialDate,
             events: mapToFc(state.filtered),
@@ -1351,6 +1356,9 @@
                 if (currentType === 'listWeek') {
                     state.calendar.changeView('timeGridWeek');
                     setActiveViewButton('timeGridWeek');
+                } else if (currentType === 'listDay') {
+                    state.calendar.changeView('timeGridDay');
+                    setActiveViewButton('timeGridDay');
                 }
             }
             if (!isMobile) closeMobilePanels();
