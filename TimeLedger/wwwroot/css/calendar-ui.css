@@ -298,9 +298,13 @@
     gap: 0.2rem;
 }
 
-.fc .fc-daygrid-event,
-.fc .fc-timegrid-event {
+.fc .fc-daygrid-event {
     margin: 2px;
+}
+
+/* timeGrid で margin を入れると隣接イベント(10:00→11:00 など)が重なって見える */
+.fc .fc-timegrid-event {
+    margin: 0;
 }
 
 /* カテゴリカラー */
