@@ -18,6 +18,7 @@
 - `ConnectionStrings__DefaultConnection` : PostgreSQL 接続文字列
 - `ASPNETCORE_ENVIRONMENT=Production`
 - `ASPNETCORE_URLS=https://0.0.0.0:7052;http://0.0.0.0:5016`（必要に応じて変更）
+- `ASPNETCORE_PATHBASE=/timeledger`（サブパス配信時のみ。例: `https://example.com/timeledger`）
 - `Authentication__Outlook__ClientId` / `Authentication__Outlook__ClientSecret`（Outlook 連携を使う場合）
 - `Authentication__Google__ClientId` / `Authentication__Google__ClientSecret`（Google 連携を使う場合）
 - Data Protection キーの永続化先（ファイル共有や KeyVault 等）を環境変数や設定で指定することを推奨。

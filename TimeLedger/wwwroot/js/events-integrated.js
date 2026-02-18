@@ -8,6 +8,7 @@
     const root = document.documentElement;
     const APP_TIMEZONE = resolveTimeZone(document.body?.dataset?.appTimezone || 'Asia/Tokyo');
     const APP_LOCALE = root?.lang ? (root.lang === 'ja' ? 'ja-JP' : root.lang) : 'ja-JP';
+    const APP_BASE_PATH = normalizeBasePath(document.body?.dataset?.appBasePath || '');
     let hasAutoFocusedCalendar = false;
     const CAL_VIEW_STORAGE_KEYS = {
         view: 'events:lastView',
@@ -147,6 +148,20 @@
     });
 
     const pad2 = (v) => String(v).padStart(2, '0');
+
+    function normalizeBasePath(value) {
+        const raw = (value || '').toString().trim();
+        if (!raw || raw === '/') return '';
+        const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
+        return withLeadingSlash.endsWith('/') ? withLeadingSlash.slice(0, -1) : withLeadingSlash;
+    }
+
+    function toAppPath(path) {
+        const raw = (path || '').toString();
+        if (!raw || raw === '/') return APP_BASE_PATH ? `${APP_BASE_PATH}/` : '/';
+        const normalized = raw.startsWith('/') ? raw : `/${raw}`;
+        return APP_BASE_PATH ? `${APP_BASE_PATH}${normalized}` : normalized;
+    }
 
     function hasExplicitOffset(value) {
         if (typeof value !== 'string') return false;
@@ -368,7 +383,7 @@
         const allDayFlag = isAllDay ? '&allDay=true' : '';
         const startTicks = startDate.getTime();
         const endTicks = endDate.getTime();
-        return `/Events/Create?startDate=${encodeURIComponent(startStr)}&endDate=${encodeURIComponent(endStr)}&startTicks=${startTicks}&endTicks=${endTicks}&offsetMinutes=${offsetMinutes}${allDayFlag}`;
+        return toAppPath(`/Events/Create?startDate=${encodeURIComponent(startStr)}&endDate=${encodeURIComponent(endStr)}&startTicks=${startTicks}&endTicks=${endTicks}&offsetMinutes=${offsetMinutes}${allDayFlag}`);
     }
 
     function normalizeReminderValue(value) {
@@ -420,7 +435,7 @@
     }
 
     async function fetchEvents() {
-        const res = await fetch('/Events/GetEvents');
+        const res = await fetch(toAppPath('/Events/GetEvents'));
         if (!res.ok) throw new Error('イベント取得に失敗しました');
         const json = await res.json();
         const holidays = await fetchHolidayEvents();
@@ -1051,7 +1066,7 @@
             btn.classList.add('is-loading');
             visual.setState('running', 'すべて同期中…');
             try {
-                const res = await fetch('/Events/Sync', { method: 'POST', headers: { 'RequestVerificationToken': token } });
+                const res = await fetch(toAppPath('/Events/Sync'), { method: 'POST', headers: { 'RequestVerificationToken': token } });
                 if (!res.ok) {
                     visual.setState('error', '同期に失敗しました');
                     alert('同期に失敗しました');
@@ -1328,7 +1343,7 @@
                 }
                 const baseId = props.baseId || info.event.id;
                 const occ = formatZonedIso(info.event.start) || info.event.startStr;
-                if (baseId) window.location.href = `/Events/Details?id=${encodeURIComponent(baseId)}&occurrence=${encodeURIComponent(occ)}`;
+                if (baseId) window.location.href = toAppPath(`/Events/Details?id=${encodeURIComponent(baseId)}&occurrence=${encodeURIComponent(occ)}`);
             },
             selectable: true,
             select(info) {

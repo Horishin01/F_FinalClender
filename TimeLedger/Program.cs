@@ -16,6 +16,9 @@ using Microsoft.AspNetCore.StaticFiles;
 var builder = WebApplication.CreateBuilder(args);
 // appsettings.{Environment}.json で接続先を環境ごとに切り替える。
 // 本番のパスワードは環境変数や Secret Manager で上書きすること。
+var configuredPathBase = NormalizePathBase(
+    builder.Configuration["PathBase"]
+    ?? builder.Configuration["ASPNETCORE_PATHBASE"]);
 
 //================ DB接続 ==================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -141,6 +144,11 @@ else
     app.UseHsts();
 }
 
+if (!string.IsNullOrEmpty(configuredPathBase))
+{
+    app.UsePathBase(configuredPathBase);
+}
+
 app.UseHttpsRedirection();
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -206,4 +214,30 @@ static async Task SeedAdminUserAsync(UserManager<ApplicationUser> userManager, R
             throw new InvalidOperationException($"Adminロール付与に失敗しました: {errors}");
         }
     }
+}
+
+static string? NormalizePathBase(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return null;
+    }
+
+    var normalized = value.Trim();
+    if (normalized == "/")
+    {
+        return null;
+    }
+
+    if (!normalized.StartsWith('/'))
+    {
+        normalized = "/" + normalized;
+    }
+
+    if (normalized.Length > 1 && normalized.EndsWith('/'))
+    {
+        normalized = normalized.TrimEnd('/');
+    }
+
+    return normalized;
 }

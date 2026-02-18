@@ -12,6 +12,7 @@
 (function () {
     const APP_TIMEZONE = resolveTimeZone(document.body?.dataset?.appTimezone || 'Asia/Tokyo');
     const APP_LOCALE = document.documentElement?.lang ? (document.documentElement.lang === 'ja' ? 'ja-JP' : document.documentElement.lang) : 'ja-JP';
+    const APP_BASE_PATH = normalizeBasePath(document.body?.dataset?.appBasePath || '');
     const ISO_NO_TZ_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,7}))?)?)?$/;
     const APP_PARTS_FORMATTER = new Intl.DateTimeFormat(APP_LOCALE, {
         timeZone: APP_TIMEZONE,
@@ -24,6 +25,20 @@
         hour12: false
     });
     const pad2 = (v) => String(v).padStart(2, '0');
+
+    function normalizeBasePath(value) {
+        const raw = (value || '').toString().trim();
+        if (!raw || raw === '/') return '';
+        const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
+        return withLeadingSlash.endsWith('/') ? withLeadingSlash.slice(0, -1) : withLeadingSlash;
+    }
+
+    function toAppPath(path) {
+        const raw = (path || '').toString();
+        if (!raw || raw === '/') return APP_BASE_PATH ? `${APP_BASE_PATH}/` : '/';
+        const normalized = raw.startsWith('/') ? raw : `/${raw}`;
+        return APP_BASE_PATH ? `${APP_BASE_PATH}${normalized}` : normalized;
+    }
 
     function resolveTimeZone(timeZoneId) {
         if (!timeZoneId) return 'UTC';
@@ -172,7 +187,7 @@
         const startTicks = startDate.getTime();
         const endTicks = endDate.getTime();
         const allDayFlag = isAllDay ? '&allDay=true' : '';
-        return `/Events/Create?startDate=${encodeURIComponent(startStr)}&endDate=${encodeURIComponent(endStr)}&startTicks=${startTicks}&endTicks=${endTicks}&offsetMinutes=${offsetMinutes}${allDayFlag}`;
+        return toAppPath(`/Events/Create?startDate=${encodeURIComponent(startStr)}&endDate=${encodeURIComponent(endStr)}&startTicks=${startTicks}&endTicks=${endTicks}&offsetMinutes=${offsetMinutes}${allDayFlag}`);
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -196,7 +211,7 @@
             slotMinTime: '00:00:00',
             slotMaxTime: '24:00:00',
 
-            events: '/Events/GetEvents',   // 既存のバックエンド
+            events: toAppPath('/Events/GetEvents'),   // 既存のバックエンド
             eventClassNames: function (arg) {
                 // 種別/ソース/優先度に応じてクラス付与（色分けに使用）
                 const props = arg.event.extendedProps || {};
@@ -269,7 +284,7 @@
             },
             eventClick(info) {
                 const id = info.event.id;
-                if (id) window.location.href = `/Events/Details?id=${encodeURIComponent(id)}`;
+                if (id) window.location.href = toAppPath(`/Events/Details?id=${encodeURIComponent(id)}`);
             },
             selectable: true,
             select(info) {
@@ -304,7 +319,7 @@
             syncBtn.addEventListener('click', async () => {
                 syncBtn.disabled = true;
                 try {
-                    const res = await fetch('/Events/Sync', {
+                    const res = await fetch(toAppPath('/Events/Sync'), {
                         method: 'POST',
                         headers: { 'RequestVerificationToken': token }
                     });

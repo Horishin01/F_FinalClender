@@ -8,6 +8,7 @@
     const FLOW_STORAGE_KEY = 'pit2hi-preview-flow';
     const APP_TIMEZONE = resolveTimeZone(document.body?.dataset?.appTimezone || 'Asia/Tokyo');
     const APP_LOCALE = document.documentElement?.lang ? (document.documentElement.lang === 'ja' ? 'ja-JP' : document.documentElement.lang) : 'ja-JP';
+    const APP_BASE_PATH = normalizeBasePath(document.body?.dataset?.appBasePath || '');
     const LEGACY_SAMPLE_TITLES = new Set([
         'スプリントレビュー',
         '歩いてランチ',
@@ -34,6 +35,20 @@
         learning: '#0ea5e9',
         focus: '#14b8a6'
     };
+
+    function normalizeBasePath(value) {
+        const raw = (value || '').toString().trim();
+        if (!raw || raw === '/') return '';
+        const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
+        return withLeadingSlash.endsWith('/') ? withLeadingSlash.slice(0, -1) : withLeadingSlash;
+    }
+
+    function toAppPath(path) {
+        const raw = (path || '').toString();
+        if (!raw || raw === '/') return APP_BASE_PATH ? `${APP_BASE_PATH}/` : '/';
+        const normalized = raw.startsWith('/') ? raw : `/${raw}`;
+        return APP_BASE_PATH ? `${APP_BASE_PATH}${normalized}` : normalized;
+    }
 
     function resolveTimeZone(timeZoneId) {
         if (!timeZoneId) return 'UTC';
@@ -279,7 +294,7 @@
                 const ev = info.event;
                 const props = ev.extendedProps || {};
                 if (props.serverId) {
-                    window.location.href = `/Events/Details?id=${encodeURIComponent(props.serverId)}`;
+                    window.location.href = toAppPath(`/Events/Details?id=${encodeURIComponent(props.serverId)}`);
                     return;
                 }
                 const summary = [

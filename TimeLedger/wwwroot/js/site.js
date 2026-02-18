@@ -6,9 +6,28 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     console.info('[site.js] loaded');
+    const appBasePath = normalizeBasePath(document.body?.dataset.appBasePath || '');
+    const toAppPath = (path) => {
+        const raw = (path || '').toString();
+        if (!raw || raw === '/') {
+            return appBasePath ? `${appBasePath}/` : '/';
+        }
+        const normalized = raw.startsWith('/') ? raw : `/${raw}`;
+        return appBasePath ? `${appBasePath}${normalized}` : normalized;
+    };
+
+    function normalizeBasePath(value) {
+        const raw = (value || '').toString().trim();
+        if (!raw || raw === '/') {
+            return '';
+        }
+        const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
+        return withLeadingSlash.endsWith('/') ? withLeadingSlash.slice(0, -1) : withLeadingSlash;
+    }
+
     const noticeKey = document.body?.dataset.appNoticeKey;
     const noticeKind = document.body?.dataset.appNoticeKind;
-    const noticeBaseUrl = document.body?.dataset.appNoticeUrl || '/Home/Privacy';
+    const noticeBaseUrl = document.body?.dataset.appNoticeUrl || toAppPath('/Home/Privacy');
     if (noticeKey) {
         const storageKey = 'timeledger.notice.lastSeen';
         let lastSeen = null;
@@ -152,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if ('serviceWorker' in navigator && isSecure) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker.register(toAppPath('/sw.js'), { scope: toAppPath('/') })
                 .then(reg => console.info('[site.js] sw registered', reg.scope))
                 .catch(err => console.warn('[site.js] sw register failed', err));
         });
