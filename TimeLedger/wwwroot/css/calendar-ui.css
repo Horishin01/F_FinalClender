@@ -440,16 +440,89 @@
 }
 
 .fc-timegrid-event .ev-row {
-    flex-wrap: wrap;          /* タイトルが隠れないように必要なら改行 */
-    column-gap: 0.35rem;
-    row-gap: 2px;
+    flex-wrap: nowrap;
+    column-gap: 0.25rem;
+    row-gap: 0;
     max-width: 100%;
     overflow: hidden;
+    align-items: flex-start;
 }
 
 .fc-timegrid-event .ev-title {
-    white-space: normal;      /* 改行を許可してタイトルを必ず表示 */
-    flex-basis: 100%;         /* タイトルは必要なら次の行で全幅を使う */
+    white-space: nowrap;
+    flex-basis: auto;
+    line-height: 1.15;
+}
+
+/* timeGrid は時間を最上段に固定し、縦方向の情報量を最小化 */
+.fc .fc-timegrid-event .fc-event-main {
+    padding: 0.2rem 0.35rem;
+    display: block;
+}
+
+/* timeGrid の上下リサイズ判定を掴みやすくする */
+.fc .fc-timegrid-event .fc-event-resizer-start,
+.fc .fc-timegrid-event .fc-event-resizer-end {
+    left: 0;
+    right: 0;
+    height: 10px;
+    cursor: ns-resize;
+    opacity: 0.95;
+}
+
+.fc .fc-timegrid-event .fc-event-resizer-start::before,
+.fc .fc-timegrid-event .fc-event-resizer-end::before {
+    content: '';
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    border-top: 2px solid rgba(59, 130, 246, 0.45);
+}
+
+.fc .fc-timegrid-event .fc-event-resizer-start::before {
+    top: 2px;
+}
+
+.fc .fc-timegrid-event .fc-event-resizer-end::before {
+    bottom: 2px;
+}
+
+.fc-timegrid-event .ev-timegrid {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.fc-timegrid-event .ev-timegrid .ev-time {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.02rem 0.4rem;
+    font-size: 0.72rem;
+    line-height: 1.1;
+}
+
+.fc-timegrid-event.ev-overlap-secondary .ev-timegrid .ev-time {
+    display: none;
+}
+
+.fc-timegrid-event .ev-timegrid-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.fc-timegrid-event .ev-timegrid-main .ev-prio-dot {
+    margin-top: 0.15rem;
+}
+
+.fc-timegrid-event .ev-timegrid-main .ev-title {
+    font-size: 0.85rem;
 }
 
 .fc .fc-list-day-cushion {

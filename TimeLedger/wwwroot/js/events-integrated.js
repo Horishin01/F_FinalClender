@@ -10,6 +10,7 @@
     const APP_LOCALE = root?.lang ? (root.lang === 'ja' ? 'ja-JP' : root.lang) : 'ja-JP';
     const APP_BASE_PATH = normalizeBasePath(document.body?.dataset?.appBasePath || '');
     let hasAutoFocusedCalendar = false;
+    let suppressEventClickUntil = 0;
     const CAL_VIEW_STORAGE_KEYS = {
         view: 'events:lastView',
         date: 'events:lastDate'
@@ -407,6 +408,97 @@
         const mins = value % 60;
         if (mins === 0) return `${hours}時間前`;
         return `${hours}時間${mins}分前`;
+    }
+
+    function canResizeCalendarEvent(fcEvent) {
+        if (!fcEvent) return false;
+        const props = fcEvent.extendedProps || {};
+        if (props.isHoliday) return false;
+        if (fcEvent.allDay) return false;
+        const recurrence = (props.recurrence || 'None').toString();
+        return recurrence === 'None';
+    }
+
+    function suppressEventClick(ms = 650) {
+        suppressEventClickUntil = Math.max(suppressEventClickUntil, Date.now() + ms);
+    }
+
+    function shouldSuppressEventClick() {
+        return Date.now() < suppressEventClickUntil;
+    }
+
+    function applyRangeUpdateToState(eventId, startIso, endIso, allDay) {
+        if (!eventId) return;
+        const target = state.allEvents.find(e => e.id === eventId);
+        if (!target) return;
+        target.start = startIso;
+        target.end = endIso;
+        target.allDay = !!allDay;
+    }
+
+    function formatLocalDateTimeForServer(value) {
+        const parts = getZonedNumericParts(value);
+        if (!parts) {
+            const d = parseZonedDate(value);
+            if (!d) return '';
+            return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+        }
+        return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(parts.hour)}:${pad2(parts.minute)}:${pad2(parts.second)}`;
+    }
+
+    function toServerWallTimeString(raw, fallbackDate) {
+        const base = typeof raw === 'string' ? stripOffsetSuffix(raw.trim()) : '';
+        const match = /^(\d{4}-\d{2}-\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/.exec(base);
+        if (match) {
+            const sec = match[4] || '00';
+            return `${match[1]}T${match[2]}:${match[3]}:${sec}`;
+        }
+        return formatLocalDateTimeForServer(fallbackDate);
+    }
+
+    async function persistEventRangeUpdate(fcEvent) {
+        if (!fcEvent?.start) throw new Error('開始日時が不正です。');
+        const props = fcEvent.extendedProps || {};
+        const baseId = props.baseId || fcEvent.id;
+        if (!baseId) throw new Error('イベントIDが不正です。');
+
+        let endDate = fcEvent.end;
+        if (!endDate) endDate = new Date(fcEvent.start.getTime() + 60 * 60 * 1000);
+        if (endDate.getTime() <= fcEvent.start.getTime()) {
+            endDate = new Date(fcEvent.start.getTime() + 30 * 60 * 1000);
+        }
+        // FullCalendar の start/end Date は named timezone 環境で UTC-coercion になることがあるため、
+        // 保存は startStr/endStr の壁時計表現を優先する。
+        const startLocal = toServerWallTimeString(fcEvent.startStr, fcEvent.start);
+        const endLocal = toServerWallTimeString(fcEvent.endStr, endDate);
+        if (!startLocal || !endLocal) throw new Error('日時の変換に失敗しました。');
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        const body = new URLSearchParams({
+            id: baseId,
+            start: startLocal,
+            end: endLocal,
+            allDay: String(!!fcEvent.allDay)
+        });
+
+        const res = await fetch(toAppPath('/Events/UpdateRange'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                ...(token ? { RequestVerificationToken: token } : {})
+            },
+            body: body.toString()
+        });
+
+        if (!res.ok) {
+            const message = await res.text().catch(() => '');
+            throw new Error(message || 'イベント時間の更新に失敗しました。');
+        }
+
+        const payload = await res.json().catch(() => null);
+        if (!payload?.start) throw new Error('更新レスポンスが不正です。');
+        applyRangeUpdateToState(baseId, payload.start, payload.end || null, payload.allDay);
+        return payload;
     }
 
     function getDayKey(val) {
@@ -1146,6 +1238,9 @@
             end: e.end,
             allDay: e.allDay,
             display: e.source === 'Holiday' ? 'block' : 'auto',
+            // 繰り返し/祝日は timeGrid での移動/リサイズ不可。
+            durationEditable: e.source !== 'Holiday' && (e.recurrence || 'None') === 'None' && !e.allDay,
+            startEditable: e.source !== 'Holiday' && (e.recurrence || 'None') === 'None' && !e.allDay,
             extendedProps: {
                 baseId: e.baseId || e.id,
                 source: e.source,
@@ -1199,12 +1294,32 @@
         }
     }
 
+    function refreshSidebarSummaries() {
+        const { start, end } = getExpansionRange();
+        const expanded = expandRecurringEvents(state.filtered, start, end);
+        updateStats(expanded);
+        updateUpcoming(expanded);
+    }
+
     function getCalendarHeight() {
         return isMobileMode() ? 'auto' : '80vh';
     }
 
     function refreshCalendarHeight() {
         if (state.calendar) state.calendar.setOption('height', getCalendarHeight());
+    }
+
+    function isSecondaryTimeGridLane(eventEl) {
+        const harness = eventEl?.closest?.('.fc-timegrid-event-harness');
+        if (!harness) return false;
+
+        const leftStyle = (harness.style.left || '').trim();
+        if (leftStyle.endsWith('%')) {
+            const leftPercent = Number.parseFloat(leftStyle);
+            if (Number.isFinite(leftPercent)) return leftPercent > 0.1;
+        }
+
+        return harness.offsetLeft > 0;
     }
 
     function initCalendar() {
@@ -1227,11 +1342,18 @@
             nowIndicator: true,
             scrollTime,
             height: getCalendarHeight(),
+            editable: true,
+            longPressDelay: 350,
+            eventLongPressDelay: 350,
+            eventDurationEditable: false,
+            eventStartEditable: false,
+            eventResizableFromStart: false,
             expandRows: false,
             dayMaxEvents: true,
             views: {
-                timeGridWeek: { slotEventOverlap: false },
-                timeGridDay: { slotEventOverlap: false }
+                // Outlook ライク: 重複イベントは横分割で重ねずに表示
+                timeGridWeek: { slotEventOverlap: false, eventStartEditable: true, eventDurationEditable: true, eventResizableFromStart: true },
+                timeGridDay: { slotEventOverlap: false, eventStartEditable: true, eventDurationEditable: true, eventResizableFromStart: true }
             },
             initialView,
             initialDate,
@@ -1260,6 +1382,7 @@
                 const prioLabel = { high: '高', normal: '通常', low: '低' }[prioKey] || '通常';
                 const prioTag = `<span class="ev-prio-dot prio-${prioKey || 'normal'}" title="優先度: ${prioLabel}" aria-label="優先度: ${prioLabel}"></span>`;
                 const isListView = (arg.view?.type || '').toString().startsWith('list');
+                const isTimeGridView = (arg.view?.type || '').toString().startsWith('timeGrid');
                 // リストビューでは FullCalendar が左列に時間を表示するため、重複を避けて時間表示を省く
                 const time = !isListView && arg.timeText ? `<span class="ev-time">${arg.timeText}</span>` : '';
                 const srcKey = (props.source || '').toString().toLowerCase();
@@ -1290,7 +1413,54 @@
                 if (isHoliday) {
                     return { html: `<div class="ev-row"><span class="ev-title">${arg.event.title}</span></div>` };
                 }
+                if (isTimeGridView) {
+                    return {
+                        html: `<div class="ev-timegrid"><span class="ev-time">${arg.timeText || ''}</span><div class="ev-timegrid-main">${prioTag}<span class="ev-title">${arg.event.title}</span></div></div>`
+                    };
+                }
                 return { html: `<div class="ev-row">${prioTag}${time}<span class="ev-title">${arg.event.title}</span>${iconRow}</div>` };
+            },
+            eventDidMount(arg) {
+                const viewType = (arg.view?.type || '').toString();
+                if (!viewType.startsWith('timeGrid')) return;
+
+                const updateSecondaryLaneClass = () => {
+                    arg.el.classList.toggle('ev-overlap-secondary', isSecondaryTimeGridLane(arg.el));
+                };
+
+                requestAnimationFrame(updateSecondaryLaneClass);
+            },
+            async eventResize(info) {
+                suppressEventClick(1000);
+                if (!canResizeCalendarEvent(info.event)) {
+                    info.revert();
+                    return;
+                }
+                try {
+                    await persistEventRangeUpdate(info.event);
+                    refreshSidebarSummaries();
+                } catch (err) {
+                    console.error(err);
+                    info.revert();
+                    const message = err instanceof Error && err.message ? err.message : 'イベント時間の更新に失敗しました。';
+                    alert(message);
+                }
+            },
+            async eventDrop(info) {
+                suppressEventClick(1000);
+                if (!canResizeCalendarEvent(info.event)) {
+                    info.revert();
+                    return;
+                }
+                try {
+                    await persistEventRangeUpdate(info.event);
+                    refreshSidebarSummaries();
+                } catch (err) {
+                    console.error(err);
+                    info.revert();
+                    const message = err instanceof Error && err.message ? err.message : 'イベント時間の更新に失敗しました。';
+                    alert(message);
+                }
             },
             datesSet(info) {
                 if (period) period.textContent = info.view.title;
@@ -1336,6 +1506,10 @@
                 window.location.href = buildCreateUrl(startDate, endDate, isAllDay);
             },
             eventClick(info) {
+                if (shouldSuppressEventClick()) {
+                    info.jsEvent?.preventDefault();
+                    return;
+                }
                 const props = info.event.extendedProps || {};
                 if (props.source === 'Holiday') {
                     info.jsEvent?.preventDefault();

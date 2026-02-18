@@ -106,6 +106,65 @@ namespace TimeLedger.Controllers
             return new JsonResult(json);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateRange(
+            string id,
+            string? start,
+            string? end,
+            bool allDay = false,
+            long? startTicks = null,
+            long? endTicks = null)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(start))
+                return BadRequest("イベントIDまたは開始日時が不正です。");
+
+            var ev = await _context.Events.FirstOrDefaultAsync(e => e.Id == id && e.UserId == currentUser.Id);
+            if (ev == null) return NotFound("対象イベントが見つかりません。");
+
+            // 繰り返しの1件だけをドラッグで更新すると系列整合が崩れるため、編集画面での明示操作に限定する。
+            if (ev.Recurrence != EventRecurrence.None)
+                return BadRequest("繰り返しイベントは編集画面から時間変更してください。");
+
+            var tz = AppTimeZone;
+            // Create/Edit と同様に、まずクライアントのローカル日時文字列を優先して解釈する。
+            var parsedStart = ParseClientDate(start, null);
+            if (!parsedStart.HasValue && startTicks.HasValue)
+                parsedStart = FromUnixMillis(startTicks, tz)?.DateTime;
+            if (!parsedStart.HasValue)
+                return BadRequest("開始日時の形式が不正です。");
+
+            DateTime? parsedEnd = null;
+            if (!string.IsNullOrWhiteSpace(end))
+                parsedEnd = ParseClientDate(end, null);
+            if (!parsedEnd.HasValue && endTicks.HasValue)
+                parsedEnd = FromUnixMillis(endTicks, tz)?.DateTime;
+            if (!parsedEnd.HasValue && !string.IsNullOrWhiteSpace(end))
+                return BadRequest("終了日時の形式が不正です。");
+
+            ev.StartDate = parsedStart.Value;
+            ev.EndDate = parsedEnd ?? ev.EndDate ?? parsedStart.Value.AddHours(1);
+            ev.AllDay = allDay;
+
+            if (!ev.AllDay && ev.StartDate.HasValue && ev.EndDate.HasValue && ev.EndDate.Value <= ev.StartDate.Value)
+                ev.EndDate = ev.StartDate.Value.AddMinutes(30);
+
+            NormalizeAllDayRange(ev);
+            ev.LastModified = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Json(new
+            {
+                id = ev.Id,
+                start = _timeZone.ToOffsetIso(ev.StartDate),
+                end = _timeZone.ToOffsetIso(ev.EndDate),
+                allDay = ev.AllDay
+            });
+        }
+
         // ======= 手動同期（60秒レート制御）=======
         [HttpPost]
         [ValidateAntiForgeryToken]
