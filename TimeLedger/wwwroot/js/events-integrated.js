@@ -1414,6 +1414,11 @@
                     return { html: `<div class="ev-row"><span class="ev-title">${arg.event.title}</span></div>` };
                 }
                 if (isTimeGridView) {
+                    if (arg.event.allDay) {
+                        return {
+                            html: `<div class="ev-row"><span class="ev-prio-dot prio-${prioKey || 'normal'}" title="優先度: ${prioLabel}" aria-label="優先度: ${prioLabel}"></span><span class="ev-title">${arg.event.title}</span></div>`
+                        };
+                    }
                     return {
                         html: `<div class="ev-timegrid"><span class="ev-time">${arg.timeText || ''}</span><div class="ev-timegrid-main">${prioTag}<span class="ev-title">${arg.event.title}</span></div></div>`
                     };
