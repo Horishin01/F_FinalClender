@@ -32,6 +32,7 @@ namespace TimeLedger.Data;
     public virtual DbSet<GoogleCalendarConnection> GoogleCalendarConnections { get; set; } = default!;
     public DbSet<UserAccessLog> UserAccessLogs { get; set; } = default!;
     public DbSet<AppNotice> AppNotices { get; set; } = default!;
+    public DbSet<DiscordNotificationDelivery> DiscordNotificationDeliveries { get; set; } = default!;
 
     //--------
     // icouldプロパティ
@@ -48,6 +49,11 @@ namespace TimeLedger.Data;
         builder.Entity<AppNotice>(entity =>
         {
             entity.HasIndex(x => new { x.Kind, x.OccurredAt });
+        });
+
+        builder.Entity<DiscordNotificationDelivery>(entity =>
+        {
+            entity.HasIndex(x => new { x.EventId, x.NotificationKind, x.ScheduledAtUtc }).IsUnique();
         });
     }
 

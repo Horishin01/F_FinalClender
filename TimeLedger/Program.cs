@@ -86,6 +86,7 @@ builder.Services.AddRazorPages();
 //================ カレンダータイムゾーン設定 ===============
 builder.Services.Configure<CalendarSettings>(builder.Configuration.GetSection("Calendar"));
 builder.Services.AddSingleton<ICalendarTimeZoneService, CalendarTimeZoneService>();
+builder.Services.Configure<DiscordNotificationSettings>(builder.Configuration.GetSection(DiscordNotificationSettings.SectionName));
 
 //================ IHttpContextAccessor登録 ===============
 builder.Services.AddHttpContextAccessor();
@@ -98,6 +99,8 @@ builder.Services.AddScoped<IcalParserService>();
 
 //================ 外部カレンダー連携 ===============
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(nameof(DiscordReminderWorker));
+builder.Services.AddHostedService<DiscordReminderWorker>();
 builder.Services.AddHttpClient<OutlookCalendarClient>();
 builder.Services.AddHttpClient<GoogleCalendarClient>();
 builder.Services.AddScoped<IExternalCalendarClient, OutlookCalendarClient>();

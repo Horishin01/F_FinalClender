@@ -7,7 +7,7 @@
 
 ## レイヤー構成
 - **Controllers**: 画面/JSON/API を提供 (`EventsController`, `CategoriesController`, `AuthController`, `AppNoticesController` など)。
-- **Services**: 業務ロジックと外部連携 (`CloudCalDavService`, `ExternalCalendarSyncService`, `OutlookCalendarService`, `GoogleCalendarService`, `IcalParserService` ほか)。
+- **Services**: 業務ロジックと外部連携 (`CloudCalDavService`, `ExternalCalendarSyncService`, `OutlookCalendarService`, `GoogleCalendarService`, `IcalParserService` ほか)。`DiscordReminderWorker` は予定リマインダーを定期確認するバックグラウンドサービス。
 - **Data**: `ApplicationDbContext` が Identity テーブルとドメインテーブルを EF Core で管理。
 - **Middleware**: `UseUserAccessLogging` でアクセスログを DB に記録。Antiforgery はヘッダー `RequestVerificationToken` を要求。
 - **Views/ViewModels**: Razor ビューと対応する ViewModel DTO が `Views/` と `ViewModels/` に配置。
@@ -35,6 +35,7 @@
 ## 外部連携
 - **CalDAV (iCloud)**: 予定の取得・作成・更新・削除に対応。UID ベースで DB と iCloud を同期（更新/削除の衝突処理は TODO）。
 - **Outlook/Google カレンダー**: OAuth トークンを DB に保持し、`ExternalCalendarSyncService` がイベントを upsert（暗号化は今後の課題）。
+- **Discord Webhook**: `DiscordNotifications:Enabled=true` の時だけ、単発・時間指定予定の既存リマインダーをWebhookへ送信する。Webhook URLは環境変数またはSecret Managerだけで設定し、appsettingsやDBには保存しない。終日予定、繰り返し予定、Flowログは対象外。
 
 ## フロントエンド構成
 - FullCalendar 初期化と統合カレンダー UI は `wwwroot/js/events-integrated.js`。カテゴリ/ソース/統計などの拡張 UI を同ファイルで制御。

@@ -301,6 +301,38 @@ namespace TimeLedger.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("TimeLedger.Models.DiscordNotificationDelivery", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NotificationKind")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("ScheduledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("SentAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId", "NotificationKind", "ScheduledAtUtc")
+                        .IsUnique();
+
+                    b.ToTable("DiscordNotificationDeliveries");
+                });
+
             modelBuilder.Entity("TimeLedger.Models.Event", b =>
                 {
                     b.Property<string>("Id")

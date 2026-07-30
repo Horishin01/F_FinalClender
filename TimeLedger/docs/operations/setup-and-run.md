@@ -16,10 +16,21 @@
   - `ConnectionStrings:DefaultConnection`（PostgreSQL 接続文字列）  
   - `Authentication:Outlook:ClientId|ClientSecret`（利用時のみ必須）  
   - `Authentication:Google:ClientId|ClientSecret`（利用時のみ必須）
+  - `DiscordNotifications:Enabled`（既定は`false`。Discord通知を利用する場合のみ`true`）
+  - `DiscordNotifications:WebhookUrl`（Discord Webhook URL。環境変数またはSecret Managerでのみ設定）
 - Secret Manager 例（`TimeLedger` プロジェクト直下で実行）  
   - `dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=...;Port=...;Database=...;Username=...;Password=..."`  
   - `dotnet user-secrets set "Authentication:Google:ClientId" "xxx"`  
   - `dotnet user-secrets set "Authentication:Google:ClientSecret" "xxx"`
+  - `dotnet user-secrets set "DiscordNotifications:Enabled" "true"`
+  - `dotnet user-secrets set "DiscordNotifications:WebhookUrl" "https://discord.com/api/webhooks/..."`
+
+### Discord予定リマインダー
+
+- `Event.ReminderMinutesBefore` が設定された単発・時間指定予定だけを対象に、開始前にDiscord Webhookへ通知する。
+- 既定のポーリング間隔は60秒。必要なら`DiscordNotifications:PollIntervalSeconds`を15〜300秒で指定する。
+- 同じ予定・同じ通知時刻の送信記録をDBに保存して、アプリ再起動後も重複送信を避ける。
+- 終日予定、繰り返し予定、ブラウザーのlocalStorageだけに存在するFlowログは通知対象外。期限付きタスク通知やDiscord BotのDM・コマンド連携は未実装。
 
 ## DB 準備
 1) PostgreSQL で DB とユーザーを作成。  

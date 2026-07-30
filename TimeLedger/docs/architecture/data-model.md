@@ -9,6 +9,7 @@
 - **ICloudSetting**: CalDAV 用の Apple ID + アプリパスワード。プレーン保存のため、暗号化/外部ストア移行が必須。
 - **UserAccessLog**: `UserId` と `AccessedAtUtc` の複合インデックスでアクセス履歴を保持。ミドルウェア経由で記録。
 - **AppNotice**: アップデート/障害通知。`Kind` と `OccurredAt` にインデックス。
+- **DiscordNotificationDelivery**: Discordへ送信済みの予定リマインダーの最小記録。`EventId`、`UserId`、通知種別、予定送信時刻、送信時刻だけを保持し、Webhook URL・通知本文は保存しない。`EventId`、通知種別、予定送信時刻の一意制約で重複送信を防ぐ。
 - **ICCard**: ICカード UID とユーザーの紐付け。現状 UI では未使用だが将来拡張を想定。
 
 ## リレーション（テキスト）
@@ -17,6 +18,7 @@
 - ApplicationUser 1 : 1 OutlookCalendarConnection / GoogleCalendarConnection / ICloudSetting / ICCard(将来)  
 - CalendarCategory 1 : N Event  
 - AppNotice, UserAccessLog はユーザーと疎結合（UserId で関連）
+- Event 1 : N DiscordNotificationDelivery（論理参照。予定削除時にも送信履歴は保持）
 
 ## 運用メモ
 - すべてのテーブルは PostgreSQL に作成される。スキーマ変更は `Migrations/` を更新し、`dotnet ef database update` で適用。

@@ -10,6 +10,7 @@
 | カレンダー本体 | `EventsController` | 認証必須（ユーザー単位） | コントローラー全体に `[Authorize]` がなく、所有者チェック漏れがあるため高リスク。 |
 | カテゴリ管理 | `CategoriesController` | 認証必須（ユーザー単位） | 一部はユーザーIDで絞り込み済みだが、`Edit` 更新時に所有者再検証が不足。 |
 | 外部連携（OAuth/同期） | `AuthController`, `ExternalCalendarsController`, `*CalendarService` | 認証必須（管理者操作中心） | 認可属性は比較的整備。トークン保存が平文で重大課題。 |
+| Discord予定通知 | `DiscordReminderWorker` | サーバー設定で無効が既定 | Webhook URLをDB・Git・Markdownに保存せず、HTTPSの`discord.com/api/webhooks/`だけを送信先として許可する。 |
 | アカウント拡張（iCloud/ICカード/Outlook/Google） | `Areas/Identity/Pages/Account/Manage/*` | 管理者操作 + 一般ユーザー閲覧 | 管理者制御と α フラグは機能。秘密情報平文保存が継続。 |
 | 管理運用アプリ | `Admin/Analytics/AppNotices/Tools/Users/Roles/UserRoles` | 管理者限定 | `Admin/Analytics/AppNotices/Tools` はガード済み。`Users/Roles/UserRoles` は未ガードで最重要リスク。 |
 | 旧 iCloud 設定 MVC | `ICloudSettingController` | 原則未使用/廃止対象 | 認可属性がコメントアウトされ残置。新しい Razor Pages 実装と二重化。 |
