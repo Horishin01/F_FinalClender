@@ -59,7 +59,8 @@ var useDevelopmentSqlite = builder.Environment.IsDevelopment();
 string connectionString;
 if (useDevelopmentSqlite)
 {
-    connectionString = "Data Source=database/runtime/development/timeledger.db";
+    var developmentDatabasePath = Path.Combine(builder.Environment.ContentRootPath, "timeledger.db");
+    connectionString = $"Data Source={developmentDatabasePath}";
 }
 else
 {

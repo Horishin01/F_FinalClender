@@ -13,11 +13,11 @@ database/
 |   |-- Database.ps1               # 本番DBの起動・停止・状態・バックアップ・復元
 |   `-- database.sh                # Ubuntu用の同等運用スクリプト
 `-- runtime/                        # 初回起動時に作成（全体をGit除外）
-    |-- development/timeledger.db  # 開発用SQLite DB
+    |-- ../timeledger.db           # 開発用SQLite DB（TimeLedger直下）
     `-- production/{data,backups}
 ```
 
-`development/timeledger.db` は開発用SQLiteの単一ファイルである。`production/data/` はPostgreSQLの物理データ、`production/backups/` は `pg_dump -Fc` の論理バックアップである。PostgreSQLのメジャーバージョン変更時は物理データを直接コピーせず、対応する `pg_dump` / `pg_restore` または `pg_upgrade` で移行する。
+`../timeledger.db` は開発用SQLiteの単一ファイルである。SQLiteが作る `timeledger.db-wal` と `timeledger.db-shm` も同じ場所に置く。`production/data/` はPostgreSQLの物理データ、`production/backups/` は `pg_dump -Fc` の論理バックアップである。PostgreSQLのメジャーバージョン変更時は物理データを直接コピーせず、対応する `pg_dump` / `pg_restore` または `pg_upgrade` で移行する。
 
 ## 前提
 
@@ -28,7 +28,7 @@ database/
 
 ## 開発DBを作る
 
-開発DBは `database/runtime/development/timeledger.db` に作られるSQLiteファイルで、事前設定、Docker、接続資格情報は不要。
+開発DBは `TimeLedger/timeledger.db` に作られるSQLiteファイルで、事前設定、Docker、接続資格情報は不要。
 
 ```powershell
 dotnet run --project ./TimeLedger.csproj

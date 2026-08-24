@@ -22,5 +22,5 @@
 
 ## 運用メモ
 - すべてのテーブルは、DevelopmentではSQLite、ProductionではPostgreSQLに作成される。Developmentは初回起動時に現行モデルから作成し、Productionのスキーマ変更は `Migrations/` を更新して適用する。
-- PostgreSQLの物理データは `database/runtime/development/data` と `database/runtime/production/data` に環境分離して保持し、Gitには登録しない。バックアップは同階層の `backups` に `pg_dump -Fc` 形式で作成する。
+- DevelopmentのSQLiteファイルはTimeLedger直下の `timeledger.db` に保持し、SQLiteが作る `-wal` / `-shm` を含めてGitには登録しない。ProductionのPostgreSQL物理データは `database/runtime/production/data`、バックアップは同階層の `backups` に `pg_dump -Fc` 形式で作成する。
 - トークン/パスワード系カラムは暗号化未対応。公開前に Data Protection + 外部キー管理を導入し、既存レコードの再暗号化手順を別途用意すること。

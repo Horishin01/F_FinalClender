@@ -4,6 +4,7 @@ param()
 $ErrorActionPreference = 'Stop'
 $projectDirectory = Split-Path -Parent $PSScriptRoot
 $databaseDirectory = Join-Path $projectDirectory 'database'
+$programFile = Join-Path $projectDirectory 'Program.cs'
 $failures = [Collections.Generic.List[string]]::new()
 
 function Assert-True {
@@ -13,7 +14,7 @@ function Assert-True {
     }
 }
 
-foreach ($environmentName in @('development', 'production')) {
+foreach ($environmentName in @('production')) {
     $composeFile = Join-Path $databaseDirectory "compose.$environmentName.yaml"
     $exampleFile = Join-Path $databaseDirectory "config\$environmentName.env.example"
     Assert-True (Test-Path -LiteralPath $composeFile -PathType Leaf) "$composeFile がありません。"
@@ -36,8 +37,7 @@ foreach ($environmentName in @('development', 'production')) {
 }
 
 foreach ($scriptFile in @(
-        (Join-Path $databaseDirectory 'scripts\Database.ps1'),
-        (Join-Path $databaseDirectory 'scripts\Migrate-DevelopmentDatabase.ps1'))) {
+        (Join-Path $databaseDirectory 'scripts\Database.ps1'))) {
     $tokens = $null
     $parseErrors = $null
     [Management.Automation.Language.Parser]::ParseFile($scriptFile, [ref]$tokens, [ref]$parseErrors) | Out-Null
@@ -51,10 +51,17 @@ $ignoreFile = Join-Path (Split-Path -Parent $projectDirectory) '.gitignore'
 $ignoreText = Get-Content -LiteralPath $ignoreFile -Raw
 Assert-True $ignoreText.Contains('TimeLedger/database/config/*.env') 'DBのenvファイルがGit除外されていません。'
 Assert-True $ignoreText.Contains('TimeLedger/database/runtime/') 'DB物理データとバックアップがGit除外されていません。'
+Assert-True $ignoreText.Contains('TimeLedger/timeledger.db') '開発用SQLite DBがGit除外されていません。'
+Assert-True $ignoreText.Contains('TimeLedger/timeledger.db-wal') 'SQLite WALファイルがGit除外されていません。'
+Assert-True $ignoreText.Contains('TimeLedger/timeledger.db-shm') 'SQLite SHMファイルがGit除外されていません。'
+
+# development-local-sqlite-path
+$programText = Get-Content -LiteralPath $programFile -Raw
+Assert-True $programText.Contains('Path.Combine(builder.Environment.ContentRootPath, "timeledger.db")') 'development-local-sqlite-path: 開発DBがTimeLedger直下のtimeledger.dbに設定されていません。'
 
 if ($failures.Count -gt 0) {
     $failures | ForEach-Object { Write-Error $_ }
     throw "DB構成確認に$($failures.Count)件失敗しました。"
 }
 
-Write-Host 'DB構成確認: 開発・本番の分離、配下保存、秘密値除外、PowerShell構文を確認しました。'
+Write-Host 'DB構成確認: 開発用SQLiteのTimeLedger直下保存、Production DB構成、Git除外、PowerShell構文を確認しました。'

@@ -32,9 +32,9 @@
 
 ## DB 準備
 
-開発時はDockerもDBサーバーも不要です。起動するとプロジェクト配下のSQLiteファイル `database/runtime/development/timeledger.db` が使用され、初回はテーブルも自動作成されます。開発用のマイグレーション適用画面は使用しません。
+開発時はDockerもDBサーバーも不要です。起動するとTimeLedger直下のSQLiteファイル `timeledger.db` が使用され、初回はテーブルも自動作成されます。SQLiteが作る `timeledger.db-wal` と `timeledger.db-shm` も同じ場所に置かれます。開発用のマイグレーション適用画面は使用しません。
 
-モデル変更でDBを作り直す必要がある場合は、必要なデータを退避してから `timeledger.db` を削除し、アプリを再起動してください。既存の開発用PostgreSQLデータは自動移行・自動削除しません。必要なら別途バックアップを取り、SQLiteへ移す対象を確認してから移行します。本番DBの構成は `database/README.md` を参照してください。
+モデル変更でDBを作り直す必要がある場合は、必要なデータを退避してから `timeledger.db` と同名の `-wal` / `-shm` ファイルを削除し、アプリを再起動してください。既存の開発用PostgreSQLデータは自動移行・自動削除しません。本番DBの構成は `database/README.md` を参照してください。
 
 ## 実行
 - 開発: `dotnet watch run --project TimeLedger/TimeLedger.csproj`  
