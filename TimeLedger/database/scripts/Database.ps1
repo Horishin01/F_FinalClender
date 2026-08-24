@@ -1,7 +1,7 @@
 ﻿[CmdletBinding()]
 param(
-    [ValidateSet('Development', 'Production')]
-    [string]$Environment = 'Development',
+    [ValidateSet('Production')]
+    [string]$Environment = 'Production',
 
     [ValidateSet('Start', 'Stop', 'Status', 'Backup', 'Restore')]
     [string]$Action = 'Start',

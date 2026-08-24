@@ -45,11 +45,10 @@ TimeLedger/
 |   |-- testing/                     # テスト方針/チェックリスト
 |   |-- history/                     # 変更履歴メモ
 |   `-- prototypes/                  # 静的UIモック置き場
-|-- database/                        # PostgreSQL本体・接続設定・運用
-|   |-- config/                      # Git管理外envと追跡対象example
-|   |-- scripts/                     # 起動・バックアップ・移行スクリプト
-|   |-- runtime/                     # DB物理データ/ダンプ（全体をGit除外）
-|   |-- compose.development.yaml     # 開発DB（127.0.0.1:55432）
+|-- database/                        # Production PostgreSQLの接続設定・運用
+|   |-- config/                      # Production用Git管理外envと追跡対象example
+|   |-- scripts/                     # Production DBの起動・バックアップ・復元
+|   |-- runtime/production/          # Production DB物理データ/ダンプ（Git除外）
 |   `-- compose.production.yaml      # 本番DB（127.0.0.1:5432）
 |-- deploy/                          # 本番配備ひな型
 |   |-- nginx/                       # TLS終端・リバースプロキシ
@@ -58,6 +57,7 @@ TimeLedger/
 |-- αtestModel/                      # 単体UIモック(index.html, style.css)
 |-- appsettings*.json                # 共有設定とGit管理外Development Local設定
 |-- Program.cs                       # ASP.NET Coreエントリーポイント
+|-- timeledger.db                    # Development SQLite DB（Git管理外）
 |-- TimeLedger.csproj / TimeLedger.sln
 |-- NuGet.Config
 |-- bin/                             # ビルド成果物

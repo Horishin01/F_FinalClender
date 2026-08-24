@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-environment_name="${1:-development}"
+environment_name="${1:-production}"
 action="${2:-status}"
 backup_file="${3:-}"
 force="${4:-}"
 
 case "$environment_name" in
-  development|production) ;;
-  *) echo 'Environment must be development or production.' >&2; exit 2 ;;
+  production) ;;
+  *) echo 'Environment must be production.' >&2; exit 2 ;;
 esac
 
 case "$action" in

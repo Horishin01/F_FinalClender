@@ -27,7 +27,7 @@ _最終更新: 2026-08-25。仕様書とコードコメントは日本語を基�
 - 接続文字列、OAuth秘密情報、初期Admin情報は追跡対象JSONへ保存しない。DevelopmentはGit管理外の `appsettings.Development.Local.json` またはUser Secrets、ProductionはGit管理外・所有者限定の `database/config/production.env`（または承認済み秘密情報ストア）で設定する。
 - `appsettings.Development.json`: `Security:RequireHttps=false` の共有設定。端末固有値は同じディレクトリの `appsettings.Development.Local.json` から追加読込し、環境変数・コマンドライン指定を優先する。Visual Studio / VS CodeのF5起動はKestrel用の `http` Projectプロファイルだけを提供し、IIS Expressと開発用HTTPS証明書を使用しない。VS Codeは `checkForDevCert=false` を明示して証明書確認ダイアログを抑止する。
 - `appsettings.Production.json`: `Security:RequireHttps=true`、`TrustedProxyIp=127.0.0.1`、Kestrelのloopback HTTP endpoint、未設定を示す `AllowedHosts` placeholderを持つ。実ホスト名とDB接続文字列は `database/config/production.env` をsystemdのEnvironmentFileとして読み込んで必ず上書きする。
-- DB構成は `database/` に集約する。開発は `127.0.0.1:55432`、本番は `127.0.0.1:5432` だけで待ち受け、`config/*.env`、`runtime/`、バックアップはGit管理外とする。開発から本番の物理データ共有は禁止する。
+- Development DBはTimeLedger直下のSQLite `timeledger.db` とし、Docker・DBポート・接続文字列を使用しない。Production PostgreSQLは `database/` に集約して `127.0.0.1:5432` だけで待ち受け、`config/*.env`、`runtime/`、バックアップはGit管理外とする。開発から本番の物理データ共有は禁止する。
 - 初期Admin自動作成は既定無効。DevelopmentでLocal.jsonまたはUser Secretsに明示した場合だけ有効で、Productionでは拒否する。
 - 主要環境変数: `ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT`、`ConnectionStrings__DefaultConnection`、`AllowedHosts`。ProductionでKestrelへ証明書や秘密鍵を渡さない。
 

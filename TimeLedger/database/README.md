@@ -5,16 +5,16 @@
 ## 構成
 
 ```text
-database/
-|-- compose.production.yaml        # 本番DB（127.0.0.1:5432）
-|-- config/
-|   `-- production.env.example     # 本番DB・アプリ接続設定ひな型
-|-- scripts/
-|   |-- Database.ps1               # 本番DBの起動・停止・状態・バックアップ・復元
-|   `-- database.sh                # Ubuntu用の同等運用スクリプト
-`-- runtime/                        # 初回起動時に作成（全体をGit除外）
-    |-- ../timeledger.db           # 開発用SQLite DB（TimeLedger直下）
-    `-- production/{data,backups}
+TimeLedger/
+|-- timeledger.db                  # 開発用SQLite DB（Git管理外）
+`-- database/
+    |-- compose.production.yaml    # 本番DB（127.0.0.1:5432）
+    |-- config/
+    |   `-- production.env.example # 本番DB・アプリ接続設定ひな型
+    |-- scripts/
+    |   |-- Database.ps1           # 本番DBの起動・停止・状態・バックアップ・復元
+    |   `-- database.sh            # Ubuntu用の同等運用スクリプト
+    `-- runtime/production/{data,backups}
 ```
 
 `../timeledger.db` は開発用SQLiteの単一ファイルである。SQLiteが作る `timeledger.db-wal` と `timeledger.db-shm` も同じ場所に置く。`production/data/` はPostgreSQLの物理データ、`production/backups/` は `pg_dump -Fc` の論理バックアップである。PostgreSQLのメジャーバージョン変更時は物理データを直接コピーせず、対応する `pg_dump` / `pg_restore` または `pg_upgrade` で移行する。
@@ -34,7 +34,7 @@ database/
 dotnet run --project ./TimeLedger.csproj
 ```
 
-初回起動時にテーブルを自動作成する。モデル変更で作り直す場合は、必要なデータを退避してから `timeledger.db` を削除し、再起動する。既存の開発用PostgreSQLデータは自動で移行・削除しない。移す必要がある場合は先に論理バックアップを作成し、移すデータを確認してから別途実施する。
+初回起動時にテーブルを自動作成する。モデル変更で作り直す場合は、必要なデータを退避してから `timeledger.db` を削除し、再起動する。旧開発用Docker PostgreSQLはデータ・バックアップが空であることを確認して撤去済みである。
 
 ## 本番DBを配下へ移す
 

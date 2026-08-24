@@ -59,9 +59,26 @@ Assert-True $ignoreText.Contains('TimeLedger/timeledger.db-shm') 'SQLite SHMフ�
 $programText = Get-Content -LiteralPath $programFile -Raw
 Assert-True $programText.Contains('Path.Combine(builder.Environment.ContentRootPath, "timeledger.db")') 'development-local-sqlite-path: 開発DBがTimeLedger直下のtimeledger.dbに設定されていません。'
 
+# development-docker-removed
+$removedDevelopmentDockerPaths = @(
+    (Join-Path $databaseDirectory 'compose.development.yaml'),
+    (Join-Path $databaseDirectory 'config\development.env'),
+    (Join-Path $databaseDirectory 'config\development.env.example'),
+    (Join-Path $databaseDirectory 'scripts\Migrate-DevelopmentDatabase.ps1'),
+    (Join-Path $databaseDirectory 'runtime\development')
+)
+foreach ($removedPath in $removedDevelopmentDockerPaths) {
+    Assert-True (-not (Test-Path -LiteralPath $removedPath)) "development-docker-removed: 開発Docker DBの残置があります: $removedPath"
+}
+
+$powerShellDatabaseScript = Get-Content -LiteralPath (Join-Path $databaseDirectory 'scripts\Database.ps1') -Raw
+$bashDatabaseScript = Get-Content -LiteralPath $bashScript -Raw
+Assert-True (-not $powerShellDatabaseScript.Contains("ValidateSet('Development'")) 'development-docker-removed: Database.ps1にDevelopment用Docker処理が残っています。'
+Assert-True (-not $bashDatabaseScript.Contains('development|production')) 'development-docker-removed: database.shにDevelopment用Docker処理が残っています。'
+
 if ($failures.Count -gt 0) {
     $failures | ForEach-Object { Write-Error $_ }
     throw "DB構成確認に$($failures.Count)件失敗しました。"
 }
 
-Write-Host 'DB構成確認: 開発用SQLiteのTimeLedger直下保存、Production DB構成、Git除外、PowerShell構文を確認しました。'
+Write-Host 'DB構成確認: 開発用SQLiteのTimeLedger直下保存、開発Docker DBの撤去、Production DB構成、Git除外、PowerShell構文を確認しました。'

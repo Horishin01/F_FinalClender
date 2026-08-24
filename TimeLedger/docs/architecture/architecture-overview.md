@@ -28,12 +28,11 @@ Nginxの設定例は `deploy/nginx/` に置く。証明書と秘密鍵は `/etc/
 
 ## データ永続化
 - DevelopmentはTimeLedger直下のSQLiteファイル `timeledger.db`。ProductionはPostgreSQLで、接続文字列は `ConnectionStrings:DefaultConnection`。
-- 開発・本番ともコンテナのPostgreSQL 16.15を使用し、物理データと論理バックアップを `database/runtime/<environment>/` に分離して保持する。DBポートはloopbackだけへ公開する。
-- DevelopmentはGit管理外の `appsettings.Development.Local.json` から `127.0.0.1:55432` へ接続する。ProductionはGit管理外の `database/config/production.env` をアプリとComposeで共有し、`127.0.0.1:5432` へ接続する。
+- DevelopmentではDockerやDB接続文字列を使用しない。ProductionだけがコンテナのPostgreSQL 16.15を使用し、Git管理外の `database/config/production.env` をアプリとComposeで共有して `127.0.0.1:5432` へ接続する。
 - タイムゾーン既定値は `Calendar:DefaultTimeZoneId = Asia/Tokyo`（クライアント/サーバー双方で一致させる）。
-- マイグレーションは `Migrations/` に保存し、`dotnet ef database update` で適用。
+- Productionのマイグレーションは `Migrations/` に保存し、`dotnet ef database update` で適用。Development SQLiteは初回起動時に現行モデルから作成する。
 
-DB構成、既存開発DBの移行、本番切替、バックアップ/復元の詳細は `database/README.md` に集約する。
+DB構成、本番切替、バックアップ/復元の詳細は `database/README.md` に集約する。
 
 ## キャッシュ・非機能
 - `IMemoryCache` を CalDAV 同期のクールダウン管理に使用。
