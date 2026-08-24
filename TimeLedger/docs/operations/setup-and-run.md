@@ -1,4 +1,4 @@
-# 開発環境セットアップ & 実行手順（更新日: 2026-02-12）
+# 開発環境セットアップ & 実行手順（更新日: 2026-08-25）
 
 ## 前提
 - .NET SDK 8.0.x
@@ -11,7 +11,7 @@
 - ルート直下にも旧版 `../TimeLedger.sln` があるため、IDE でプロジェクトを重複読み込みしないよう注意。
 
 ## 設定
-- ローカルは `appsettings.Development.json` を編集するか、環境変数/Secret Manager で上書きする。
+- ローカルの秘密情報は `appsettings.Development.json` へ書かず、環境変数またはUser Secretsで設定する。
 - 必須キー  
   - `ConnectionStrings:DefaultConnection`（PostgreSQL 接続文字列）  
   - `Authentication:Outlook:ClientId|ClientSecret`（利用時のみ必須）  
@@ -24,6 +24,7 @@
   - `dotnet user-secrets set "Authentication:Google:ClientSecret" "xxx"`
   - `dotnet user-secrets set "DiscordNotifications:Enabled" "true"`
   - `dotnet user-secrets set "DiscordNotifications:WebhookUrl" "https://discord.com/api/webhooks/..."`
+- 開発用Adminを自動作成する必要がある場合だけ、`BootstrapAdmin:Enabled=true`、`Email`、`Password` をUser Secretsへ設定する。Productionではこの機能を起動前に拒否する。
 
 ### Discord予定リマインダー
 
@@ -40,14 +41,17 @@
 ## 実行
 - 開発: `dotnet watch run --project TimeLedger/TimeLedger.csproj`  
 - 通常: `dotnet run --project TimeLedger/TimeLedger.csproj`  
-- 既定 URL: `https://localhost:7052` / `http://localhost:5016`（`launchSettings.json` 依存）
+- 既定URL: `http://localhost:5016`。動作確認はHTTPだけで行い、開発証明書は必須にしない。
 
 ## 初期アカウント
-- 起動時に Admin ユーザー `admin@admin.admin` がシードされ、パスワードは `i2JvwXGn<>`（開発用）。本番前に必ず変更またはシード処理を修正すること。
+- 初期Adminの自動作成は既定で無効。DevelopmentでUser Secretsに明示設定した場合だけ実行する。
+- 既存DBに旧固定資格情報から作られたAdminがある場合は、公開前にパスワード変更またはアカウント無効化を行う。
 
 ## ビルド/公開
 - `dotnet publish -c Release -o ./publish`  
 - 公開先で `ConnectionStrings__DefaultConnection` などを環境変数に設定し、`ASPNETCORE_ENVIRONMENT=Production` で起動する。
+- ProductionはNginxでTLS終端し、Kestrelは `127.0.0.1:5016` のHTTPだけを使用する。アプリへ証明書・秘密鍵を渡さない。
+- 公開前に `ASPNETCORE_ENVIRONMENT=Production AllowedHosts=<実ドメイン> dotnet TimeLedger.dll --validate-web-security` を実行する。この検査はDB接続やAdmin作成を行わない。
 
 ## フロントエンド
 - `wwwroot/lib` にベンダー資産は同梱済み。npm から再取得する場合はリポジトリ直下で `npm install`（`fullcalendar@^6.1.15`）。

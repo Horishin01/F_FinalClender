@@ -1,0 +1,18 @@
+# 証明書を初回発行する間だけ使うHTTP構成。
+# __TIMELEDGER_DOMAIN__ を実ドメインへ置換し、証明書発行後は timeledger.conf.example のHTTPS構成へ切り替える。
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __TIMELEDGER_DOMAIN__;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+
+    location / {
+        return 503;
+    }
+}

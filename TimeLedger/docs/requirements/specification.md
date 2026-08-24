@@ -1,6 +1,6 @@
 ﻿# TimeLedger システム仕様書
 
-_最終更新: 2026-03-13。仕様書とコードコメントは日本語を基本言語とする。挙動・ルート・データモデル・フローを変更した場合は、本書も同じコミットで更新すること。_
+_最終更新: 2026-08-25。仕様書とコードコメントは日本語を基本言語とする。挙動・ルート・データモデル・フローを変更した場合は、本書も同じコミットで更新すること。_
 
 ## 1. 目的と適用範囲
 - iCloud (CalDAV) の予定をユーザー単位で取得し、FullCalendar 上で可視化しながら PostgreSQL に保存・編集できる Web アプリを提供する。
@@ -12,7 +12,7 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - **言語 / ターゲット:** C# 12、.NET 8.0 (`TimeLedger.csproj`)。
 - **主要ライブラリ:** ASP.NET Core Identity、Entity Framework Core (Npgsql)、Ical.Net、PCSC/PCSC.Iso7816、Microsoft.VisualStudio.Web.CodeGeneration.Design など。
 - **フロントエンド:** FullCalendar を `wwwroot/js/events-integrated.js` で初期化し、素の JavaScript で UI 操作を実装。
-- **ホスティング:** Kestrel。デバッグ時は `https://localhost:7052;http://localhost:5016` を使用。
+- **ホスティング:** Kestrel。Developmentは `http://localhost:5016`、ProductionはNginxでTLS終端しKestrelを `http://127.0.0.1:5016` に限定する。
 
 ## 3. 実行時構成 (Program.cs)
 1. `DefaultConnection` を構成ファイルから読み込み (未設定時は例外)。
@@ -20,13 +20,15 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 3. Identity を設定 (`ApplicationUser` + Roles、メール確認必須、Razor Pages / MVCを登録)。
 4. Microsoft / Google OAuth を外部スキームとして追加（`CalendarAuthDefaults.OutlookScheme` / `GoogleScheme`、`SaveTokens=true`、スコープは Calendars.ReadWrite / Google Calendar）。※実値は `appsettings` から取得する TODO コメント付き。
 5. `AddHttpContextAccessor`、`ICloudCalDavService`、`IcalParserService`、外部カレンダー用 `OutlookCalendarService` / `GoogleCalendarService` / `ExternalCalendarSyncService`、`AddMemoryCache`、`AddAntiforgery`(ヘッダー `RequestVerificationToken`) を DI へ追加。
-6. パイプライン: Development=`UseMigrationsEndPoint`、Production=`UseExceptionHandler("/Home/Error")`+`UseHsts()`、共通=HTTPS 強制/静的ファイル/StatusCodePages/Routing/Authentication/Authorization、既定ルート `{controller=Home}/{action=Index}/{id?}/{id2?}` + Razor Pages。
+6. Web通信構成を起動前に検査。DevelopmentはHTTPを許可し、ProductionはHTTPS必須・実 `AllowedHosts`・loopback信頼プロキシ・初期Admin無効を必須とする。検査専用の `--validate-web-security` はDB接続前に終了する。
+7. パイプライン: ProductionはForwarded Headersを最初に処理し、HTTPSと確認できない要求を400で拒否、`UseExceptionHandler("/Home/Error")`+`UseHsts()`を適用する。Developmentは `UseMigrationsEndPoint` を使用しHTTPSリダイレクトを行わない。以降は静的ファイル/StatusCodePages/Routing/Authentication/Authorization、既定ルート `{controller=Home}/{action=Index}/{id?}/{id2?}` + Razor Pages。
 
 ## 4. 設定と環境
-- `appsettings.json`: PostgreSQL 接続文字列 (Host `192.168.1.104`, DB `pit2_hi022052`)。本番は Secret Manager / KeyVault で秘匿する。
-- `appsettings.Development.json`: ログレベルのみ上書き。接続文字列はデフォルトを利用。
-- `Properties/launchSettings.json` と `.vscode/launch.json` で VS / VS Code 双方向けの起動プロファイルを用意。
-- 主要環境変数: `ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT` (通常 `Development`)、VS Code デバッグ時の `ASPNETCORE_URLS=https://localhost:7052;http://localhost:5016`。
+- 接続文字列、OAuth秘密情報、初期Admin情報はJSONへ保存せず、DevelopmentはUser Secrets、Productionは環境変数または承認済み秘密情報ストアで設定する。
+- `appsettings.Development.json`: `Security:RequireHttps=false`。Visual Studio / VS CodeはHTTPだけでデバッグする。
+- `appsettings.Production.json`: `Security:RequireHttps=true`、`TrustedProxyIp=127.0.0.1`、Kestrelのloopback HTTP endpoint、未設定を示す `AllowedHosts` placeholderを持つ。実ホスト名はProduction環境変数で必ず上書きする。
+- 初期Admin自動作成は既定無効。DevelopmentでUser Secretsに明示した場合だけ有効で、Productionでは拒否する。
+- 主要環境変数: `ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT`、`ConnectionStrings__DefaultConnection`、`AllowedHosts`。ProductionでKestrelへ証明書や秘密鍵を渡さない。
 
 ## 5. 認証・認可
 - ASP.NET Core Identity (EF Core) を利用し、`AspNetUsers` 等の標準テーブルでユーザー・ロールを管理。
@@ -141,5 +143,5 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - 予定同期 UI は `EventsController` + `Views/Events/Index.cshtml` + `wwwroot/js/events-integrated.js`（FullCalendar 使用）。ソース/カテゴリ/検索/統計/直近予定/現在時刻インジケーターを備える。IC カードは現状 UI 未連携。
 - CalDAV 取り込みは iCloud の新規 UID 挿入のみ（更新/削除の取り込みは未対応）。アプリ側で `Source=ICloud` のイベントを作成・更新・削除した場合は CalDAV へ PUT/DELETE で書き戻す。
 - 外部カレンダー連携は Outlook/Google の OAuth 認可コードフローを追加。トークンはユーザー入力不要で `*_CalendarConnection` テーブル（UserId ユニークで 1:1）にサーバー保存し、リフレッシュ処理をサービス層に分離。Encrypted 列だが現状は平文保存のため暗号化 TODO。旧 `ExternalCalendarAccount` はレガシーとして残置。
-- セキュリティ想定: `ICloudSettings` の Password は平文列のため KeyVault などへの移行が必須。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。Outlook/Google のトークンは公開前に暗号化実装と鍵管理を整備し、管理系 `[Authorize]` を有効化。
+- セキュリティ想定: 本番TLSは同一ホストNginxで終端し、証明書・秘密鍵をアプリやGitへ保存しない。`ICloudSettings` の Password は平文列のため KeyVault などへの移行が必須。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。Outlook/Google のトークンは公開前に暗号化実装と鍵管理を整備し、管理系 `[Authorize]` を有効化。
 - 運用: スキーマ変更時は `docs/db-3nf.txt` と本仕様書を同じコミットで更新する。公開前は現行 RDB を軸に内容を維持・更新する。

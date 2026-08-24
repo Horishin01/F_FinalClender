@@ -1,6 +1,6 @@
 // Program.cs
 // アプリのエントリーポイント。DI/認証プロバイダ/カレンダー連携クライアントの登録と、Admin ユーザーのシードを行う。
-// 外部 OAuth のクライアントID/Secret は appsettings または環境変数経由で設定し、起動時に存在する場合のみ追加する。
+// 外部 OAuth のクライアントID/Secret は環境変数またはUser Secretsで設定し、起動時に存在する場合のみ追加する。
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,20 +9,45 @@ using TimeLedger.Models;
 using TimeLedger.Extensions;
 using TimeLedger.Services;
 using TimeLedger.Middleware;
+using TimeLedger.Security;
 using System.Linq;
 using Microsoft.AspNetCore.StaticFiles;
 
 
 var builder = WebApplication.CreateBuilder(args);
 // appsettings.{Environment}.json で接続先を環境ごとに切り替える。
-// 本番のパスワードは環境変数や Secret Manager で上書きすること。
+// 接続文字列や資格情報は環境変数、User Secrets、承認済み秘密情報ストアで設定すること。
 var configuredPathBase = NormalizePathBase(
     builder.Configuration["PathBase"]
     ?? builder.Configuration["ASPNETCORE_PATHBASE"]);
 
+WebTransportSecurity webTransportSecurity;
+try
+{
+    webTransportSecurity = WebTransportSecurity.Load(builder.Configuration, builder.Environment);
+}
+catch (InvalidOperationException ex) when (ex.Message.StartsWith("TIMELEDGER-", StringComparison.Ordinal))
+{
+    Console.Error.WriteLine(ex.Message);
+    Environment.ExitCode = 2;
+    return;
+}
+
+webTransportSecurity.ConfigureServices(builder.Services);
+
+if (args.Contains("--validate-web-security", StringComparer.Ordinal))
+{
+    Console.WriteLine($"Web通信構成: {webTransportSecurity.Description}");
+    return;
+}
+
 //================ DB接続 ==================
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' not found. 環境変数またはUser Secretsで設定してください。");
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -117,20 +142,39 @@ builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 //================ アプリ構築 ===============
 var app = builder.Build();
 
-//================ 起動時シード ===============
-using (var scope = app.Services.CreateScope())
+if (webTransportSecurity.RequireHttps)
 {
+    app.UseForwardedHeaders();
+}
+
+//================ 起動時シード ===============
+if (builder.Configuration.GetValue<bool>("BootstrapAdmin:Enabled"))
+{
+    if (!app.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("初期管理者の自動作成はDevelopment環境だけで使用できます。");
+    }
+
+    var bootstrapAdminEmail = builder.Configuration["BootstrapAdmin:Email"];
+    var bootstrapAdminPassword = builder.Configuration["BootstrapAdmin:Password"];
+    if (string.IsNullOrWhiteSpace(bootstrapAdminEmail) || string.IsNullOrWhiteSpace(bootstrapAdminPassword))
+    {
+        throw new InvalidOperationException(
+            "BootstrapAdminを有効にする場合はEmailとPasswordをUser Secretsで設定してください。");
+    }
+
+    using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        await SeedAdminUserAsync(userManager, roleManager);
+        await SeedAdminUserAsync(userManager, roleManager, bootstrapAdminEmail, bootstrapAdminPassword);
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Adminユーザーのシード中にエラーが発生しました。");
+        logger.LogError(ex, "開発用Adminユーザーのシード中にエラーが発生しました。");
     }
 }
 
@@ -144,7 +188,10 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    if (webTransportSecurity.RequireHttps)
+    {
+        app.UseHsts();
+    }
 }
 
 if (!string.IsNullOrEmpty(configuredPathBase))
@@ -152,7 +199,22 @@ if (!string.IsNullOrEmpty(configuredPathBase))
     app.UsePathBase(configuredPathBase);
 }
 
-app.UseHttpsRedirection();
+if (webTransportSecurity.RequireHttps)
+{
+    app.Use(async (context, next) =>
+    {
+        if (!context.Request.IsHttps)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "text/plain; charset=utf-8";
+            await context.Response.WriteAsync("HTTPS経由の要求だけを受け付けます。");
+            return;
+        }
+
+        await next();
+    });
+}
+
 app.UseStaticFiles(new StaticFileOptions
 {
     ContentTypeProvider = contentTypeProvider
@@ -172,10 +234,12 @@ app.MapRazorPages();
 app.Run();
 
 // Adminユーザーを起動時に冪等作成する
-static async Task SeedAdminUserAsync(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+static async Task SeedAdminUserAsync(
+    UserManager<ApplicationUser> userManager,
+    RoleManager<IdentityRole> roleManager,
+    string adminEmail,
+    string adminPassword)
 {
-    const string adminEmail = "admin@admin.admin";
-    const string adminPassword = "i2JvwXGn<>"; // 開発用の初期パスワード。本番では環境変数等に置き換える。
     const string adminRoleName = "Admin";
 
     var existing = await userManager.FindByEmailAsync(adminEmail);

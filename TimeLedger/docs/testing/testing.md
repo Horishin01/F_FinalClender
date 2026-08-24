@@ -1,4 +1,4 @@
-# テスト方針（更新日: 2026-02-13）
+# テスト方針（更新日: 2026-08-25）
 
 ## 現状
 - 自動テストプロジェクトは未整備。
@@ -46,6 +46,16 @@
 - CSRF トークンなし POST が拒否されること。
 - 入力異常時に 500 を返さず、機密情報を画面表示しないこと。
 - ログにトークン/パスワードが出力されないこと。
+
+## HTTP・HTTPS境界の回帰確認
+- Windowsでは `pwsh -File ./TimeLedger/動作確認/HTTPS構成確認.ps1` を実行すると、Releaseビルドと次のDB非接続6ケースをまとめて確認できる。
+- Developmentの `http` プロファイルとVS Codeデバッグが `http://localhost:5016` だけを使用し、開発証明書警告なしで起動設定できること。
+- `--validate-web-security` がDevelopmentでは成功すること。
+- Productionで `Security:RequireHttps=false`、`AllowedHosts=*` または未設定、loopback以外の `TrustedProxyIp`、`BootstrapAdmin:Enabled=true` の各条件を拒否すること。
+- Productionで実ホスト名を設定した構成検査がDB接続なしで成功すること。
+- Nginxの `nginx -t`、HTTP 308、HTTPS応答、証明書SAN・発行元・期限・チェーン、HSTS、Certbot更新dry-runを実機で確認すること。
+- Kestrelの5016がloopback限定で、転送ヘッダーなしの直接HTTP要求を拒否すること。任意送信元の転送ヘッダーを信頼する設定へ緩和しない。
+- 実ドメイン・証明書がない場合はProduction HTTPSの実機項目を未確認として残し、テストHTTP成功で代用しない。
 
 ## 自動化の優先順
 1. 認可・所有者照合の統合テスト（`WebApplicationFactory`）。

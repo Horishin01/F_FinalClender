@@ -1,4 +1,4 @@
-# アーキテクチャ概要（更新日: 2026-02-12）
+# アーキテクチャ概要（更新日: 2026-08-25）
 
 ## スタック
 - ASP.NET Core 8 (MVC + Razor Pages + Identity)
@@ -13,10 +13,13 @@
 - **Views/ViewModels**: Razor ビューと対応する ViewModel DTO が `Views/` と `ViewModels/` に配置。
 
 ## 主要フロー（HTTP リクエスト→レスポンス）
-1. `Program.cs` で DI/認証/ミドルウェアを構成し、既定ルート `{controller=Home}/{action=Index}` を登録。
-2. クライアント → MVC コントローラー → 必要に応じてサービス経由で外部 API や DB へアクセス。
-3. 返却: Razor View あるいは JSON (FullCalendar などのフロント用データ)。
-4. 開発環境: `UseMigrationsEndPoint`、本番: `UseExceptionHandler + HSTS` を適用。
+1. DevelopmentはクライアントからKestrelの `http://localhost:5016` へ直接接続する。
+2. ProductionはクライアントHTTPS → Nginx（証明書/TLS終端）→ loopback HTTPのKestrelという経路だけを使用する。
+3. `Program.cs` は既知loopbackプロキシの転送ヘッダーを先に処理し、HTTPSと確認できないProduction要求を拒否してから、MVC/Razor/認証ミドルウェアへ渡す。
+4. クライアント → MVC コントローラー → 必要に応じてサービス経由で外部 API や DB へアクセス。
+5. 返却: Razor View あるいは JSON (FullCalendar などのフロント用データ)。Developmentは `UseMigrationsEndPoint`、Productionは `UseExceptionHandler + HSTS` を適用。
+
+Nginxの設定例は `deploy/nginx/` に置く。証明書と秘密鍵は `/etc/letsencrypt` 等の本番基盤で管理し、リポジトリへ含めない。
 
 ## 認証・認可
 - Identity (Email 確認必須) + ロール。管理系はロールガードを付与する想定。
