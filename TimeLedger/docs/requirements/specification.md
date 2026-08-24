@@ -15,12 +15,12 @@ _最終更新: 2026-08-25。仕様書とコードコメントは日本語を基�
 - **ホスティング:** Kestrel。Developmentは `http://localhost:5016`、ProductionはNginxでTLS終端しKestrelを `http://127.0.0.1:5016` に限定する。
 
 ## 3. 実行時構成 (Program.cs)
-1. `DefaultConnection` を構成ファイルから読み込み (未設定時は例外)。
+1. `DefaultConnection` を環境変数またはUser Secretsから読み込む。未設定時は環境別の `TIMELEDGER-*-DB-CONNECTION-MISSING` で起動を拒否する。
 2. `ApplicationDbContext` を Npgsql プロバイダーで登録。
 3. Identity を設定 (`ApplicationUser` + Roles、メール確認必須、Razor Pages / MVCを登録)。
 4. Microsoft / Google OAuth を外部スキームとして追加（`CalendarAuthDefaults.OutlookScheme` / `GoogleScheme`、`SaveTokens=true`、スコープは Calendars.ReadWrite / Google Calendar）。※実値は `appsettings` から取得する TODO コメント付き。
 5. `AddHttpContextAccessor`、`ICloudCalDavService`、`IcalParserService`、外部カレンダー用 `OutlookCalendarService` / `GoogleCalendarService` / `ExternalCalendarSyncService`、`AddMemoryCache`、`AddAntiforgery`(ヘッダー `RequestVerificationToken`) を DI へ追加。
-6. Web通信構成を起動前に検査。DevelopmentはHTTPを許可し、ProductionはHTTPS必須・実 `AllowedHosts`・loopback信頼プロキシ・初期Admin無効を必須とする。検査専用の `--validate-web-security` はDB接続前に終了する。
+6. Web通信構成を起動前に検査。DevelopmentはHTTPを許可し、ProductionはHTTPS必須・実 `AllowedHosts`・loopback信頼プロキシ・初期Admin無効を必須とする。検査専用の `--validate-web-security` はDB接続前に終了する。`--validate-db-configuration` は接続文字列の存在だけを検査し、DB接続・マイグレーション・初期Admin作成を行わない。
 7. パイプライン: ProductionはForwarded Headersを最初に処理し、HTTPSと確認できない要求を400で拒否、`UseExceptionHandler("/Home/Error")`+`UseHsts()`を適用する。Developmentは `UseMigrationsEndPoint` を使用しHTTPSリダイレクトを行わない。以降は静的ファイル/StatusCodePages/Routing/Authentication/Authorization、既定ルート `{controller=Home}/{action=Index}/{id?}/{id2?}` + Razor Pages。
 
 ## 4. 設定と環境

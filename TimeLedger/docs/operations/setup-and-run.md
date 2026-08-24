@@ -20,6 +20,7 @@
   - `DiscordNotifications:WebhookUrl`（Discord Webhook URL。環境変数またはSecret Managerでのみ設定）
 - Secret Manager 例（`TimeLedger` プロジェクト直下で実行）  
   - `dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=...;Port=...;Database=...;Username=...;Password=..."`  
+- 起動前の設定確認には `dotnet run -- --validate-db-configuration` を使う。この確認は接続先へ接続せず、接続文字列の値も表示しない。
   - `dotnet user-secrets set "Authentication:Google:ClientId" "xxx"`  
   - `dotnet user-secrets set "Authentication:Google:ClientSecret" "xxx"`
   - `dotnet user-secrets set "DiscordNotifications:Enabled" "true"`
@@ -51,7 +52,7 @@
 - `dotnet publish -c Release -o ./publish`  
 - 公開先で `ConnectionStrings__DefaultConnection` などを環境変数に設定し、`ASPNETCORE_ENVIRONMENT=Production` で起動する。
 - ProductionはNginxでTLS終端し、Kestrelは `127.0.0.1:5016` のHTTPだけを使用する。アプリへ証明書・秘密鍵を渡さない。
-- 公開前に `ASPNETCORE_ENVIRONMENT=Production AllowedHosts=<実ドメイン> dotnet TimeLedger.dll --validate-web-security` を実行する。この検査はDB接続やAdmin作成を行わない。
+- 公開前に `ASPNETCORE_ENVIRONMENT=Production AllowedHosts=<実ドメイン> dotnet TimeLedger.dll --validate-web-security` と `dotnet TimeLedger.dll --validate-db-configuration` を実行する。どちらの検査もDB接続やAdmin作成を行わない。
 
 ## フロントエンド
 - `wwwroot/lib` にベンダー資産は同梱済み。npm から再取得する場合はリポジトリ直下で `npm install`（`fullcalendar@^6.1.15`）。

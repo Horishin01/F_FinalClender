@@ -42,11 +42,22 @@ if (args.Contains("--validate-web-security", StringComparer.Ordinal))
 }
 
 //================ DB接続 ==================
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrWhiteSpace(connectionString))
+string connectionString;
+try
 {
-    throw new InvalidOperationException(
-        "Connection string 'DefaultConnection' not found. 環境変数またはUser Secretsで設定してください。");
+    connectionString = GetRequiredConnectionString(builder.Configuration, builder.Environment);
+}
+catch (InvalidOperationException ex) when (ex.Message.StartsWith("TIMELEDGER-", StringComparison.Ordinal))
+{
+    Console.Error.WriteLine(ex.Message);
+    Environment.ExitCode = 2;
+    return;
+}
+
+if (args.Contains("--validate-db-configuration", StringComparer.Ordinal))
+{
+    Console.WriteLine($"DB接続構成: DefaultConnection設定済み（{builder.Environment.EnvironmentName}）。接続先には接続しません。");
+    return;
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -307,4 +318,25 @@ static string? NormalizePathBase(string? value)
     }
 
     return normalized;
+}
+
+static string GetRequiredConnectionString(IConfiguration configuration, IHostEnvironment environment)
+{
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        return connectionString;
+    }
+
+    var environmentCode = environment.IsProduction()
+        ? "PRODUCTION"
+        : environment.IsDevelopment()
+            ? "DEVELOPMENT"
+            : "NONPRODUCTION";
+    var configurationSource = environment.IsProduction()
+        ? "環境変数または承認済み秘密情報ストア"
+        : "環境変数またはUser Secrets";
+
+    throw new InvalidOperationException(
+        $"TIMELEDGER-{environmentCode}-DB-CONNECTION-MISSING: ConnectionStrings:DefaultConnectionが未設定です。{configurationSource}で設定してください。");
 }

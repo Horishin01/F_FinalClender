@@ -48,11 +48,12 @@
 - ログにトークン/パスワードが出力されないこと。
 
 ## HTTP・HTTPS境界の回帰確認
-- Windowsでは `pwsh -File ./TimeLedger/動作確認/HTTPS構成確認.ps1` を実行すると、Releaseビルドと次のDB非接続6ケースをまとめて確認できる。
+- Windowsでは `pwsh -File ./TimeLedger/動作確認/HTTPS構成確認.ps1` を実行すると、Releaseビルドと次のDB非接続10ケースをまとめて確認できる。
 - Developmentの `http` プロファイルとVS Codeデバッグが `http://localhost:5016` だけを使用し、開発証明書警告なしで起動設定できること。
 - `--validate-web-security` がDevelopmentでは成功すること。
 - Productionで `Security:RequireHttps=false`、`AllowedHosts=*` または未設定、loopback以外の `TrustedProxyIp`、`BootstrapAdmin:Enabled=true` の各条件を拒否すること。
 - Productionで実ホスト名を設定した構成検査がDB接続なしで成功すること。
+- `--validate-db-configuration` がDevelopmentおよびProductionで未設定の `ConnectionStrings:DefaultConnection` を環境別エラーコードで拒否し、ダミー値ではDBへ接続せず成功すること。
 - Nginxの `nginx -t`、HTTP 308、HTTPS応答、証明書SAN・発行元・期限・チェーン、HSTS、Certbot更新dry-runを実機で確認すること。
 - Kestrelの5016がloopback限定で、転送ヘッダーなしの直接HTTP要求を拒否すること。任意送信元の転送ヘッダーを信頼する設定へ緩和しない。
 - 実ドメイン・証明書がない場合はProduction HTTPSの実機項目を未確認として残し、テストHTTP成功で代用しない。
