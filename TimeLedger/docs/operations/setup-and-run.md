@@ -2,9 +2,7 @@
 
 ## 前提
 - .NET SDK 8.0.x
-- Docker Desktop（Linuxコンテナ）+ Docker Compose v2。PostgreSQL 16.15はプロジェクト配下のComposeで起動する。
 - Node.js 18+（FullCalendar を npm 取得する場合のみ）
-- `dotnet-ef` CLI（マイグレーション適用用）: `dotnet tool install --global dotnet-ef`
 
 ## リポジトリとソリューション
 - 推奨: `TimeLedger/TimeLedger.sln`（サブフォルダ直下）を開く。  
@@ -14,13 +12,11 @@
 - 開発端末固有の設定は、プロジェクト直下の `appsettings.Development.Local.example.json` を `appsettings.Development.Local.json` へコピーして設定する。Local.jsonはGit管理外で、Developmentだけが読み込む。
 - `appsettings.Development.json` は秘密情報を含まない共有設定としてGit管理する。環境変数とコマンドライン指定はLocal.jsonより優先する。
 - 必須キー  
-  - `ConnectionStrings:DefaultConnection`（PostgreSQL 接続文字列）  
   - `Authentication:Outlook:ClientId|ClientSecret`（利用時のみ必須）  
   - `Authentication:Google:ClientId|ClientSecret`（利用時のみ必須）
   - `DiscordNotifications:Enabled`（既定は`false`。Discord通知を利用する場合のみ`true`）
   - `DiscordNotifications:WebhookUrl`（Discord Webhook URL。環境変数またはSecret Managerでのみ設定）
 - User Secretsも代替手段として利用できるが、この開発環境では `appsettings.Development.Local.json` を使用する。
-- 起動前の設定確認には `dotnet run -- --validate-db-configuration` を使う。この確認は接続先へ接続せず、接続文字列の値も表示しない。
   - `dotnet user-secrets set "Authentication:Google:ClientId" "xxx"`  
   - `dotnet user-secrets set "Authentication:Google:ClientSecret" "xxx"`
   - `dotnet user-secrets set "DiscordNotifications:Enabled" "true"`
@@ -35,13 +31,10 @@
 - 終日予定、繰り返し予定、ブラウザーのlocalStorageだけに存在するFlowログは通知対象外。期限付きタスク通知やDiscord BotのDM・コマンド連携は未実装。
 
 ## DB 準備
-1) 既存DBを引き継ぐ場合は `./database/scripts/Migrate-DevelopmentDatabase.ps1` を実行する。バックアップ・復元・疎通に成功した場合だけLocal設定が `127.0.0.1:55432` へ切り替わる。
-2) 新規DBの場合は `database/config/development.env.example` をGit管理外の `development.env` へコピーし、例示パスワードを変更する。
-3) `./database/scripts/Database.ps1 -Environment Development -Action Start` で起動する。DB本体は `database/runtime/development/data` に保持される。
-4) ルートで `dotnet restore`。
-5) `dotnet ef database update --project TimeLedger.csproj --startup-project TimeLedger.csproj` で最新マイグレーションを適用。
 
-詳細とバックアップ・本番移行は `database/README.md` を参照する。
+開発時はDockerもDBサーバーも不要です。起動するとプロジェクト配下のSQLiteファイル `database/runtime/development/timeledger.db` が使用され、初回はテーブルも自動作成されます。開発用のマイグレーション適用画面は使用しません。
+
+モデル変更でDBを作り直す必要がある場合は、必要なデータを退避してから `timeledger.db` を削除し、アプリを再起動してください。既存の開発用PostgreSQLデータは自動移行・自動削除しません。必要なら別途バックアップを取り、SQLiteへ移す対象を確認してから移行します。本番DBの構成は `database/README.md` を参照してください。
 
 ## 実行
 - 開発: `dotnet watch run --project TimeLedger/TimeLedger.csproj`  

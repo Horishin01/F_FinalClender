@@ -27,7 +27,7 @@ Nginxの設定例は `deploy/nginx/` に置く。証明書と秘密鍵は `/etc/
 - iCloud: CalDAV (ユーザー入力の Apple ID + アプリパスワード) を `ICloudSetting` に保存し、サービスが利用。
 
 ## データ永続化
-- PostgreSQL。接続文字列は `ConnectionStrings:DefaultConnection`。
+- Developmentはプロジェクト配下のSQLiteファイル `database/runtime/development/timeledger.db`。ProductionはPostgreSQLで、接続文字列は `ConnectionStrings:DefaultConnection`。
 - 開発・本番ともコンテナのPostgreSQL 16.15を使用し、物理データと論理バックアップを `database/runtime/<environment>/` に分離して保持する。DBポートはloopbackだけへ公開する。
 - DevelopmentはGit管理外の `appsettings.Development.Local.json` から `127.0.0.1:55432` へ接続する。ProductionはGit管理外の `database/config/production.env` をアプリとComposeで共有し、`127.0.0.1:5432` へ接続する。
 - タイムゾーン既定値は `Calendar:DefaultTimeZoneId = Asia/Tokyo`（クライアント/サーバー双方で一致させる）。

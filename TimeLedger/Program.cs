@@ -53,26 +53,48 @@ if (args.Contains("--validate-web-security", StringComparer.Ordinal))
 }
 
 //================ DB接続 ==================
+// DevelopmentはDockerやDBサーバーを使わず、プロジェクト配下のSQLiteファイルだけで動作する。
+// 以前のDevelopment用PostgreSQL接続文字列がLocal設定に残っていても参照しない。
+var useDevelopmentSqlite = builder.Environment.IsDevelopment();
 string connectionString;
-try
+if (useDevelopmentSqlite)
 {
-    connectionString = GetRequiredConnectionString(builder.Configuration, builder.Environment);
+    connectionString = "Data Source=database/runtime/development/timeledger.db";
 }
-catch (InvalidOperationException ex) when (ex.Message.StartsWith("TIMELEDGER-", StringComparison.Ordinal))
+else
 {
-    Console.Error.WriteLine(ex.Message);
-    Environment.ExitCode = 2;
-    return;
+    try
+    {
+        connectionString = GetRequiredConnectionString(builder.Configuration, builder.Environment);
+    }
+    catch (InvalidOperationException ex) when (ex.Message.StartsWith("TIMELEDGER-", StringComparison.Ordinal))
+    {
+        Console.Error.WriteLine(ex.Message);
+        Environment.ExitCode = 2;
+        return;
+    }
 }
 
 if (args.Contains("--validate-db-configuration", StringComparer.Ordinal))
 {
-    Console.WriteLine($"DB接続構成: DefaultConnection設定済み（{builder.Environment.EnvironmentName}）。接続先には接続しません。");
+    var configurationDescription = useDevelopmentSqlite
+        ? "開発用SQLiteファイルを使用"
+        : $"DefaultConnection設定済み（{builder.Environment.EnvironmentName}）";
+    Console.WriteLine($"DB接続構成: {configurationDescription}。接続先には接続しません。");
     return;
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    if (useDevelopmentSqlite)
+    {
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        options.UseNpgsql(connectionString);
+    }
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -164,6 +186,13 @@ builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 //================ アプリ構築 ===============
 var app = builder.Build();
 
+if (useDevelopmentSqlite)
+{
+    using var databaseScope = app.Services.CreateScope();
+    var database = databaseScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    database.Database.EnsureCreated();
+}
+
 if (webTransportSecurity.RequireHttps)
 {
     app.UseForwardedHeaders();
@@ -205,7 +234,7 @@ contentTypeProvider.Mappings[".webmanifest"] = "application/manifest+json";
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseMigrationsEndPoint();
+    app.UseDeveloperExceptionPage();
 }
 else
 {
