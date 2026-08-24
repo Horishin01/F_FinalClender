@@ -630,6 +630,39 @@
         }
 
         state.filtered = focused;
+        updateCalendarContext();
+    }
+
+    function updateCalendarContext() {
+        const text = qs('#calendarContextText');
+        const clear = qs('#clearCalendarFilters');
+        if (!text || !clear) return;
+
+        const sourceLabel = qs(`#icSourceList [data-source="${state.filters.source}"] .ic-list-label span:last-child`)?.textContent?.trim();
+        const categoryLabel = qs(`#icCategoryList [data-category="${state.filters.category}"] .ic-list-label span:last-child`)?.textContent?.trim();
+        const chips = [];
+        if (state.filters.source !== 'all' && sourceLabel) chips.push(sourceLabel);
+        if (state.filters.category !== 'all' && categoryLabel) chips.push(categoryLabel);
+        if (state.filters.query.trim()) chips.push(`「${state.filters.query.trim()}」を検索`);
+        if (state.focusStat === 'today') chips.push('今日の予定');
+        if (state.focusStat === 'week') chips.push('今週の予定');
+        if (state.focusStat === 'dup') chips.push('重複推定');
+
+        const active = chips.length > 0;
+        text.textContent = active
+            ? `${chips.join('・')}：${state.filtered.length}件を表示中`
+            : `すべての予定：${state.filtered.length}件を表示中`;
+        clear.hidden = !active;
+    }
+
+    function clearCalendarFilters() {
+        state.filters = { source: 'all', category: 'all', query: '' };
+        state.focusStat = null;
+        const search = qs('#icSearch');
+        if (search) search.value = '';
+        qsa('#icSourceList .ic-list-item').forEach(btn => btn.classList.toggle('active', btn.dataset.source === 'all'));
+        qsa('.ic-stat').forEach(btn => btn.classList.remove('active'));
+        rerender();
     }
 
     function updateStats(events) {
@@ -1011,6 +1044,7 @@
             rerender();
             if (isMobileMode()) closeMobilePanels();
         });
+        qs('#clearCalendarFilters')?.addEventListener('click', clearCalendarFilters);
     }
 
     const mobilePanels = {
@@ -1075,7 +1109,6 @@
             e.preventDefault();
             goCreate(false);
         });
-
         qsa('[data-action="create-event"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -1108,9 +1141,35 @@
 
     function setActiveViewButton(viewName) {
         const mapping = { dayGridMonth: 'viewMonth', timeGridWeek: 'viewWeek', timeGridDay: 'viewDay', listWeek: 'viewWeek', listDay: 'viewDay' };
-        Object.values(mapping).forEach(id => id && qs('#' + id)?.classList.remove('active'));
+        Object.values(mapping).forEach(id => {
+            const button = id && qs('#' + id);
+            button?.classList.remove('active');
+            button?.setAttribute('aria-pressed', 'false');
+        });
         const btnId = mapping[viewName];
-        if (btnId) qs('#' + btnId)?.classList.add('active');
+        if (btnId) {
+            const button = qs('#' + btnId);
+            button?.classList.add('active');
+            button?.setAttribute('aria-pressed', 'true');
+        }
+    }
+
+    function bindKeyboardShortcuts() {
+        document.addEventListener('keydown', (event) => {
+            if (event.ctrlKey || event.metaKey || event.altKey) return;
+            const target = event.target;
+            const isTyping = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
+            if (isTyping) return;
+            if (event.key === '/') {
+                event.preventDefault();
+                qs('#icSearch')?.focus();
+            }
+            if (event.key.toLowerCase() === 'n') {
+                event.preventDefault();
+                const { start, end } = getDefaultCreateRange(false);
+                window.location.href = buildCreateUrl(start, end, false);
+            }
+        });
     }
 
     function focusCalendar(kind) {
@@ -1608,6 +1667,7 @@
         bindExternalSyncButtons();
         bindStats();
         bindMobileToggles();
+        bindKeyboardShortcuts();
         window.addEventListener('resize', refreshCalendarHeight);
         autoFocusCalendarOnLoad();
     }

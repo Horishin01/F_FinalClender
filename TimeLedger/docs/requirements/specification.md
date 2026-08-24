@@ -98,7 +98,7 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
   - `.app-hero` と `.app-content` でカードが背景から浮き上がる構成。
   - AppNotice の最新投稿を検知した場合、初回アクセス時に「不具合・アップデートが確認されています」の通知バナーを表示し、Privacy の該当セクションを別タブで開く（既読は localStorage で保持）。
 - **カレンダー (`Views/Events/Index.cshtml` + `wwwroot/css/calendar-ui.css` + `wwwroot/css/events-integrated.css` + `wwwroot/js/events-integrated.js`):**
-  - 左サイドでソース/カテゴリのフィルター（カテゴリは DB マスタから動的生成）、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。
+  - 左サイドでソース/カテゴリのフィルター（カテゴリは DB マスタから動的生成）、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。カレンダー直上には現在の絞り込み条件と表示件数を示し、ワンクリックで解除できる。`/` で検索欄へ、`N` で新規予定作成へ移動できる（入力中は無効）。
   - FullCalendar に拡張メタを渡し、フィルター/統計用に利用する。同期ボタンは `/Events/Sync` (iCloud) を AJAX 呼び出し、Outlook/Google 同期ボタンは `ExternalCalendars/Sync` へ POST。
   - モバイル/タブレット（～1024px）は1カラム化し、クイックアクション＋シート表示を採用。リストビューは時間/タイトルを1行扱いのレイアウトで重なりを防止。
 - **フォーム/詳細 (`Views/Events/Create|Edit|Details|Delete` + `wwwroot/css/event-forms.css` + `wwwroot/js/event-forms.js`):**
