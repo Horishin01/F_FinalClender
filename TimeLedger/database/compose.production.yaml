@@ -1,0 +1,28 @@
+name: timeledger-production-db
+
+services:
+  postgres:
+    image: postgres:16.15
+    container_name: timeledger-postgres-production
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?database/config/production.env の POSTGRES_DB が未設定です}
+      POSTGRES_USER: ${POSTGRES_USER:?database/config/production.env の POSTGRES_USER が未設定です}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?database/config/production.env の POSTGRES_PASSWORD が未設定です}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - type: bind
+        source: ./runtime/production/data
+        target: /var/lib/postgresql/data
+      - type: bind
+        source: ./runtime/production/backups
+        target: /backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: 1m

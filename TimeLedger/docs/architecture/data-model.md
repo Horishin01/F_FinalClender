@@ -9,6 +9,7 @@
 - **ICloudSetting**: CalDAV 用の Apple ID + アプリパスワード。プレーン保存のため、暗号化/外部ストア移行が必須。
 - **UserAccessLog**: `UserId` と `AccessedAtUtc` の複合インデックスでアクセス履歴を保持。ミドルウェア経由で記録。
 - **AppNotice**: アップデート/障害通知。`Kind` と `OccurredAt` にインデックス。
+- **DiscordNotificationDelivery**: Discordへ送信済みの予定リマインダーの最小記録。`EventId`、`UserId`、通知種別、予定送信時刻、送信時刻だけを保持し、Webhook URL・通知本文は保存しない。`EventId`、通知種別、予定送信時刻の一意制約で重複送信を防ぐ。
 - **ICCard**: ICカード UID とユーザーの紐付け。現状 UI では未使用だが将来拡張を想定。
 
 ## リレーション（テキスト）
@@ -17,7 +18,9 @@
 - ApplicationUser 1 : 1 OutlookCalendarConnection / GoogleCalendarConnection / ICloudSetting / ICCard(将来)  
 - CalendarCategory 1 : N Event  
 - AppNotice, UserAccessLog はユーザーと疎結合（UserId で関連）
+- Event 1 : N DiscordNotificationDelivery（論理参照。予定削除時にも送信履歴は保持）
 
 ## 運用メモ
-- すべてのテーブルは PostgreSQL に作成される。スキーマ変更は `Migrations/` を更新し、`dotnet ef database update` で適用。
+- すべてのテーブルは、DevelopmentではSQLite、ProductionではPostgreSQLに作成される。Developmentは初回起動時に現行モデルから作成し、Productionのスキーマ変更は `Migrations/` を更新して適用する。
+- DevelopmentのSQLiteファイルはTimeLedger直下の `timeledger.db` に保持し、SQLiteが作る `-wal` / `-shm` を含めてGitには登録しない。ProductionのPostgreSQL物理データは `database/runtime/production/data`、バックアップは同階層の `backups` に `pg_dump -Fc` 形式で作成する。
 - トークン/パスワード系カラムは暗号化未対応。公開前に Data Protection + 外部キー管理を導入し、既存レコードの再暗号化手順を別途用意すること。

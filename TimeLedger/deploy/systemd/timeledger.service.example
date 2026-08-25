@@ -1,0 +1,24 @@
+[Unit]
+Description=TimeLedger ASP.NET Core application
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=__TIMELEDGER_PUBLISH_DIR__
+ExecStart=/usr/bin/dotnet __TIMELEDGER_PUBLISH_DIR__/TimeLedger.dll
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=60
+EnvironmentFile=__TIMELEDGER_PROJECT_DIR__/database/config/production.env
+User=timeledger
+Group=timeledger
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

@@ -10,6 +10,16 @@
 *.userosscache
 *.sln.docstates
 
+# TimeLedger development-only settings (may contain local credentials)
+TimeLedger/appsettings.Development.Local.json
+
+# TimeLedger project-local PostgreSQL (credentials, data files, and backups)
+TimeLedger/database/config/*.env
+TimeLedger/database/runtime/
+TimeLedger/timeledger.db
+TimeLedger/timeledger.db-shm
+TimeLedger/timeledger.db-wal
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

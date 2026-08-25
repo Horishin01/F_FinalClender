@@ -1,6 +1,6 @@
 ﻿# TimeLedger システム仕様書
 
-_最終更新: 2026-03-13。仕様書とコードコメントは日本語を基本言語とする。挙動・ルート・データモデル・フローを変更した場合は、本書も同じコミットで更新すること。_
+_最終更新: 2026-08-25。仕様書とコードコメントは日本語を基本言語とする。挙動・ルート・データモデル・フローを変更した場合は、本書も同じコミットで更新すること。_
 
 ## 1. 目的と適用範囲
 - iCloud (CalDAV) の予定をユーザー単位で取得し、FullCalendar 上で可視化しながら PostgreSQL に保存・編集できる Web アプリを提供する。
@@ -12,21 +12,24 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - **言語 / ターゲット:** C# 12、.NET 8.0 (`TimeLedger.csproj`)。
 - **主要ライブラリ:** ASP.NET Core Identity、Entity Framework Core (Npgsql)、Ical.Net、PCSC/PCSC.Iso7816、Microsoft.VisualStudio.Web.CodeGeneration.Design など。
 - **フロントエンド:** FullCalendar を `wwwroot/js/events-integrated.js` で初期化し、素の JavaScript で UI 操作を実装。
-- **ホスティング:** Kestrel。デバッグ時は `https://localhost:7052;http://localhost:5016` を使用。
+- **ホスティング:** Kestrel。Developmentは `http://localhost:5016`、ProductionはNginxでTLS終端しKestrelを `http://127.0.0.1:5016` に限定する。PostgreSQL 16.15は開発・本番別のComposeで起動し、物理データを `database/runtime/<environment>/data` に保持する。
 
 ## 3. 実行時構成 (Program.cs)
-1. `DefaultConnection` を構成ファイルから読み込み (未設定時は例外)。
+1. `DefaultConnection` を環境変数またはUser Secretsから読み込む。未設定時は環境別の `TIMELEDGER-*-DB-CONNECTION-MISSING` で起動を拒否する。
 2. `ApplicationDbContext` を Npgsql プロバイダーで登録。
 3. Identity を設定 (`ApplicationUser` + Roles、メール確認必須、Razor Pages / MVCを登録)。
 4. Microsoft / Google OAuth を外部スキームとして追加（`CalendarAuthDefaults.OutlookScheme` / `GoogleScheme`、`SaveTokens=true`、スコープは Calendars.ReadWrite / Google Calendar）。※実値は `appsettings` から取得する TODO コメント付き。
 5. `AddHttpContextAccessor`、`ICloudCalDavService`、`IcalParserService`、外部カレンダー用 `OutlookCalendarService` / `GoogleCalendarService` / `ExternalCalendarSyncService`、`AddMemoryCache`、`AddAntiforgery`(ヘッダー `RequestVerificationToken`) を DI へ追加。
-6. パイプライン: Development=`UseMigrationsEndPoint`、Production=`UseExceptionHandler("/Home/Error")`+`UseHsts()`、共通=HTTPS 強制/静的ファイル/StatusCodePages/Routing/Authentication/Authorization、既定ルート `{controller=Home}/{action=Index}/{id?}/{id2?}` + Razor Pages。
+6. Web通信構成を起動前に検査。DevelopmentはHTTPを許可し、ProductionはHTTPS必須・実 `AllowedHosts`・loopback信頼プロキシ・初期Admin無効を必須とする。検査専用の `--validate-web-security` はDB接続前に終了する。`--validate-db-configuration` は接続文字列の存在だけを検査し、DB接続・マイグレーション・初期Admin作成を行わない。
+7. パイプライン: ProductionはForwarded Headersを最初に処理し、HTTPSと確認できない要求を400で拒否、`UseExceptionHandler("/Home/Error")`+`UseHsts()`を適用する。Developmentは `UseMigrationsEndPoint` を使用しHTTPSリダイレクトを行わない。以降は静的ファイル/StatusCodePages/Routing/Authentication/Authorization、既定ルート `{controller=Home}/{action=Index}/{id?}/{id2?}` + Razor Pages。
 
 ## 4. 設定と環境
-- `appsettings.json`: PostgreSQL 接続文字列 (Host `192.168.1.104`, DB `pit2_hi022052`)。本番は Secret Manager / KeyVault で秘匿する。
-- `appsettings.Development.json`: ログレベルのみ上書き。接続文字列はデフォルトを利用。
-- `Properties/launchSettings.json` と `.vscode/launch.json` で VS / VS Code 双方向けの起動プロファイルを用意。
-- 主要環境変数: `ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT` (通常 `Development`)、VS Code デバッグ時の `ASPNETCORE_URLS=https://localhost:7052;http://localhost:5016`。
+- 接続文字列、OAuth秘密情報、初期Admin情報は追跡対象JSONへ保存しない。DevelopmentはGit管理外の `appsettings.Development.Local.json` またはUser Secrets、ProductionはGit管理外・所有者限定の `database/config/production.env`（または承認済み秘密情報ストア）で設定する。
+- `appsettings.Development.json`: `Security:RequireHttps=false` の共有設定。端末固有値は同じディレクトリの `appsettings.Development.Local.json` から追加読込し、環境変数・コマンドライン指定を優先する。Visual Studio / VS CodeのF5起動はKestrel用の `http` Projectプロファイルだけを提供し、IIS Expressと開発用HTTPS証明書を使用しない。VS Codeは `checkForDevCert=false` を明示して証明書確認ダイアログを抑止する。
+- `appsettings.Production.json`: `Security:RequireHttps=true`、`TrustedProxyIp=127.0.0.1`、Kestrelのloopback HTTP endpoint、未設定を示す `AllowedHosts` placeholderを持つ。実ホスト名とDB接続文字列は `database/config/production.env` をsystemdのEnvironmentFileとして読み込んで必ず上書きする。
+- Development DBはTimeLedger直下のSQLite `timeledger.db` とし、Docker・DBポート・接続文字列を使用しない。Production PostgreSQLは `database/` に集約して `127.0.0.1:5432` だけで待ち受け、`config/*.env`、`runtime/`、バックアップはGit管理外とする。開発から本番の物理データ共有は禁止する。
+- 初期Admin自動作成は既定無効。DevelopmentでLocal.jsonまたはUser Secretsに明示した場合だけ有効で、Productionでは拒否する。
+- 主要環境変数: `ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT`、`ConnectionStrings__DefaultConnection`、`AllowedHosts`。ProductionでKestrelへ証明書や秘密鍵を渡さない。
 
 ## 5. 認証・認可
 - ASP.NET Core Identity (EF Core) を利用し、`AspNetUsers` 等の標準テーブルでユーザー・ロールを管理。
@@ -98,7 +101,7 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
   - `.app-hero` と `.app-content` でカードが背景から浮き上がる構成。
   - AppNotice の最新投稿を検知した場合、初回アクセス時に「不具合・アップデートが確認されています」の通知バナーを表示し、Privacy の該当セクションを別タブで開く（既読は localStorage で保持）。
 - **カレンダー (`Views/Events/Index.cshtml` + `wwwroot/css/calendar-ui.css` + `wwwroot/css/events-integrated.css` + `wwwroot/js/events-integrated.js`):**
-  - 左サイドでソース/カテゴリのフィルター（カテゴリは DB マスタから動的生成）、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。
+  - 左サイドでソース/カテゴリのフィルター（カテゴリは DB マスタから動的生成）、右サイドで検索・統計・直近予定を配置した統合カレンダー UI。中央に FullCalendar を配置し、月/週/日ビュー切替と [今日][同期][新規追加] ボタンを備える。カレンダー直上には現在の絞り込み条件と表示件数を示し、ワンクリックで解除できる。`/` で検索欄へ、`N` で新規予定作成へ移動できる（入力中は無効）。
   - FullCalendar に拡張メタを渡し、フィルター/統計用に利用する。同期ボタンは `/Events/Sync` (iCloud) を AJAX 呼び出し、Outlook/Google 同期ボタンは `ExternalCalendars/Sync` へ POST。
   - モバイル/タブレット（～1024px）は1カラム化し、クイックアクション＋シート表示を採用。リストビューは時間/タイトルを1行扱いのレイアウトで重なりを防止。
 - **フォーム/詳細 (`Views/Events/Create|Edit|Details|Delete` + `wwwroot/css/event-forms.css` + `wwwroot/js/event-forms.js`):**
@@ -141,5 +144,5 @@ _最終更新: 2026-03-13。仕様書とコードコメントは日本語を基�
 - 予定同期 UI は `EventsController` + `Views/Events/Index.cshtml` + `wwwroot/js/events-integrated.js`（FullCalendar 使用）。ソース/カテゴリ/検索/統計/直近予定/現在時刻インジケーターを備える。IC カードは現状 UI 未連携。
 - CalDAV 取り込みは iCloud の新規 UID 挿入のみ（更新/削除の取り込みは未対応）。アプリ側で `Source=ICloud` のイベントを作成・更新・削除した場合は CalDAV へ PUT/DELETE で書き戻す。
 - 外部カレンダー連携は Outlook/Google の OAuth 認可コードフローを追加。トークンはユーザー入力不要で `*_CalendarConnection` テーブル（UserId ユニークで 1:1）にサーバー保存し、リフレッシュ処理をサービス層に分離。Encrypted 列だが現状は平文保存のため暗号化 TODO。旧 `ExternalCalendarAccount` はレガシーとして残置。
-- セキュリティ想定: `ICloudSettings` の Password は平文列のため KeyVault などへの移行が必須。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。Outlook/Google のトークンは公開前に暗号化実装と鍵管理を整備し、管理系 `[Authorize]` を有効化。
+- セキュリティ想定: 本番TLSは同一ホストNginxで終端し、証明書・秘密鍵をアプリやGitへ保存しない。`ICloudSettings` の Password は平文列のため KeyVault などへの移行が必須。`ICCards` を 1 対 1 にするなら `UserId` へ Unique 制約を付ける。Outlook/Google のトークンは公開前に暗号化実装と鍵管理を整備し、管理系 `[Authorize]` を有効化。
 - 運用: スキーマ変更時は `docs/db-3nf.txt` と本仕様書を同じコミットで更新する。公開前は現行 RDB を軸に内容を維持・更新する。

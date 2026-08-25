@@ -1,4 +1,4 @@
-# セキュリティポリシー（更新日: 2026-02-13）
+# セキュリティポリシー（更新日: 2026-08-25）
 
 ## 適用範囲
 - 本書は `TimeLedger` の全機能（カレンダー、外部連携、管理機能、Flow/Tools を含む）に適用する。
@@ -18,6 +18,9 @@
 ## Web セキュリティポリシー
 - POST 系エンドポイントは CSRF 対策（`ValidateAntiForgeryToken`）を必須とする。
 - 本番は HTTPS 必須、`UseHsts()` を有効化する。
+- 本番TLSは同一ホストのNginxで終端し、Kestrelは `127.0.0.1` のHTTPだけで待ち受ける。アプリはloopbackの既知プロキシから届く転送ヘッダーだけを信頼し、HTTPSとして確認できない要求を拒否する。
+- HTTPからHTTPSへのリダイレクト、証明書発行・更新、秘密鍵保護はNginx/証明書運用側で行う。失敗時に外部HTTPへ降格しない。
+- Productionの `AllowedHosts` は証明書SANと一致する実ホスト名へ限定し、`*` を許可しない。
 - セキュリティヘッダーを付与する。
 - 対象ヘッダー: `Content-Security-Policy`, `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options`.
 
@@ -31,6 +34,7 @@
 - 管理系エンドポイントのロール制御が有効。
 - 主要更新 API の所有者照合が有効。
 - 平文保存される秘密情報がない。
+- 実ドメイン、DNS、証明書SAN・チェーン・期限、自動更新、80→443リダイレクト、Kestrelのloopback限定を確認済み。
 - 既知の高リスク項目がトラッキングされ、回避策が運用に反映済み。
 
 ## 現状ギャップ（2026-02-13 時点）
@@ -38,3 +42,4 @@
 - `EventsController` / `CategoriesController` で一部所有者照合が不十分。
 - iCloud/OAuth トークンが実質平文で保存されている。
 - 旧 `ICloudSettingController` が残置されている。
+- OAuth/iCloudトークンの暗号化など既存P0課題が残る間は、HTTPS構成が完成しても公開準備完了とは扱わない。

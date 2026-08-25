@@ -1,6 +1,6 @@
 # セキュリティ評価（現行実装再評価）
 対象リポジトリ: TimeLedger  
-評価日: 2026-02-13  
+評価日: 2026-02-13（TLS構成のみ2026-08-25追補）
 評価方法: コードベース確認（実環境ペネトレーションテスト未実施）
 
 ## 機能別評価（各アプリ）
@@ -10,6 +10,7 @@
 | カレンダー本体 | `EventsController` | 認証必須（ユーザー単位） | コントローラー全体に `[Authorize]` がなく、所有者チェック漏れがあるため高リスク。 |
 | カテゴリ管理 | `CategoriesController` | 認証必須（ユーザー単位） | 一部はユーザーIDで絞り込み済みだが、`Edit` 更新時に所有者再検証が不足。 |
 | 外部連携（OAuth/同期） | `AuthController`, `ExternalCalendarsController`, `*CalendarService` | 認証必須（管理者操作中心） | 認可属性は比較的整備。トークン保存が平文で重大課題。 |
+| Discord予定通知 | `DiscordReminderWorker` | サーバー設定で無効が既定 | Webhook URLをDB・Git・Markdownに保存せず、HTTPSの`discord.com/api/webhooks/`だけを送信先として許可する。 |
 | アカウント拡張（iCloud/ICカード/Outlook/Google） | `Areas/Identity/Pages/Account/Manage/*` | 管理者操作 + 一般ユーザー閲覧 | 管理者制御と α フラグは機能。秘密情報平文保存が継続。 |
 | 管理運用アプリ | `Admin/Analytics/AppNotices/Tools/Users/Roles/UserRoles` | 管理者限定 | `Admin/Analytics/AppNotices/Tools` はガード済み。`Users/Roles/UserRoles` は未ガードで最重要リスク。 |
 | 旧 iCloud 設定 MVC | `ICloudSettingController` | 原則未使用/廃止対象 | 認可属性がコメントアウトされ残置。新しい Razor Pages 実装と二重化。 |
@@ -32,12 +33,18 @@
 4. **P1: 旧実装の残置による攻撃面積拡大**
 - `ICloudSettingController` が新しい Identity 管理ページ実装と併存し、認可未適用の古い経路を残している。
 
-5. **P1: 初期管理者の固定資格情報**
-- `Program.cs` のシードで固定メール/パスワードが埋め込み。
-- 運用ミス時に即時侵害リスクへ直結。
+5. **対応済み: 初期管理者の固定資格情報**
+- 固定メール/パスワードをコードから除去し、初期Admin作成は既定無効かつDevelopment限定のUser Secrets設定へ変更した。
+- 既存DBに旧固定資格情報由来のアカウントが残る可能性はコードから判定できないため、公開前の変更・無効化確認が必要。
 
-6. **P2: セキュリティヘッダー未整備**
-- CSP / Referrer-Policy / X-Content-Type-Options / X-Frame-Options が未実装。
+6. **P2: セキュリティヘッダーの一部未整備**
+- 本番NginxテンプレートへHSTS / Referrer-Policy / X-Content-Type-Options / X-Frame-Optionsを追加した。現行画面のインライン資産互換性を確認できていないためCSPは未適用。
+
+## 2026-08-25 TLS構成追補
+- DevelopmentのデバッグURLをHTTPだけへ統一し、開発証明書を要求しない。
+- ProductionはNginx TLS終端、Kestrel loopback HTTPに固定する。既知のloopbackプロキシからの `X-Forwarded-For` / `X-Forwarded-Proto` だけを処理し、HTTPSと確認できない要求を400で拒否する。
+- ProductionのHTTPS無効化、ホスト名未設定・ワイルドカード、loopback以外の信頼プロキシ、初期Admin自動作成は起動前検査で拒否する。
+- 証明書と秘密鍵はアプリ・Git・共有資料へ保存しない。実証明書の発行、DNS、SAN、失効、自動更新、実ブラウザ確認は本番基盤側の未実施事項である。
 
 ## 既存の防御策（維持すべき点）
 - 多くの POST に `ValidateAntiForgeryToken` を適用済み。
@@ -55,7 +62,6 @@
 2. **短期（次スプリント）**
 - iCloud/OAuth トークンの暗号化保存を実装（Data Protection + 鍵管理）。
 - 既存平文データの再取得/再暗号化と強制再認可手順を用意。
-- 初期管理者資格情報を環境変数化し、固定値シードを廃止。
 
 3. **中期（運用品質向上）**
 - 認可回帰テスト（匿名/一般/管理者）を自動化し、PR の必須チェック化。

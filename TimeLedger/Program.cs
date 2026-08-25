@@ -1,6 +1,6 @@
 // Program.cs
 // アプリのエントリーポイント。DI/認証プロバイダ/カレンダー連携クライアントの登録と、Admin ユーザーのシードを行う。
-// 外部 OAuth のクライアントID/Secret は appsettings または環境変数経由で設定し、起動時に存在する場合のみ追加する。
+// 外部 OAuth のクライアントID/Secret は環境変数、Development Local設定、User Secretsのいずれかで設定し、起動時に存在する場合のみ追加する。
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,23 +9,93 @@ using TimeLedger.Models;
 using TimeLedger.Extensions;
 using TimeLedger.Services;
 using TimeLedger.Middleware;
+using TimeLedger.Security;
 using System.Linq;
 using Microsoft.AspNetCore.StaticFiles;
 
 
 var builder = WebApplication.CreateBuilder(args);
 // appsettings.{Environment}.json で接続先を環境ごとに切り替える。
-// 本番のパスワードは環境変数や Secret Manager で上書きすること。
+// DevelopmentではGit管理外のappsettings.Development.Local.jsonも使用できる。
+// ローカルJSONより環境変数とコマンドラインを優先し、ProductionではローカルJSONを読み込まない。
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile(
+        "appsettings.Development.Local.json",
+        optional: true,
+        reloadOnChange: true);
+    builder.Configuration.AddEnvironmentVariables();
+    builder.Configuration.AddCommandLine(args);
+}
+
 var configuredPathBase = NormalizePathBase(
     builder.Configuration["PathBase"]
     ?? builder.Configuration["ASPNETCORE_PATHBASE"]);
 
+WebTransportSecurity webTransportSecurity;
+try
+{
+    webTransportSecurity = WebTransportSecurity.Load(builder.Configuration, builder.Environment);
+}
+catch (InvalidOperationException ex) when (ex.Message.StartsWith("TIMELEDGER-", StringComparison.Ordinal))
+{
+    Console.Error.WriteLine(ex.Message);
+    Environment.ExitCode = 2;
+    return;
+}
+
+webTransportSecurity.ConfigureServices(builder.Services);
+
+if (args.Contains("--validate-web-security", StringComparer.Ordinal))
+{
+    Console.WriteLine($"Web通信構成: {webTransportSecurity.Description}");
+    return;
+}
+
 //================ DB接続 ==================
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// DevelopmentはDockerやDBサーバーを使わず、プロジェクト配下のSQLiteファイルだけで動作する。
+// 以前のDevelopment用PostgreSQL接続文字列がLocal設定に残っていても参照しない。
+var useDevelopmentSqlite = builder.Environment.IsDevelopment();
+string connectionString;
+if (useDevelopmentSqlite)
+{
+    var developmentDatabasePath = Path.Combine(builder.Environment.ContentRootPath, "timeledger.db");
+    connectionString = $"Data Source={developmentDatabasePath}";
+}
+else
+{
+    try
+    {
+        connectionString = GetRequiredConnectionString(builder.Configuration, builder.Environment);
+    }
+    catch (InvalidOperationException ex) when (ex.Message.StartsWith("TIMELEDGER-", StringComparison.Ordinal))
+    {
+        Console.Error.WriteLine(ex.Message);
+        Environment.ExitCode = 2;
+        return;
+    }
+}
+
+if (args.Contains("--validate-db-configuration", StringComparer.Ordinal))
+{
+    var configurationDescription = useDevelopmentSqlite
+        ? "開発用SQLiteファイルを使用"
+        : $"DefaultConnection設定済み（{builder.Environment.EnvironmentName}）";
+    Console.WriteLine($"DB接続構成: {configurationDescription}。接続先には接続しません。");
+    return;
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    if (useDevelopmentSqlite)
+    {
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        options.UseNpgsql(connectionString);
+    }
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -86,6 +156,7 @@ builder.Services.AddRazorPages();
 //================ カレンダータイムゾーン設定 ===============
 builder.Services.Configure<CalendarSettings>(builder.Configuration.GetSection("Calendar"));
 builder.Services.AddSingleton<ICalendarTimeZoneService, CalendarTimeZoneService>();
+builder.Services.Configure<DiscordNotificationSettings>(builder.Configuration.GetSection(DiscordNotificationSettings.SectionName));
 
 //================ IHttpContextAccessor登録 ===============
 builder.Services.AddHttpContextAccessor();
@@ -98,6 +169,8 @@ builder.Services.AddScoped<IcalParserService>();
 
 //================ 外部カレンダー連携 ===============
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(nameof(DiscordReminderWorker));
+builder.Services.AddHostedService<DiscordReminderWorker>();
 builder.Services.AddHttpClient<OutlookCalendarClient>();
 builder.Services.AddHttpClient<GoogleCalendarClient>();
 builder.Services.AddScoped<IExternalCalendarClient, OutlookCalendarClient>();
@@ -114,20 +187,46 @@ builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 //================ アプリ構築 ===============
 var app = builder.Build();
 
-//================ 起動時シード ===============
-using (var scope = app.Services.CreateScope())
+if (useDevelopmentSqlite)
 {
+    using var databaseScope = app.Services.CreateScope();
+    var database = databaseScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    database.Database.EnsureCreated();
+}
+
+if (webTransportSecurity.RequireHttps)
+{
+    app.UseForwardedHeaders();
+}
+
+//================ 起動時シード ===============
+if (builder.Configuration.GetValue<bool>("BootstrapAdmin:Enabled"))
+{
+    if (!app.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("初期管理者の自動作成はDevelopment環境だけで使用できます。");
+    }
+
+    var bootstrapAdminEmail = builder.Configuration["BootstrapAdmin:Email"];
+    var bootstrapAdminPassword = builder.Configuration["BootstrapAdmin:Password"];
+    if (string.IsNullOrWhiteSpace(bootstrapAdminEmail) || string.IsNullOrWhiteSpace(bootstrapAdminPassword))
+    {
+        throw new InvalidOperationException(
+            "BootstrapAdminを有効にする場合はEmailとPasswordをappsettings.Development.Local.json、環境変数、またはUser Secretsで設定してください。");
+    }
+
+    using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        await SeedAdminUserAsync(userManager, roleManager);
+        await SeedAdminUserAsync(userManager, roleManager, bootstrapAdminEmail, bootstrapAdminPassword);
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Adminユーザーのシード中にエラーが発生しました。");
+        logger.LogError(ex, "開発用Adminユーザーのシード中にエラーが発生しました。");
     }
 }
 
@@ -136,12 +235,15 @@ contentTypeProvider.Mappings[".webmanifest"] = "application/manifest+json";
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseMigrationsEndPoint();
+    app.UseDeveloperExceptionPage();
 }
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    if (webTransportSecurity.RequireHttps)
+    {
+        app.UseHsts();
+    }
 }
 
 if (!string.IsNullOrEmpty(configuredPathBase))
@@ -149,7 +251,22 @@ if (!string.IsNullOrEmpty(configuredPathBase))
     app.UsePathBase(configuredPathBase);
 }
 
-app.UseHttpsRedirection();
+if (webTransportSecurity.RequireHttps)
+{
+    app.Use(async (context, next) =>
+    {
+        if (!context.Request.IsHttps)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "text/plain; charset=utf-8";
+            await context.Response.WriteAsync("HTTPS経由の要求だけを受け付けます。");
+            return;
+        }
+
+        await next();
+    });
+}
+
 app.UseStaticFiles(new StaticFileOptions
 {
     ContentTypeProvider = contentTypeProvider
@@ -169,10 +286,12 @@ app.MapRazorPages();
 app.Run();
 
 // Adminユーザーを起動時に冪等作成する
-static async Task SeedAdminUserAsync(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+static async Task SeedAdminUserAsync(
+    UserManager<ApplicationUser> userManager,
+    RoleManager<IdentityRole> roleManager,
+    string adminEmail,
+    string adminPassword)
 {
-    const string adminEmail = "admin@admin.admin";
-    const string adminPassword = "i2JvwXGn<>"; // 開発用の初期パスワード。本番では環境変数等に置き換える。
     const string adminRoleName = "Admin";
 
     var existing = await userManager.FindByEmailAsync(adminEmail);
@@ -240,4 +359,25 @@ static string? NormalizePathBase(string? value)
     }
 
     return normalized;
+}
+
+static string GetRequiredConnectionString(IConfiguration configuration, IHostEnvironment environment)
+{
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        return connectionString;
+    }
+
+    var environmentCode = environment.IsProduction()
+        ? "PRODUCTION"
+        : environment.IsDevelopment()
+            ? "DEVELOPMENT"
+            : "NONPRODUCTION";
+    var configurationSource = environment.IsProduction()
+        ? "環境変数または承認済み秘密情報ストア"
+        : "appsettings.Development.Local.json、環境変数、またはUser Secrets";
+
+    throw new InvalidOperationException(
+        $"TIMELEDGER-{environmentCode}-DB-CONNECTION-MISSING: ConnectionStrings:DefaultConnectionが未設定です。{configurationSource}で設定してください。");
 }

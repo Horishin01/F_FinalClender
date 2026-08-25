@@ -770,12 +770,76 @@ body.mobile-lock {
     margin-right: 0.25rem;
 }
 
+.ic-calendar-context {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0.55rem 0.7rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fbfcff, #f4f7ff);
+    color: #475569;
+    font-size: 0.86rem;
+}
+
+.ic-calendar-context-copy,
+.ic-calendar-context-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.ic-context-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    flex: 0 0 auto;
+}
+
+.ic-context-reset {
+    border: 0;
+    border-radius: 8px;
+    padding: 0.3rem 0.55rem;
+    background: rgba(99, 102, 241, 0.1);
+    color: #4338ca;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ic-context-reset:hover,
+.ic-context-reset:focus-visible {
+    background: rgba(99, 102, 241, 0.18);
+}
+
+.ic-shortcut-hint {
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.ic-shortcut-hint kbd {
+    padding: 0.08rem 0.32rem;
+    border: 1px solid #cbd5e1;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: #fff;
+    color: #475569;
+    font-family: inherit;
+    font-size: 0.76rem;
+}
+
 .ic-btn.is-loading i {
     animation: sync-spin 0.9s linear infinite;
 }
 
 .ic-main-actions #createBtn {
-    display: none; /* PC 表示では非表示 */
+    display: inline-flex;
+    align-items: center;
 }
 
 .ic-sync-chips {
@@ -1454,6 +1518,22 @@ body.mobile-lock {
 }
 
 @media (max-width: 640px) {
+    .ic-calendar-context {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .ic-calendar-context-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .ic-shortcut-hint {
+        display: none;
+    }
+
     .ic-header {
         flex-direction: column;
         gap: 0.8rem;

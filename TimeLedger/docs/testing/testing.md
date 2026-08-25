@@ -1,4 +1,4 @@
-# テスト方針（更新日: 2026-02-13）
+# テスト方針（更新日: 2026-08-25）
 
 ## 現状
 - 自動テストプロジェクトは未整備。
@@ -13,6 +13,13 @@
 - ログインユーザーのイベントのみ表示・編集・削除できること。
 - 他ユーザーのイベント ID を指定しても参照/更新/削除できないこと。
 - `Sync` が 60 秒レート制限とエラーハンドリングを維持していること。
+
+- `Discord予定リマインダー`
+- `DiscordNotifications:Enabled=false` では外部送信が行われないこと。
+- 有効時に、単発かつ時間指定で`ReminderMinutesBefore`を設定した予定だけが通知候補になること。
+- 終日予定・繰り返し予定・リマインダー未設定予定が通知されないこと。
+- 同じ予定・同じ通知時刻を再実行しても、`DiscordNotificationDeliveries`の一意制約により二重送信されないこと。
+- 送信失敗時は送信記録が残らず、次回ポーリングで再試行できること。
 
 - `Categories`
 - CRUD が自ユーザー範囲で完結すること。
@@ -39,6 +46,22 @@
 - CSRF トークンなし POST が拒否されること。
 - 入力異常時に 500 を返さず、機密情報を画面表示しないこと。
 - ログにトークン/パスワードが出力されないこと。
+
+## HTTP・HTTPS境界の回帰確認
+- Windowsでは `pwsh -File ./TimeLedger/動作確認/HTTPS構成確認.ps1` を実行すると、Releaseビルドと次のDB非接続10ケースをまとめて確認できる。
+- Developmentの起動プロファイルがKestrel用の `http` 1件だけで、IIS Express設定やHTTPS URLを含まないこと。VS CodeのF5構成が `checkForDevCert=false` を明示し、`http://localhost:5016` のブラウザー自動起動を維持しながら開発証明書警告を表示しないこと。
+- `--validate-web-security` がDevelopmentでは成功すること。
+- Productionで `Security:RequireHttps=false`、`AllowedHosts=*` または未設定、loopback以外の `TrustedProxyIp`、`BootstrapAdmin:Enabled=true` の各条件を拒否すること。
+- Productionで実ホスト名を設定した構成検査がDB接続なしで成功すること。
+- `--validate-db-configuration` がDevelopmentおよびProductionで未設定の `ConnectionStrings:DefaultConnection` を環境別エラーコードで拒否し、ダミー値ではDBへ接続せず成功すること。
+- Nginxの `nginx -t`、HTTP 308、HTTPS応答、証明書SAN・発行元・期限・チェーン、HSTS、Certbot更新dry-runを実機で確認すること。
+- Kestrelの5016がloopback限定で、転送ヘッダーなしの直接HTTP要求を拒否すること。任意送信元の転送ヘッダーを信頼する設定へ緩和しない。
+- 実ドメイン・証明書がない場合はProduction HTTPSの実機項目を未確認として残し、テストHTTP成功で代用しない。
+
+## DB配置の回帰確認
+- Windowsでは `pwsh -File ./TimeLedger/動作確認/DB構成確認.ps1` を実行し、開発・本番Composeの分離、PostgreSQLバージョン固定、loopback限定、プロジェクト配下のdata/backups、秘密値と物理データのGit除外、運用スクリプト構文を確認する。
+- Docker利用可能環境では開発DBを起動し、healthcheck、`select 1`、`dotnet ef database update`、F5ログイン、バックアップ作成を確認する。
+- 本番移行は移行元を停止して最終ダンプを取得し、復元後にマイグレーション履歴、主要テーブル件数、管理者ログインを比較する。開発データを本番へ流用しない。
 
 ## 自動化の優先順
 1. 認可・所有者照合の統合テスト（`WebApplicationFactory`）。

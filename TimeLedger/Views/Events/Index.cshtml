@@ -115,20 +115,20 @@
         <div class="ic-main" id="icMain">
             <div class="ic-main-head">
                 <div class="ic-month-nav">
-                    <button id="calPrev" class="ic-nav-btn">◀</button>
-                    <div id="calPeriod" class="ic-month-label">----</div>
-                    <button id="calNext" class="ic-nav-btn">▶</button>
+                    <button id="calPrev" class="ic-nav-btn" type="button" aria-label="前の期間へ" title="前の期間へ">◀</button>
+                    <div id="calPeriod" class="ic-month-label" aria-live="polite">----</div>
+                    <button id="calNext" class="ic-nav-btn" type="button" aria-label="次の期間へ" title="次の期間へ">▶</button>
                 </div>
-                <div class="ic-views">
-                    <button id="viewMonth" class="view-btn active">月</button>
-                    <button id="viewWeek" class="view-btn">週</button>
-                    <button id="viewDay" class="view-btn">日</button>
+                <div class="ic-views" role="group" aria-label="カレンダーの表示形式">
+                    <button id="viewMonth" class="view-btn active" type="button" aria-pressed="true">月</button>
+                    <button id="viewWeek" class="view-btn" type="button" aria-pressed="false">週</button>
+                    <button id="viewDay" class="view-btn" type="button" aria-pressed="false">日</button>
                 </div>
                 <div class="ic-main-actions">
                     <a id="createBtn" class="ic-btn primary" asp-controller="Events" asp-action="Create">
                         <i class="fa-solid fa-plus"></i> 新規追加
                     </a>
-                    <button id="calToday" class="ic-btn ghost"><i class="fa-solid fa-calendar-day"></i> 今日</button>
+                    <button id="calToday" class="ic-btn ghost" type="button"><i class="fa-solid fa-calendar-day"></i> 今日</button>
                     <form id="syncForm" method="post">
                         @Html.AntiForgeryToken()
                         <button type="button" class="ic-btn sync" id="syncBtn"><i class="fa-solid fa-arrows-rotate"></i> すべて同期</button>
@@ -151,6 +151,16 @@
                             </button>
                         </form>
                     </div>
+                </div>
+            </div>
+            <div class="ic-calendar-context" id="calendarContext" role="status" aria-live="polite">
+                <div class="ic-calendar-context-copy">
+                    <span class="ic-context-dot" aria-hidden="true"></span>
+                    <span id="calendarContextText">すべての予定を表示中</span>
+                </div>
+                <div class="ic-calendar-context-actions">
+                    <button type="button" class="ic-context-reset" id="clearCalendarFilters" hidden>絞り込みを解除</button>
+                    <span class="ic-shortcut-hint"><kbd>/</kbd> 検索　<kbd>N</kbd> 新規予定</span>
                 </div>
             </div>
             <div class="ic-calendar-wrap">
