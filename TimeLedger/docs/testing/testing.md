@@ -49,7 +49,7 @@
 
 ## HTTP・HTTPS境界の回帰確認
 - Windowsでは `pwsh -File ./TimeLedger/動作確認/HTTPS構成確認.ps1` を実行すると、Releaseビルドと次のDB非接続10ケースをまとめて確認できる。
-- Developmentの起動プロファイルがKestrel用の `http` 1件だけで、IIS Express設定やHTTPS URLを含まないこと。Visual Studio / VS CodeのF5デバッグが `http://localhost:5016` だけを使用し、開発証明書警告なしで起動できること。
+- Developmentの起動プロファイルがKestrel用の `http` 1件だけで、IIS Express設定やHTTPS URLを含まないこと。VS CodeのF5構成が `checkForDevCert=false` を明示し、`http://localhost:5016` のブラウザー自動起動を維持しながら開発証明書警告を表示しないこと。
 - `--validate-web-security` がDevelopmentでは成功すること。
 - Productionで `Security:RequireHttps=false`、`AllowedHosts=*` または未設定、loopback以外の `TrustedProxyIp`、`BootstrapAdmin:Enabled=true` の各条件を拒否すること。
 - Productionで実ホスト名を設定した構成検査がDB接続なしで成功すること。

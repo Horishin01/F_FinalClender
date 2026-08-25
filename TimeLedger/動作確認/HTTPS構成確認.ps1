@@ -18,17 +18,23 @@ if ($profileNames.Count -ne 1 -or $profileNames[0] -ne 'http') {
 }
 
 $httpProfile = $launchSettings.profiles.http
-if ($httpProfile.commandName -ne 'Project'
-    -or $httpProfile.applicationUrl -ne 'http://localhost:5016'
-    -or $httpProfile.environmentVariables.ASPNETCORE_ENVIRONMENT -ne 'Development'
-    -or $httpProfile.environmentVariables.DOTNET_ENVIRONMENT -ne 'Development'
-    -or $httpProfile.environmentVariables.ASPNETCORE_URLS -ne 'http://localhost:5016') {
+if ($httpProfile.commandName -ne 'Project' -or
+    $httpProfile.applicationUrl -ne 'http://localhost:5016' -or
+    $httpProfile.environmentVariables.ASPNETCORE_ENVIRONMENT -ne 'Development' -or
+    $httpProfile.environmentVariables.DOTNET_ENVIRONMENT -ne 'Development' -or
+    $httpProfile.environmentVariables.ASPNETCORE_URLS -ne 'http://localhost:5016') {
     throw 'Developmentのhttp起動プロファイルがF5用のHTTP固定構成と一致しません。'
 }
 
 $debugConfigurationText = (Get-Content -LiteralPath $vsCodeLaunchFile -Raw) + (Get-Content -LiteralPath $vsCodeTasksFile -Raw)
 if ($debugConfigurationText.Contains('https://') -or $debugConfigurationText.Contains('https?://')) {
     throw 'VS CodeのF5・watch構成にHTTPS URLが残っています。'
+}
+
+$vsCodeLaunch = Get-Content -LiteralPath $vsCodeLaunchFile -Raw | ConvertFrom-Json
+$launchConfiguration = @($vsCodeLaunch.configurations | Where-Object request -eq 'launch')
+if ($launchConfiguration.Count -ne 1 -or $launchConfiguration[0].checkForDevCert -ne $false) {
+    throw 'VS CodeのF5構成ではcheckForDevCert=falseを明示し、HTTP開発時の証明書警告を無効にしてください。'
 }
 
 & dotnet build $projectFile -c $Configuration --no-restore

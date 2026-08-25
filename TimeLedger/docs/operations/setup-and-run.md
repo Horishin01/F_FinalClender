@@ -42,7 +42,7 @@
 ## 実行
 - 開発: `dotnet watch run --project TimeLedger/TimeLedger.csproj`  
 - 通常: `dotnet run --project TimeLedger/TimeLedger.csproj`  
-- 既定URL: `http://localhost:5016`。Visual Studio / VS CodeのF5起動は `http` Projectプロファイルだけを使用する。IIS Expressプロファイルは用意せず、開発証明書を作成・信頼しない。
+- 既定URL: `http://localhost:5016`。Visual Studio / VS CodeのF5起動は `http` Projectプロファイルだけを使用する。IIS Expressプロファイルは用意せず、VS Codeでは `checkForDevCert=false` として開発証明書の確認・作成・信頼を行わない。ブラウザーはHTTP待受開始後に自動起動する。
 
 ## 初期アカウント
 - 初期Adminの自動作成は既定で無効。DevelopmentでUser Secretsに明示設定した場合だけ実行する。

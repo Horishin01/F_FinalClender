@@ -20,6 +20,7 @@
         "action": "openExternally",
         "pattern": "\\bNow listening on:\\s+(http://\\S+)"
       },
+      "checkForDevCert": false,
       "justMyCode": true
     },
     {
