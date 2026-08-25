@@ -22,4 +22,5 @@
 
 ## 運用メモ
 - すべてのテーブルは PostgreSQL に作成される。スキーマ変更は `Migrations/` を更新し、`dotnet ef database update` で適用。
+- PostgreSQLの物理データは `database/runtime/development/data` と `database/runtime/production/data` に環境分離して保持し、Gitには登録しない。バックアップは同階層の `backups` に `pg_dump -Fc` 形式で作成する。
 - トークン/パスワード系カラムは暗号化未対応。公開前に Data Protection + 外部キー管理を導入し、既存レコードの再暗号化手順を別途用意すること。

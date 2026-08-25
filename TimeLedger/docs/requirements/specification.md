@@ -12,7 +12,7 @@ _最終更新: 2026-08-25。仕様書とコードコメントは日本語を基�
 - **言語 / ターゲット:** C# 12、.NET 8.0 (`TimeLedger.csproj`)。
 - **主要ライブラリ:** ASP.NET Core Identity、Entity Framework Core (Npgsql)、Ical.Net、PCSC/PCSC.Iso7816、Microsoft.VisualStudio.Web.CodeGeneration.Design など。
 - **フロントエンド:** FullCalendar を `wwwroot/js/events-integrated.js` で初期化し、素の JavaScript で UI 操作を実装。
-- **ホスティング:** Kestrel。Developmentは `http://localhost:5016`、ProductionはNginxでTLS終端しKestrelを `http://127.0.0.1:5016` に限定する。
+- **ホスティング:** Kestrel。Developmentは `http://localhost:5016`、ProductionはNginxでTLS終端しKestrelを `http://127.0.0.1:5016` に限定する。PostgreSQL 16.15は開発・本番別のComposeで起動し、物理データを `database/runtime/<environment>/data` に保持する。
 
 ## 3. 実行時構成 (Program.cs)
 1. `DefaultConnection` を環境変数またはUser Secretsから読み込む。未設定時は環境別の `TIMELEDGER-*-DB-CONNECTION-MISSING` で起動を拒否する。
@@ -24,9 +24,10 @@ _最終更新: 2026-08-25。仕様書とコードコメントは日本語を基�
 7. パイプライン: ProductionはForwarded Headersを最初に処理し、HTTPSと確認できない要求を400で拒否、`UseExceptionHandler("/Home/Error")`+`UseHsts()`を適用する。Developmentは `UseMigrationsEndPoint` を使用しHTTPSリダイレクトを行わない。以降は静的ファイル/StatusCodePages/Routing/Authentication/Authorization、既定ルート `{controller=Home}/{action=Index}/{id?}/{id2?}` + Razor Pages。
 
 ## 4. 設定と環境
-- 接続文字列、OAuth秘密情報、初期Admin情報は追跡対象JSONへ保存しない。DevelopmentはGit管理外の `appsettings.Development.Local.json` またはUser Secrets、Productionは環境変数または承認済み秘密情報ストアで設定する。
+- 接続文字列、OAuth秘密情報、初期Admin情報は追跡対象JSONへ保存しない。DevelopmentはGit管理外の `appsettings.Development.Local.json` またはUser Secrets、ProductionはGit管理外・所有者限定の `database/config/production.env`（または承認済み秘密情報ストア）で設定する。
 - `appsettings.Development.json`: `Security:RequireHttps=false` の共有設定。端末固有値は同じディレクトリの `appsettings.Development.Local.json` から追加読込し、環境変数・コマンドライン指定を優先する。Visual Studio / VS CodeのF5起動はKestrel用の `http` Projectプロファイルだけを提供し、IIS Expressと開発用HTTPS証明書を使用しない。VS Codeは `checkForDevCert=false` を明示して証明書確認ダイアログを抑止する。
-- `appsettings.Production.json`: `Security:RequireHttps=true`、`TrustedProxyIp=127.0.0.1`、Kestrelのloopback HTTP endpoint、未設定を示す `AllowedHosts` placeholderを持つ。実ホスト名はProduction環境変数で必ず上書きする。
+- `appsettings.Production.json`: `Security:RequireHttps=true`、`TrustedProxyIp=127.0.0.1`、Kestrelのloopback HTTP endpoint、未設定を示す `AllowedHosts` placeholderを持つ。実ホスト名とDB接続文字列は `database/config/production.env` をsystemdのEnvironmentFileとして読み込んで必ず上書きする。
+- DB構成は `database/` に集約する。開発は `127.0.0.1:55432`、本番は `127.0.0.1:5432` だけで待ち受け、`config/*.env`、`runtime/`、バックアップはGit管理外とする。開発から本番の物理データ共有は禁止する。
 - 初期Admin自動作成は既定無効。DevelopmentでLocal.jsonまたはUser Secretsに明示した場合だけ有効で、Productionでは拒否する。
 - 主要環境変数: `ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT`、`ConnectionStrings__DefaultConnection`、`AllowedHosts`。ProductionでKestrelへ証明書や秘密鍵を渡さない。
 

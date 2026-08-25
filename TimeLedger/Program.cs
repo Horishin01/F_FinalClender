@@ -182,7 +182,7 @@ if (builder.Configuration.GetValue<bool>("BootstrapAdmin:Enabled"))
     if (string.IsNullOrWhiteSpace(bootstrapAdminEmail) || string.IsNullOrWhiteSpace(bootstrapAdminPassword))
     {
         throw new InvalidOperationException(
-            "BootstrapAdminを有効にする場合はEmailとPasswordをUser Secretsで設定してください。");
+            "BootstrapAdminを有効にする場合はEmailとPasswordをappsettings.Development.Local.json、環境変数、またはUser Secretsで設定してください。");
     }
 
     using var scope = app.Services.CreateScope();

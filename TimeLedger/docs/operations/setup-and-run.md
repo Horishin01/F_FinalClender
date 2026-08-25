@@ -2,7 +2,7 @@
 
 ## 前提
 - .NET SDK 8.0.x
-- PostgreSQL 14+（ローカルまたは接続可能な環境）
+- Docker Desktop（Linuxコンテナ）+ Docker Compose v2。PostgreSQL 16.15はプロジェクト配下のComposeで起動する。
 - Node.js 18+（FullCalendar を npm 取得する場合のみ）
 - `dotnet-ef` CLI（マイグレーション適用用）: `dotnet tool install --global dotnet-ef`
 
@@ -35,9 +35,13 @@
 - 終日予定、繰り返し予定、ブラウザーのlocalStorageだけに存在するFlowログは通知対象外。期限付きタスク通知やDiscord BotのDM・コマンド連携は未実装。
 
 ## DB 準備
-1) PostgreSQL で DB とユーザーを作成。  
-2) ルートで `dotnet restore`。  
-3) `dotnet ef database update --project TimeLedger/TimeLedger.csproj` で最新マイグレーションを適用。
+1) 既存DBを引き継ぐ場合は `./database/scripts/Migrate-DevelopmentDatabase.ps1` を実行する。バックアップ・復元・疎通に成功した場合だけLocal設定が `127.0.0.1:55432` へ切り替わる。
+2) 新規DBの場合は `database/config/development.env.example` をGit管理外の `development.env` へコピーし、例示パスワードを変更する。
+3) `./database/scripts/Database.ps1 -Environment Development -Action Start` で起動する。DB本体は `database/runtime/development/data` に保持される。
+4) ルートで `dotnet restore`。
+5) `dotnet ef database update --project TimeLedger.csproj --startup-project TimeLedger.csproj` で最新マイグレーションを適用。
+
+詳細とバックアップ・本番移行は `database/README.md` を参照する。
 
 ## 実行
 - 開発: `dotnet watch run --project TimeLedger/TimeLedger.csproj`  

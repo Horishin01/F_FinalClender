@@ -18,6 +18,8 @@
 - Nginx状態: `sudo systemctl status nginx`
 - 証明書一覧: `sudo certbot certificates`
 - 自動更新試験: `sudo certbot renew --dry-run`
+- DB状態: `./database/scripts/database.sh production status`
+- DBバックアップ: `./database/scripts/database.sh production backup`
 
 ## デプロイ直後の確認
 - `systemctl status timeledger` で `active (running)` を確認。
@@ -46,14 +48,21 @@
 - 読み取り失敗時は `pcscd` と USB リーダー接続状態を先に確認。
 
 ## DB確認
-- 接続試験: `psql "<conn-string>" -c "select 1"`
-- バックアップ: `pg_dump -Fc -h <host> -U <user> <db> > backup.dump`
-- 復旧: `pg_restore -c -d <db> backup.dump`
+- 配置: DB本体は `database/runtime/production/data`、論理バックアップは `database/runtime/production/backups`、秘密設定は `database/config/production.env`。
+- コンテナ状態: `docker compose --env-file database/config/production.env -f database/compose.production.yaml ps`
+- 接続試験: `docker compose --env-file database/config/production.env -f database/compose.production.yaml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select 1"'`
+- バックアップ: `./database/scripts/database.sh production backup`
+- 復旧: アプリ停止後、`./database/scripts/database.sh production restore <dump> --force`
 
 ## 典型障害と一次対応
 - `起動失敗`
-- `journalctl` で接続文字列・権限・ポート競合を確認。
+- `journalctl` で接続文字列・権限・ポート競合を確認し、DBコンテナがhealthyか確認。
 - 必要に応じて `dotnet publish` の出力先権限を再確認。
+
+- `DBコンテナ起動失敗`
+- `docker compose ... logs postgres` で初期化・権限・ポート競合を確認する。
+- `database/config/production.env` の `POSTGRES_*` と `ConnectionStrings__DefaultConnection` が一致しているか確認する。値自体はログやチケットへ貼り付けない。
+- PostgreSQLメジャーバージョンが物理データと異なる場合は直接起動せず、論理バックアップまたは `pg_upgrade` で移行する。
 
 - `TIMELEDGER-PRODUCTION-HTTPS-REQUIRED` / `TIMELEDGER-PRODUCTION-HOSTS-REQUIRED`
 - `ASPNETCORE_ENVIRONMENT=Production`、`Security:RequireHttps=true`、`AllowedHosts`が実ドメインであることを確認する。検査を無効化したりワイルドカードへ緩和したりしない。
@@ -81,7 +90,7 @@
 - `pcscd` 起動状態、`libpcsclite.so.1`、カードリーダー接続を確認。
 
 ## ロールバック
-- リリース前バックアップ（DBダンプ）から復元。
+- リリース前バックアップ（`database/runtime/production/backups` のDBダンプ）から復元。DB切替直後は確認完了まで移行元も保持する。
 - 直前に稼働していた publish 内容へ戻して `sudo systemctl restart timeledger`。
 - Nginxは直前の検証済みHTTPS設定と有効な証明書へ戻す。復旧不能時はHTTPS公開を停止し、HTTPで本番継続しない。
 

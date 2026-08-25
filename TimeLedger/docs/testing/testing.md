@@ -58,6 +58,11 @@
 - Kestrelの5016がloopback限定で、転送ヘッダーなしの直接HTTP要求を拒否すること。任意送信元の転送ヘッダーを信頼する設定へ緩和しない。
 - 実ドメイン・証明書がない場合はProduction HTTPSの実機項目を未確認として残し、テストHTTP成功で代用しない。
 
+## DB配置の回帰確認
+- Windowsでは `pwsh -File ./TimeLedger/動作確認/DB構成確認.ps1` を実行し、開発・本番Composeの分離、PostgreSQLバージョン固定、loopback限定、プロジェクト配下のdata/backups、秘密値と物理データのGit除外、運用スクリプト構文を確認する。
+- Docker利用可能環境では開発DBを起動し、healthcheck、`select 1`、`dotnet ef database update`、F5ログイン、バックアップ作成を確認する。
+- 本番移行は移行元を停止して最終ダンプを取得し、復元後にマイグレーション履歴、主要テーブル件数、管理者ログインを比較する。開発データを本番へ流用しない。
+
 ## 自動化の優先順
 1. 認可・所有者照合の統合テスト（`WebApplicationFactory`）。
 2. サービス層のユニットテスト（`ExternalCalendarSyncService`, `OutlookCalendarService`, `GoogleCalendarService`, `CloudCalDavService`）。
