@@ -7,6 +7,29 @@ param(
 $ErrorActionPreference = 'Stop'
 $projectDirectory = Split-Path -Parent $PSScriptRoot
 $projectFile = Join-Path $projectDirectory 'TimeLedger.csproj'
+$launchSettingsFile = Join-Path $projectDirectory 'Properties\launchSettings.json'
+$vsCodeLaunchFile = Join-Path $projectDirectory '.vscode\launch.json'
+$vsCodeTasksFile = Join-Path $projectDirectory '.vscode\tasks.json'
+
+$launchSettings = Get-Content -LiteralPath $launchSettingsFile -Raw | ConvertFrom-Json
+$profileNames = @($launchSettings.profiles.PSObject.Properties.Name)
+if ($profileNames.Count -ne 1 -or $profileNames[0] -ne 'http') {
+    throw 'Developmentの起動プロファイルはKestrel用のhttp 1件だけにしてください。'
+}
+
+$httpProfile = $launchSettings.profiles.http
+if ($httpProfile.commandName -ne 'Project'
+    -or $httpProfile.applicationUrl -ne 'http://localhost:5016'
+    -or $httpProfile.environmentVariables.ASPNETCORE_ENVIRONMENT -ne 'Development'
+    -or $httpProfile.environmentVariables.DOTNET_ENVIRONMENT -ne 'Development'
+    -or $httpProfile.environmentVariables.ASPNETCORE_URLS -ne 'http://localhost:5016') {
+    throw 'Developmentのhttp起動プロファイルがF5用のHTTP固定構成と一致しません。'
+}
+
+$debugConfigurationText = (Get-Content -LiteralPath $vsCodeLaunchFile -Raw) + (Get-Content -LiteralPath $vsCodeTasksFile -Raw)
+if ($debugConfigurationText.Contains('https://') -or $debugConfigurationText.Contains('https?://')) {
+    throw 'VS CodeのF5・watch構成にHTTPS URLが残っています。'
+}
 
 & dotnet build $projectFile -c $Configuration --no-restore
 if ($LASTEXITCODE -ne 0) {
@@ -79,4 +102,4 @@ if ($failures.Count -gt 0) {
     throw "Web通信構成確認に$($failures.Count)件失敗しました。"
 }
 
-Write-Host "Web通信構成確認: $($cases.Count)/$($cases.Count)件成功（DB接続・サーバー起動なし）"
+Write-Host "Web通信構成確認: F5 HTTP固定構成と$($cases.Count)/$($cases.Count)件成功（DB接続・サーバー起動なし）"
