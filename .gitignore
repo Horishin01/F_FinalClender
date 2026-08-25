@@ -10,6 +10,9 @@
 *.userosscache
 *.sln.docstates
 
+# TimeLedger development-only settings (may contain local credentials)
+TimeLedger/appsettings.Development.Local.json
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

@@ -11,21 +11,21 @@
 - ルート直下にも旧版 `../TimeLedger.sln` があるため、IDE でプロジェクトを重複読み込みしないよう注意。
 
 ## 設定
-- ローカルの秘密情報は `appsettings.Development.json` へ書かず、環境変数またはUser Secretsで設定する。
+- 開発端末固有の設定は、プロジェクト直下の `appsettings.Development.Local.example.json` を `appsettings.Development.Local.json` へコピーして設定する。Local.jsonはGit管理外で、Developmentだけが読み込む。
+- `appsettings.Development.json` は秘密情報を含まない共有設定としてGit管理する。環境変数とコマンドライン指定はLocal.jsonより優先する。
 - 必須キー  
   - `ConnectionStrings:DefaultConnection`（PostgreSQL 接続文字列）  
   - `Authentication:Outlook:ClientId|ClientSecret`（利用時のみ必須）  
   - `Authentication:Google:ClientId|ClientSecret`（利用時のみ必須）
   - `DiscordNotifications:Enabled`（既定は`false`。Discord通知を利用する場合のみ`true`）
   - `DiscordNotifications:WebhookUrl`（Discord Webhook URL。環境変数またはSecret Managerでのみ設定）
-- Secret Manager 例（`TimeLedger` プロジェクト直下で実行）  
-  - `dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=...;Port=...;Database=...;Username=...;Password=..."`  
+- User Secretsも代替手段として利用できるが、この開発環境では `appsettings.Development.Local.json` を使用する。
 - 起動前の設定確認には `dotnet run -- --validate-db-configuration` を使う。この確認は接続先へ接続せず、接続文字列の値も表示しない。
   - `dotnet user-secrets set "Authentication:Google:ClientId" "xxx"`  
   - `dotnet user-secrets set "Authentication:Google:ClientSecret" "xxx"`
   - `dotnet user-secrets set "DiscordNotifications:Enabled" "true"`
   - `dotnet user-secrets set "DiscordNotifications:WebhookUrl" "https://discord.com/api/webhooks/..."`
-- 開発用Adminを自動作成する必要がある場合だけ、`BootstrapAdmin:Enabled=true`、`Email`、`Password` をUser Secretsへ設定する。Productionではこの機能を起動前に拒否する。
+- 開発用Adminを自動作成する必要がある場合だけ、Local.jsonに `BootstrapAdmin:Enabled=true`、`Email`、`Password` を設定する。ProductionではLocal.jsonを読み込まず、この機能も起動前に拒否する。
 
 ### Discord予定リマインダー
 

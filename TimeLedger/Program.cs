@@ -1,6 +1,6 @@
 // Program.cs
 // アプリのエントリーポイント。DI/認証プロバイダ/カレンダー連携クライアントの登録と、Admin ユーザーのシードを行う。
-// 外部 OAuth のクライアントID/Secret は環境変数またはUser Secretsで設定し、起動時に存在する場合のみ追加する。
+// 外部 OAuth のクライアントID/Secret は環境変数、Development Local設定、User Secretsのいずれかで設定し、起動時に存在する場合のみ追加する。
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +16,18 @@ using Microsoft.AspNetCore.StaticFiles;
 
 var builder = WebApplication.CreateBuilder(args);
 // appsettings.{Environment}.json で接続先を環境ごとに切り替える。
-// 接続文字列や資格情報は環境変数、User Secrets、承認済み秘密情報ストアで設定すること。
+// DevelopmentではGit管理外のappsettings.Development.Local.jsonも使用できる。
+// ローカルJSONより環境変数とコマンドラインを優先し、ProductionではローカルJSONを読み込まない。
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile(
+        "appsettings.Development.Local.json",
+        optional: true,
+        reloadOnChange: true);
+    builder.Configuration.AddEnvironmentVariables();
+    builder.Configuration.AddCommandLine(args);
+}
+
 var configuredPathBase = NormalizePathBase(
     builder.Configuration["PathBase"]
     ?? builder.Configuration["ASPNETCORE_PATHBASE"]);
@@ -335,7 +346,7 @@ static string GetRequiredConnectionString(IConfiguration configuration, IHostEnv
             : "NONPRODUCTION";
     var configurationSource = environment.IsProduction()
         ? "環境変数または承認済み秘密情報ストア"
-        : "環境変数またはUser Secrets";
+        : "appsettings.Development.Local.json、環境変数、またはUser Secrets";
 
     throw new InvalidOperationException(
         $"TIMELEDGER-{environmentCode}-DB-CONNECTION-MISSING: ConnectionStrings:DefaultConnectionが未設定です。{configurationSource}で設定してください。");
